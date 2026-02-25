@@ -9,24 +9,36 @@ export async function GET(req: NextRequest) {
 
     const db = createAdminClient();
 
-    const { data: sales } = await db
-        .from('invoices')
-        .select('total_amount,paid_amount')
-        .eq('invoice_type', 'sale');
+    try {
+        // 1. Try high-performance RPC
+        const { data: rpcData, error: rpcError } = await db.rpc('get_invoice_stats');
 
-    const { data: purchases } = await db
-        .from('invoices')
-        .select('total_amount,paid_amount')
-        .eq('invoice_type', 'purchase');
+        if (!rpcError && rpcData && rpcData.length > 0) {
+            const stats = rpcData[0];
+            return NextResponse.json({
+                sale_count: parseInt(stats.sale_count),
+                purchase_count: parseInt(stats.purchase_count),
+                total_sales: parseFloat(stats.total_sales),
+                total_purchases: parseFloat(stats.total_purchases),
+                profit: parseFloat(stats.total_sales) - parseFloat(stats.total_purchases),
+            });
+        }
 
-    const totalSales = (sales || []).reduce((s: number, i: any) => s + (i.total_amount || 0), 0);
-    const totalPurchases = (purchases || []).reduce((s: number, i: any) => s + (i.total_amount || 0), 0);
+        // 2. Fallback to standard queries if RPC fails
+        const { data: sales } = await db.from('invoices').select('total_amount').eq('invoice_type', 'sale');
+        const { data: purchases } = await db.from('invoices').select('total_amount').eq('invoice_type', 'purchase');
 
-    return NextResponse.json({
-        sale_count: (sales || []).length,
-        purchase_count: (purchases || []).length,
-        total_sales: totalSales,
-        total_purchases: totalPurchases,
-        profit: totalSales - totalPurchases,
-    });
+        const totalSales = (sales || []).reduce((s: number, i: any) => s + (i.total_amount || 0), 0);
+        const totalPurchases = (purchases || []).reduce((s: number, i: any) => s + (i.total_amount || 0), 0);
+
+        return NextResponse.json({
+            sale_count: (sales || []).length,
+            purchase_count: (purchases || []).length,
+            total_sales: totalSales,
+            total_purchases: totalPurchases,
+            profit: totalSales - totalPurchases,
+        });
+    } catch {
+        return NextResponse.json({ error: 'خطأ في جلب إحصائيات الفواتير' }, { status: 500 });
+    }
 }

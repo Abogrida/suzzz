@@ -65,7 +65,7 @@ export default function EmployeesPage() {
     const inp: React.CSSProperties = { width: '100%', padding: '14px 18px', border: '1.5px solid #e2e8f0', borderRadius: 12, fontSize: 17, fontFamily: 'Cairo', outline: 'none', background: '#fff', boxSizing: 'border-box' };
 
     return (
-        <div style={{ padding: 28, direction: 'rtl', minHeight: '100vh', background: '#f8fafc' }}>
+        <div className="page-content" style={{ direction: 'rtl', minHeight: '100vh' }}>
             {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
 
             {/* Edit Modal */}
@@ -94,27 +94,27 @@ export default function EmployeesPage() {
             )}
 
             {/* Header */}
-            <div style={{ background: '#1e293b', borderRadius: 14, padding: '18px 26px', marginBottom: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <h1 style={{ margin: 0, color: '#fff', fontSize: 24, fontWeight: 900 }}>👥 إدارة الموظفين</h1>
-                <button onClick={() => window.history.back()} style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 15, fontFamily: 'Cairo' }}>→ العودة</button>
+            <div className="page-header">
+                <h1 className="page-title">👥 إدارة الموظفين</h1>
+                <button onClick={() => window.history.back()} className="btn btn-secondary">→ العودة</button>
             </div>
 
             {/* Add Form */}
-            <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 2px 12px rgba(0,0,0,0.07)', padding: '24px 28px', marginBottom: 24 }}>
-                <h2 style={{ margin: '0 0 18px', fontSize: 18, fontWeight: 800, color: '#374151', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ background: '#6366f1', color: '#fff', borderRadius: '50%', width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>+</span>
+            <div className="card" style={{ marginBottom: 16 }}>
+                <h2 style={{ margin: '0 0 14px', fontSize: 17, fontWeight: 800, color: '#374151', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ background: '#6366f1', color: '#fff', borderRadius: '50%', width: 28, height: 28, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>+</span>
                     إضافة موظف جديد
                 </h2>
-                <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                    <div style={{ flex: 1, minWidth: 200 }}>
-                        <label style={{ display: 'block', fontWeight: 700, marginBottom: 8, fontSize: 15, color: '#374151' }}>اسم الموظف *</label>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                    <div style={{ flex: 1, minWidth: 160 }}>
+                        <label style={{ display: 'block', fontWeight: 700, marginBottom: 6, fontSize: 14, color: '#374151' }}>اسم الموظف *</label>
                         <input style={inp} value={newName} onChange={e => setNewName(e.target.value)} placeholder="مثال: أحمد محمد" />
                     </div>
-                    <div style={{ flex: 1, minWidth: 200 }}>
-                        <label style={{ display: 'block', fontWeight: 700, marginBottom: 8, fontSize: 15, color: '#374151' }}>كلمة المرور *</label>
+                    <div style={{ flex: 1, minWidth: 160 }}>
+                        <label style={{ display: 'block', fontWeight: 700, marginBottom: 6, fontSize: 14, color: '#374151' }}>كلمة المرور *</label>
                         <input style={inp} value={newPass} onChange={e => setNewPass(e.target.value)} placeholder="باسوورد فريد للموظف" />
                     </div>
-                    <button onClick={handleAdd} disabled={saving || !newName.trim() || !newPass.trim()} style={{ background: '#6366f1', color: '#fff', border: 'none', borderRadius: 12, padding: '14px 32px', fontWeight: 800, fontSize: 17, cursor: 'pointer', fontFamily: 'Cairo', opacity: (!newName.trim() || !newPass.trim()) ? 0.5 : 1 }}>
+                    <button onClick={handleAdd} disabled={saving || !newName.trim() || !newPass.trim()} className="btn" style={{ background: '#6366f1', color: '#fff', opacity: (!newName.trim() || !newPass.trim()) ? 0.5 : 1 }}>
                         ➕ إضافة
                     </button>
                 </div>
@@ -124,7 +124,7 @@ export default function EmployeesPage() {
             {loading ? (
                 <div style={{ textAlign: 'center', padding: 60 }}><div style={{ fontSize: 48 }}>⏳</div><div style={{ color: '#64748b', fontSize: 18, marginTop: 12 }}>جاري التحميل...</div></div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
                     {employees.map(emp => (
                         <div key={emp.id} style={{ background: '#fff', borderRadius: 18, boxShadow: '0 4px 15px rgba(0,0,0,0.05)', overflow: 'hidden', border: '1.5px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
                             <div style={{ background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)', padding: '20px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>

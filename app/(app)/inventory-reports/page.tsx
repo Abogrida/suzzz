@@ -45,15 +45,15 @@ export default function InventoryReportsPage() {
     }, [date, branch, employeeId]);
 
     return (
-        <div style={{ padding: 28, direction: 'rtl', minHeight: '100vh', background: '#f8fafc' }}>
+        <div className="page-content" style={{ direction: 'rtl', minHeight: '100vh' }}>
             {/* Header */}
-            <div style={{ background: '#1e293b', borderRadius: 14, padding: '18px 26px', marginBottom: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <h1 style={{ margin: 0, color: '#fff', fontSize: 24, fontWeight: 900 }}>📊 تقارير الجرد</h1>
-                <button onClick={() => window.history.back()} style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 15, fontFamily: 'Cairo' }}>→ العودة</button>
+            <div className="page-header">
+                <h1 className="page-title">📊 تقارير الجرد</h1>
+                <button onClick={() => window.history.back()} className="btn btn-secondary">→ العودة</button>
             </div>
 
             {/* Filters */}
-            <div style={{ background: '#fff', borderRadius: 16, padding: '24px 28px', marginBottom: 24, boxShadow: '0 2px 12px rgba(0,0,0,0.06)', display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <div className="card" style={{ marginBottom: 16, display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 <div style={{ flex: 1, minWidth: 150 }}>
                     <label style={{ display: 'block', fontWeight: 800, marginBottom: 10, fontSize: 15, color: '#475569' }}>📅 التاريخ</label>
                     <input type="date" value={date} onChange={e => setDate(e.target.value)}
@@ -102,7 +102,7 @@ export default function InventoryReportsPage() {
                     {counts.map(c => (
                         <div key={c.id} style={{ background: '#fff', borderRadius: 18, boxShadow: '0 4px 15px rgba(0,0,0,0.05)', overflow: 'hidden', border: '1.5px solid #e2e8f0' }}>
                             <button onClick={() => setExpandedCount(expandedCount === c.id ? null : c.id)}
-                                style={{ width: '100%', padding: '20px 24px', background: expandedCount === c.id ? '#f8fafc' : '#fff', border: 'none', cursor: 'pointer', textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'Cairo' }}>
+                                style={{ width: '100%', padding: '16px 18px', background: expandedCount === c.id ? '#f8fafc' : '#fff', border: 'none', cursor: 'pointer', textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'Cairo', gap: 10 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                                     <div style={{ width: 54, height: 54, background: c.shift === 'morning' ? '#fef9c3' : (c.shift === 'evening' ? '#dbeafe' : '#1e293b'), borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>
                                         {c.shift === 'morning' ? '☀️' : (c.shift === 'evening' ? '🌙' : '✨')}
@@ -126,7 +126,7 @@ export default function InventoryReportsPage() {
                             {expandedCount === c.id && (
                                 <div style={{ padding: '0 24px 24px' }}>
                                     <div style={{ height: 1.5, background: '#f1f5f9', margin: '0 0 18px' }}></div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
                                         {c.inventory_count_items.map(item => (
                                             <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
                                                 <span style={{ fontWeight: 700, color: '#475569', fontSize: 14 }}>{item.item_name}</span>

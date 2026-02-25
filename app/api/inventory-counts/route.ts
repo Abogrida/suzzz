@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
         // 2. Create items
         const itemsToInsert = items.map((it: any) => ({
-            inventory_count_id: count.id,
+            count_id: count.id,
             item_name: it.item_name,
             quantity: it.quantity
         }));

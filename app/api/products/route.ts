@@ -13,6 +13,8 @@ export async function GET(req: NextRequest) {
         const query = searchParams.get('q');
         const category = searchParams.get('category');
         const lowStock = searchParams.get('low_stock');
+        const limit = parseInt(searchParams.get('limit') || '1000');
+        const offset = parseInt(searchParams.get('offset') || '0');
 
         let qb = db.from('products').select('*').order('name');
 
@@ -22,6 +24,8 @@ export async function GET(req: NextRequest) {
         if (category) {
             qb = qb.eq('category', category);
         }
+
+        qb = qb.range(offset, offset + limit - 1);
 
         const { data, error } = await qb;
         if (error) throw error;

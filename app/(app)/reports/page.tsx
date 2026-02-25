@@ -121,19 +121,21 @@ export default function ReportsPage() {
                     <h2 className="font-bold text-gray-800">التفاصيل الشهرية</h2>
                     <a href="/api/export/invoices/excel" className="btn btn-outline btn-sm"><Download className="w-4 h-4" />تصدير</a>
                 </div>
-                <table className="data-table">
-                    <thead><tr><th>الشهر</th><th>المبيعات</th><th>المشتريات</th><th>الربح</th></tr></thead>
-                    <tbody>
-                        {(monthly as any[]).map((m: any) => (
-                            <tr key={m.month}>
-                                <td className="font-medium">{m.monthName}</td>
-                                <td className="amount text-green-600">{fmt(m.sales)}</td>
-                                <td className="amount text-blue-600">{fmt(m.purchases)}</td>
-                                <td className={`amount font-bold ${m.profit >= 0 ? 'text-indigo-600' : 'text-red-600'}`}>{fmt(m.profit)}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                <div className="table-responsive">
+                    <table className="data-table">
+                        <thead><tr><th>الشهر</th><th>المبيعات</th><th>المشتريات</th><th>الربح</th></tr></thead>
+                        <tbody>
+                            {(monthly as any[]).map((m: any) => (
+                                <tr key={m.month}>
+                                    <td className="font-medium">{m.monthName}</td>
+                                    <td className="amount text-green-600">{fmt(m.sales)}</td>
+                                    <td className="amount text-blue-600">{fmt(m.purchases)}</td>
+                                    <td className={`amount font-bold ${m.profit >= 0 ? 'text-indigo-600' : 'text-red-600'}`}>{fmt(m.profit)}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );

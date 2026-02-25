@@ -85,8 +85,42 @@ export default function Sidebar() {
     );
 
     return (
-        <aside style={{ position: 'fixed', top: 0, right: 0, height: '100%', width: '15rem', background: '#0f172a', zIndex: 40, display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 20px rgba(0,0,0,0.3)' }}>
-            <SidebarContent />
-        </aside>
+        <>
+            {/* Mobile Header - Only visible on small screens */}
+            <div className="mobile-header lg:hidden" style={{
+                position: 'fixed', top: 0, right: 0, left: 0, height: 60,
+                background: '#0f172a', alignItems: 'center',
+                justifyContent: 'space-between', padding: '0 16px', zIndex: 35,
+                boxShadow: '0 2px 10px rgba(0,0,0,0.2)', direction: 'rtl',
+                display: undefined // Let CSS handle visibility
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 34, height: 34, background: '#6366f1', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Package size={20} color="#fff" />
+                    </div>
+                    <div style={{ fontWeight: 900, color: '#fff', fontSize: 14 }}>نظام المخزون</div>
+                </div>
+                <button onClick={() => setMobileOpen(true)} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }}>
+                    <Menu size={28} />
+                </button>
+            </div>
+
+            {/* Backdrop for Mobile */}
+            {mobileOpen && (
+                <div
+                    onClick={() => setMobileOpen(false)}
+                    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 38, backdropFilter: 'blur(2px)' }}
+                />
+            )}
+
+            <aside className={`sidebar ${mobileOpen ? 'open' : ''}`}>
+                <div style={{ justifyContent: 'flex-end', padding: '10px', display: mobileOpen ? 'flex' : 'none' }}>
+                    <button onClick={() => setMobileOpen(false)} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+                        <X size={28} />
+                    </button>
+                </div>
+                <SidebarContent />
+            </aside>
+        </>
     );
 }
