@@ -27,22 +27,35 @@ export default function SettingsPage() {
         }
         setLoading(true);
         try {
-            // Verify old password first
+            // Verify old password first by trying to login
             const verifyRes = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password: oldPass }),
             });
+
             if (!verifyRes.ok) {
                 setToast({ msg: 'كلمة المرور الحالية غير صحيحة', type: 'error' });
                 setLoading(false);
                 return;
             }
-            // Password change requires updating .env.local manually
-            setToast({ msg: 'لتغيير كلمة المرور، عدّل ADMIN_PASSWORD في ملف .env.local إلى: ' + newPass, type: 'success' });
-            setOldPass(''); setNewPass(''); setConfirmPass('');
+
+            // Update password in DB
+            const updateRes = await fetch('/api/settings/password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ newPassword: newPass }),
+            });
+
+            if (updateRes.ok) {
+                setToast({ msg: 'تم تغيير كلمة المرور بنجاح!', type: 'success' });
+                setOldPass(''); setNewPass(''); setConfirmPass('');
+            } else {
+                const data = await updateRes.json();
+                setToast({ msg: data.error || 'حدث خطأ أثناء التحديث', type: 'error' });
+            }
         } catch {
-            setToast({ msg: 'حدث خطأ', type: 'error' });
+            setToast({ msg: 'حدث خطأ في الاتصال بالسيرفر', type: 'error' });
         } finally {
             setLoading(false);
         }
