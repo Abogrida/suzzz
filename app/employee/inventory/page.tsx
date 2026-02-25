@@ -8,6 +8,7 @@ export default function EmployeeInventoryPage() {
     const [empInfo, setEmpInfo] = useState<{ id: number; name: string } | null>(null);
     const [countDate, setCountDate] = useState(new Date().toISOString().split('T')[0]);
     const [shift, setShift] = useState<'morning' | 'evening' | 'night'>('morning');
+    const [branch, setBranch] = useState<'Suzz 1' | 'Suzz 2' | null>(null);
     const [values, setValues] = useState<Record<string, string>>({});
     const [submitting, setSubmitting] = useState(false);
     const [done, setDone] = useState(false);
@@ -30,13 +31,14 @@ export default function EmployeeInventoryPage() {
     };
 
     const handleSubmit = async () => {
+        if (!branch) { setError('يرجى اختيار الفرع أولاً'); return; }
         setSubmitting(true); setError('');
         const items = ALL_ITEMS.map(name => ({ item_name: name, quantity: parseFloat(values[name] || '0') || 0 }));
 
         try {
             const res = await fetch('/api/inventory-counts', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ employee_id: empInfo!.id, count_date: countDate, shift, items })
+                body: JSON.stringify({ employee_id: empInfo!.id, count_date: countDate, shift, branch, items })
             });
             if (res.ok) { setDone(true); }
             else { const r = await res.json(); setError(r.error || 'حدث خطأ'); }
@@ -55,15 +57,13 @@ export default function EmployeeInventoryPage() {
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg,#ecfdf5 0%,#d1fae5 100%)', fontFamily: 'Cairo', padding: 20, textAlign: 'center' }}>
             <div style={{ fontSize: 80, marginBottom: 16 }}>✅</div>
             <div style={{ fontSize: 26, fontWeight: 900, color: '#15803d', marginBottom: 8 }}>تم إرسال الجرد بنجاح!</div>
-            <div style={{ fontSize: 17, color: '#16a34a', marginBottom: 24 }}>شكراً {empInfo.name} 🙏</div>
+            <div style={{ fontSize: 17, color: '#16a34a', marginBottom: 24 }}>شكراً {empInfo.name} 🙏 (فرع {branch})</div>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-                <button onClick={() => { setDone(false); setValues({}) }} style={{ background: '#16a34a', color: '#fff', border: 'none', borderRadius: 14, padding: '14px 32px', fontWeight: 800, fontSize: 18, cursor: 'pointer', fontFamily: 'Cairo' }}>📝 جرد جديد</button>
+                <button onClick={() => { setDone(false); setValues({}); setBranch(null); }} style={{ background: '#16a34a', color: '#fff', border: 'none', borderRadius: 14, padding: '14px 32px', fontWeight: 800, fontSize: 18, cursor: 'pointer', fontFamily: 'Cairo' }}>📝 جرد جديد</button>
                 <button onClick={handleLogout} style={{ background: '#64748b', color: '#fff', border: 'none', borderRadius: 14, padding: '14px 32px', fontWeight: 800, fontSize: 18, cursor: 'pointer', fontFamily: 'Cairo' }}>🚪 تسجيل خروج</button>
             </div>
         </div>
     );
-
-
 
     return (
         <div style={{ minHeight: '100vh', background: '#f1f5f9', fontFamily: 'Cairo', direction: 'rtl' }}>
@@ -80,27 +80,42 @@ export default function EmployeeInventoryPage() {
             </div>
 
             <div style={{ padding: '16px 14px', maxWidth: 600, margin: '0 auto' }}>
+                {/* Branch Selection */}
+                <div style={{ background: '#fff', borderRadius: 16, padding: '18px 18px', marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '2.5px solid #e2e8f0' }}>
+                    <label style={{ display: 'block', fontWeight: 700, marginBottom: 12, fontSize: 16, color: '#1e293b' }}>📍 اختر الفرع *</label>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                        <button onClick={() => setBranch('Suzz 1')}
+                            style={{ flex: 1, padding: '15px 0', borderRadius: 14, border: '2.5px solid', borderColor: branch === 'Suzz 1' ? '#6366f1' : '#e2e8f0', background: branch === 'Suzz 1' ? '#6366f1' : '#fff', color: branch === 'Suzz 1' ? '#fff' : '#1e293b', fontWeight: 800, fontSize: 18, cursor: 'pointer', fontFamily: 'Cairo', transition: 'all 0.2s' }}>
+                            Suzz 1
+                        </button>
+                        <button onClick={() => setBranch('Suzz 2')}
+                            style={{ flex: 1, padding: '15px 0', borderRadius: 14, border: '2.5px solid', borderColor: branch === 'Suzz 2' ? '#6366f1' : '#e2e8f0', background: branch === 'Suzz 2' ? '#6366f1' : '#fff', color: branch === 'Suzz 2' ? '#fff' : '#1e293b', fontWeight: 800, fontSize: 18, cursor: 'pointer', fontFamily: 'Cairo', transition: 'all 0.2s' }}>
+                            Suzz 2
+                        </button>
+                    </div>
+                </div>
+
                 {/* Date & Shift */}
-                <div style={{ background: '#fff', borderRadius: 16, padding: '18px 18px', marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '1.5px solid #e2e8f0' }}>
-                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                        <div style={{ flex: 1, minWidth: 140 }}>
+                <div style={{ background: '#fff', borderRadius: 16, padding: '20px 18px', marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '1.5px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, minWidth: 160 }}>
                             <label style={{ display: 'block', fontWeight: 700, marginBottom: 8, fontSize: 15, color: '#374151' }}>📅 التاريخ</label>
                             <input type="date" value={countDate} onChange={e => setCountDate(e.target.value)}
                                 style={{ width: '100%', padding: '12px 14px', border: '2px solid #e2e8f0', borderRadius: 12, fontSize: 17, fontFamily: 'Cairo', outline: 'none', background: '#f8fafc', boxSizing: 'border-box' }} />
                         </div>
-                        <div style={{ flex: '1 1 100%', marginTop: 12 }}>
-                            <label style={{ display: 'block', fontWeight: 700, marginBottom: 8, fontSize: 15, color: '#374151' }}>🕐 الشيفت</label>
-                            <div style={{ display: 'flex', gap: 6 }}>
+                        <div style={{ flex: '1 1 100%' }}>
+                            <label style={{ display: 'block', fontWeight: 700, marginBottom: 10, fontSize: 15, color: '#374151' }}>🕐 الشيفت</label>
+                            <div style={{ display: 'flex', gap: 8 }}>
                                 <button onClick={() => setShift('morning')}
-                                    style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: '2px solid', borderColor: shift === 'morning' ? '#6366f1' : '#e2e8f0', background: shift === 'morning' ? '#6366f1' : '#fff', color: shift === 'morning' ? '#fff' : '#374151', fontWeight: 800, fontSize: 15, cursor: 'pointer', fontFamily: 'Cairo' }}>
+                                    style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: '2.5px solid', borderColor: shift === 'morning' ? '#6366f1' : '#e2e8f0', background: shift === 'morning' ? '#6366f1' : '#fff', color: shift === 'morning' ? '#fff' : '#374151', fontWeight: 800, fontSize: 15, cursor: 'pointer', fontFamily: 'Cairo' }}>
                                     ☀️ صباحي
                                 </button>
                                 <button onClick={() => setShift('evening')}
-                                    style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: '2px solid', borderColor: shift === 'evening' ? '#6366f1' : '#e2e8f0', background: shift === 'evening' ? '#6366f1' : '#fff', color: shift === 'evening' ? '#fff' : '#374151', fontWeight: 800, fontSize: 15, cursor: 'pointer', fontFamily: 'Cairo' }}>
+                                    style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: '2.5px solid', borderColor: shift === 'evening' ? '#6366f1' : '#e2e8f0', background: shift === 'evening' ? '#6366f1' : '#fff', color: shift === 'evening' ? '#fff' : '#374151', fontWeight: 800, fontSize: 15, cursor: 'pointer', fontFamily: 'Cairo' }}>
                                     🌙 مسائي
                                 </button>
                                 <button onClick={() => setShift('night')}
-                                    style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: '2px solid', borderColor: shift === 'night' ? '#6366f1' : '#e2e8f0', background: shift === 'night' ? '#6366f1' : '#fff', color: shift === 'night' ? '#fff' : '#374151', fontWeight: 800, fontSize: 15, cursor: 'pointer', fontFamily: 'Cairo' }}>
+                                    style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: '2.5px solid', borderColor: shift === 'night' ? '#6366f1' : '#e2e8f0', background: shift === 'night' ? '#6366f1' : '#fff', color: shift === 'night' ? '#fff' : '#374151', fontWeight: 800, fontSize: 15, cursor: 'pointer', fontFamily: 'Cairo' }}>
                                     ✨ ليلي
                                 </button>
                             </div>
@@ -129,10 +144,8 @@ export default function EmployeeInventoryPage() {
                     ))}
                 </div>
 
-                {/* Error */}
                 {error && <div style={{ background: '#fee2e2', color: '#b91c1c', borderRadius: 12, padding: '14px 18px', marginBottom: 14, fontWeight: 700, textAlign: 'center', fontSize: 16 }}>{error}</div>}
 
-                {/* Submit */}
                 <button onClick={handleSubmit} disabled={submitting}
                     style={{ width: '100%', padding: '18px 0', borderRadius: 16, background: 'linear-gradient(135deg,#16a34a 0%,#15803d 100%)', color: '#fff', border: 'none', fontWeight: 900, fontSize: 22, cursor: 'pointer', fontFamily: 'Cairo', boxShadow: '0 6px 20px rgba(22,163,74,0.3)', marginBottom: 30, opacity: submitting ? 0.6 : 1 }}>
                     {submitting ? '⏳ جاري الإرسال...' : '✅ تم الجرد'}

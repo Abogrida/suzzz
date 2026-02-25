@@ -4,8 +4,11 @@ import os
 PROJECT_REF = "vmkfwhnpevbamrfbjkzv"
 PASSWORD = "ISLam@2006#@"
 
-# Read the latest migration
-sql_files = ["supabase/migrations/003_settings.sql"]
+# Read the latest migrations
+sql_files = [
+    "supabase/migrations/003_settings.sql",
+    "supabase/migrations/004_branches_and_edits.sql"
+]
 
 HOSTS_TO_TRY = [
     ("aws-0-eu-central-1.pooler.supabase.com", 6543, f"postgres.{PROJECT_REF}"),

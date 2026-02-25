@@ -3,57 +3,48 @@ import { createAdminClient } from '@/lib/supabase';
 
 export async function GET(req: NextRequest) {
     try {
+        const { searchParams } = new URL(req.url);
+        const employeeId = searchParams.get('employee_id');
+        const countDate = searchParams.get('count_date');
+        const branch = searchParams.get('branch');
+
         const supabase = createAdminClient();
-        const employeeId = req.nextUrl.searchParams.get('employee_id');
-        let query = supabase.from('inventory_counts').select('*, employee:employees(name)').order('created_at', { ascending: false });
+        let query = supabase.from('inventory_counts').select('*, employees(name), inventory_count_items(*)').order('created_at', { ascending: false });
+
         if (employeeId) query = query.eq('employee_id', employeeId);
+        if (countDate) query = query.eq('count_date', countDate);
+        if (branch && branch !== 'all') query = query.eq('branch', branch);
+
         const { data, error } = await query;
         if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-        // Fetch items for each count
-        const ids = (data || []).map(c => c.id);
-        let items: any[] = [];
-        if (ids.length > 0) {
-            const { data: itemsData } = await supabase.from('inventory_count_items').select('*').in('count_id', ids);
-            items = itemsData || [];
-        }
-
-        const result = (data || []).map(c => ({
-            ...c,
-            employee_name: c.employee?.name || 'غير معروف',
-            items: items.filter(i => i.count_id === c.id)
-        }));
-
-        return NextResponse.json(result);
+        return NextResponse.json(data);
     } catch { return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 }); }
 }
 
 export async function POST(req: NextRequest) {
     try {
-        const { employee_id, count_date, shift, items, notes } = await req.json();
-        if (!employee_id || !items?.length) return NextResponse.json({ error: 'بيانات ناقصة' }, { status: 400 });
-
+        const { employee_id, count_date, shift, branch, items, notes } = await req.json();
         const supabase = createAdminClient();
 
-        // Create count record
-        const { data: count, error: cErr } = await supabase.from('inventory_counts').insert({
-            employee_id,
-            count_date: count_date || new Date().toISOString().split('T')[0],
-            shift: shift || 'morning',
-            notes: notes || ''
-        }).select().single();
+        // 1. Create main record
+        const { data: count, error: countErr } = await supabase
+            .from('inventory_counts')
+            .insert({ employee_id, count_date, shift, branch: branch || 'Suzz 1', notes })
+            .select()
+            .single();
 
-        if (cErr) return NextResponse.json({ error: cErr.message }, { status: 500 });
+        if (countErr) return NextResponse.json({ error: countErr.message }, { status: 500 });
 
-        // Insert items
-        const itemRows = items.map((i: { item_name: string; quantity: number }) => ({
-            count_id: count.id,
-            item_name: i.item_name,
-            quantity: i.quantity || 0
+        // 2. Create items
+        const itemsToInsert = items.map((it: any) => ({
+            inventory_count_id: count.id,
+            item_name: it.item_name,
+            quantity: it.quantity
         }));
-        const { error: iErr } = await supabase.from('inventory_count_items').insert(itemRows);
-        if (iErr) return NextResponse.json({ error: iErr.message }, { status: 500 });
 
-        return NextResponse.json({ success: true, id: count.id }, { status: 201 });
+        const { error: itemsErr } = await supabase.from('inventory_count_items').insert(itemsToInsert);
+        if (itemsErr) return NextResponse.json({ error: itemsErr.message }, { status: 500 });
+
+        return NextResponse.json({ success: true, id: count.id });
     } catch { return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 }); }
 }
