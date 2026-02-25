@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import { requireAuth } from '@/lib/auth';
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const authError = requireAuth(req);
     if (authError) return authError;
 
     try {
+        const { id } = await params;
         const supabase = createAdminClient();
-        const { error } = await supabase.from('employees').delete().eq('id', params.id);
+        const { error } = await supabase.from('employees').delete().eq('id', id);
         if (error) return NextResponse.json({ error: error.message }, { status: 500 });
         return NextResponse.json({ success: true });
     } catch {
@@ -16,11 +17,12 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const authError = requireAuth(req);
     if (authError) return authError;
 
     try {
+        const { id } = await params;
         const body = await req.json();
         const { name, password, is_active } = body;
         const supabase = createAdminClient();
@@ -30,7 +32,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         if (password !== undefined) updates.password = password;
         if (is_active !== undefined) updates.is_active = is_active;
 
-        const { error } = await supabase.from('employees').update(updates).eq('id', params.id);
+        const { error } = await supabase.from('employees').update(updates).eq('id', id);
         if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
         return NextResponse.json({ success: true });
