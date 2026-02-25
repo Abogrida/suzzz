@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 
 type Category = { id: number; name: string; description: string; product_count: number };
-type Product = { id: number; name: string; category: string; unit: string; current_quantity: number; min_quantity: number; price: number; sale_price: number; barcode: string };
+type Product = { id: number; name: string; category: string; unit: string; current_quantity: number; min_quantity: number; price: number; sale_price: number; barcode: string; warehouse: string };
 const n2 = (v: number) => Number(v || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
 function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error'; onClose: () => void }) {
@@ -57,7 +57,8 @@ export default function CategoriesPage() {
         if (expandedCat === cat.id) { setExpandedCat(null); return; }
         setExpandedCat(cat.id);
         setLoadingProducts(true);
-        const data = await fetch('/api/products').then(r => r.json());
+        // warehouse=all to get products from ALL warehouses
+        const data = await fetch('/api/products?warehouse=all').then(r => r.json());
         const prods = (Array.isArray(data) ? data : []).filter((p: Product) => p.category === cat.name);
         setCatProducts(prods);
         setLoadingProducts(false);
@@ -202,6 +203,11 @@ export default function CategoriesPage() {
                                         <div style={{ padding: '16px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                             <div style={{ flex: 1 }}>
                                                 <div style={{ fontWeight: 900, fontSize: 17, color: '#1e293b' }}>{i + 1}. {p.name}</div>
+                                                <div style={{ fontSize: 12, marginTop: 3 }}>
+                                                    <span style={{ background: p.warehouse === 'suzz1' ? '#e0f2fe' : '#ede9fe', color: p.warehouse === 'suzz1' ? '#0369a1' : '#6366f1', borderRadius: 6, padding: '2px 8px', fontWeight: 700 }}>
+                                                        {p.warehouse === 'suzz1' ? '📦 suzz1' : '🏛️ رئيسي'}
+                                                    </span>
+                                                </div>
                                             </div>
                                             <span style={{
                                                 background: p.current_quantity <= 0 ? '#fee2e2' : p.current_quantity <= p.min_quantity ? '#fef9c3' : '#dcfce7',

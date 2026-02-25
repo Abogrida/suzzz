@@ -13,10 +13,15 @@ export async function GET(req: NextRequest) {
         const query = searchParams.get('q');
         const category = searchParams.get('category');
         const lowStock = searchParams.get('low_stock');
+        const warehouse = searchParams.get('warehouse') || 'main';
         const limit = parseInt(searchParams.get('limit') || '1000');
         const offset = parseInt(searchParams.get('offset') || '0');
 
         let qb = db.from('products').select('*').order('name');
+        // 'all' means no warehouse filter (used by categories page)
+        if (warehouse !== 'all') {
+            qb = qb.eq('warehouse', warehouse);
+        }
 
         if (query) {
             qb = qb.or(`name.ilike.%${query}%,category.ilike.%${query}%,barcode.ilike.%${query}%`);
@@ -61,6 +66,7 @@ export async function POST(req: NextRequest) {
             sale_price: parseFloat(data.sale_price) || 0,
             barcode: data.barcode || '',
             description: data.description || '',
+            warehouse: data.warehouse || 'main',
         };
 
         const { data: product, error } = await db

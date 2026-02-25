@@ -7,7 +7,7 @@ import { useState } from 'react';
 
 const navLinks = [
     { href: '/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard },
-    { href: '/products', label: 'المنتجات', icon: Package },
+    { href: '/products', label: 'المخزن', icon: Package },
     { href: '/categories', label: 'الفئات', icon: Tag },
     { href: '/customers', label: 'العملاء والموردين', icon: Users },
     { href: '/invoices', label: 'الفواتير', icon: FileText },

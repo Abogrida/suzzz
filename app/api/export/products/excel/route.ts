@@ -9,11 +9,15 @@ export async function GET(req: NextRequest) {
     if (authError) return authError;
 
     const db = createAdminClient();
-    const { data: products } = await db
-        .from('products')
-        .select('*')
-        .order('category')
-        .order('name');
+    const { searchParams } = new URL(req.url);
+    const warehouse = searchParams.get('warehouse') || 'main';
+    const warehouseLabel = warehouse === 'suzz1' ? 'المخزن الفرعي (suzz1)' : 'المخزن الرئيسي';
+
+    let qb = db.from('products').select('*').order('category').order('name');
+    if (warehouse !== 'all') {
+        qb = qb.eq('warehouse', warehouse);
+    }
+    const { data: products } = await qb;
 
     const date = new Date().toLocaleDateString('ar-EG');
 
@@ -43,7 +47,7 @@ export async function GET(req: NextRequest) {
     const wsData: any[][] = [];
 
     // الهيدر الرئيسي
-    wsData.push(['كشف المخزن']);
+    wsData.push([`كشف ${warehouseLabel}`]);
     wsData.push([`تاريخ الكشف: ${date}`]);
     wsData.push([`إجمالي المنتجات: ${rows.length} منتج`]);
     wsData.push([]); // سطر فاضي
@@ -104,7 +108,8 @@ export async function GET(req: NextRequest) {
     }
 
     const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
-    const filename = `كشف-المخزن-${new Date().toISOString().split('T')[0]}.xlsx`;
+    const warehouseSlug = warehouse === 'suzz1' ? 'suzz1' : 'رئيسي';
+    const filename = `كشف-${warehouseSlug}-${new Date().toISOString().split('T')[0]}.xlsx`;
 
     return new NextResponse(buffer, {
         headers: {
