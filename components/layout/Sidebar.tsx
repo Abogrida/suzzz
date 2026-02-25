@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Package, Tag, Users, FileText, TrendingUp, Settings, LogOut, Menu, X, ClipboardList, UserCheck } from 'lucide-react';
+import { LayoutDashboard, Package, Tag, Users, FileText, TrendingUp, Settings, LogOut, Menu, X, ClipboardList, UserCheck, ChefHat } from 'lucide-react';
 import { useState } from 'react';
 
 const navLinks = [
     { href: '/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard },
     { href: '/products', label: 'المخزن', icon: Package },
+    { href: '/recipes', label: 'الريسبي', icon: ChefHat },
     { href: '/categories', label: 'الفئات', icon: Tag },
     { href: '/customers', label: 'العملاء والموردين', icon: Users },
     { href: '/invoices', label: 'الفواتير', icon: FileText },
