@@ -16,13 +16,24 @@ export default function EmployeeInventoryPage() {
     const [done, setDone] = useState(false);
     const [countId, setCountId] = useState<number | null>(null);
     const [error, setError] = useState('');
+    const [todayCounts, setTodayCounts] = useState<{ id: number; shift: string; branch: string; created_at: string }[]>([]);
+    const [showTodayCounts, setShowTodayCounts] = useState(false);
 
     const ALL_ITEMS = [...HOT_ITEMS, ...COLD_ITEMS];
 
+    const fetchTodayCounts = (empId: number, date: string) => {
+        fetch(`/api/inventory-counts?employee_id=${empId}&count_date=${date}`)
+            .then(r => r.json())
+            .then(data => { if (Array.isArray(data)) setTodayCounts(data); })
+            .catch(() => { });
+    };
+
     useEffect(() => {
         fetch('/api/auth/me').then(r => r.json()).then(d => {
-            if (d.role === 'employee') setEmpInfo({ id: d.id, name: d.name });
-            else window.location.href = '/login';
+            if (d.role === 'employee') {
+                setEmpInfo({ id: d.id, name: d.name });
+                fetchTodayCounts(d.id, new Date().toISOString().split('T')[0]);
+            } else window.location.href = '/login';
         }).catch(() => window.location.href = '/login');
     }, []);
 
@@ -45,6 +56,8 @@ export default function EmployeeInventoryPage() {
                 const data = await res.json();
                 setCountId(data.id ?? null);
                 setDone(true);
+                // Refresh today's counts list
+                fetchTodayCounts(empInfo!.id, countDate);
             } else { const r = await res.json(); setError(r.error || 'حدث خطأ'); }
         } catch { setError('خطأ في الاتصال'); }
         setSubmitting(false);
@@ -156,6 +169,47 @@ export default function EmployeeInventoryPage() {
             </div>
 
             <div style={{ padding: '16px 14px', maxWidth: 600, margin: '0 auto' }}>
+
+                {/* Today's Previous Counts */}
+                {todayCounts.length > 0 && (
+                    <div style={{ marginBottom: 16 }}>
+                        {/* Collapsible Header */}
+                        <div
+                            onClick={() => setShowTodayCounts(p => !p)}
+                            style={{ background: '#1e293b', borderRadius: showTodayCounts ? '14px 14px 0 0' : 14, padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' }}
+                        >
+                            <span style={{ fontSize: 22 }}>📋</span>
+                            <span style={{ color: '#fff', fontWeight: 900, fontSize: 17 }}>جرود اليوم السابقة</span>
+                            <span style={{ marginRight: 'auto', background: 'rgba(255,255,255,0.2)', borderRadius: 8, padding: '2px 10px', color: '#fff', fontWeight: 700, fontSize: 13 }}>{todayCounts.length}</span>
+                            <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 18, transition: 'transform 0.2s', transform: showTodayCounts ? 'rotate(180deg)' : 'rotate(0deg)', display: 'inline-block' }}>▾</span>
+                        </div>
+                        {/* Expandable List */}
+                        {showTodayCounts && (
+                            <div style={{ border: '1.5px solid #e2e8f0', borderTop: 'none', borderRadius: '0 0 14px 14px', overflow: 'hidden' }}>
+                                {todayCounts.map((c, i) => {
+                                    const time = new Date(c.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+                                    return (
+                                        <div key={c.id} style={{ background: i % 2 === 0 ? '#fff' : '#f8fafc', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, borderTop: i > 0 ? '1px solid #f1f5f9' : 'none' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ fontWeight: 800, fontSize: 16, color: '#1e293b' }}>{SHIFT_LABELS[c.shift] || c.shift}</div>
+                                                <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>🏪 {c.branch}&nbsp;•&nbsp;🕐 {time}</div>
+                                            </div>
+                                            <a
+                                                href={`/share/inventory/${c.id}`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', borderRadius: 10, padding: '9px 16px', fontWeight: 800, fontSize: 14, textDecoration: 'none', fontFamily: 'Cairo', whiteSpace: 'nowrap' }}
+                                            >
+                                                👁 عرض
+                                            </a>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* Branch Selection */}
                 <div style={{ background: '#fff', borderRadius: 16, padding: '18px 18px', marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '2.5px solid #e2e8f0' }}>
                     <label style={{ display: 'block', fontWeight: 700, marginBottom: 12, fontSize: 16, color: '#1e293b' }}>📍 اختر الفرع *</label>
