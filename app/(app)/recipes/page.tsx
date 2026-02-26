@@ -183,12 +183,16 @@ export default function RecipesPage() {
                     items: editingItem.recipe_items
                 }),
             });
+            const result = await res.json();
             if (res.ok) {
                 setShowModal(false);
                 fetchData();
+            } else {
+                alert(`فشل الحفظ: ${result.message || 'حدث خطأ غير متوقع'}`);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error saving recipe:', error);
+            alert('حدث خطأ في الاتصال بالخادم');
         } finally {
             setSaving(false);
         }

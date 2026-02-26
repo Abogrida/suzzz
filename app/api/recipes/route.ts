@@ -105,6 +105,14 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true, id: newItem.id, message: 'تم إضافة المنتج بنجاح' });
         }
     } catch (error: any) {
-        return NextResponse.json({ success: false, message: error.message }, { status: 400 });
+        console.error('Recipe API Error:', error);
+        let message = error.message;
+
+        // Handle Supabase unique constraint error (usually 23505)
+        if (error.code === '23505') {
+            message = 'هذا الاسم موجود بالفعل، يرجى اختيار اسم آخر';
+        }
+
+        return NextResponse.json({ success: false, message }, { status: 400 });
     }
 }
