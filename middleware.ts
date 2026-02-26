@@ -5,8 +5,13 @@ export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // Public paths that don't need auth
-    const publicPaths = ['/login', '/api/auth/login', '/api/auth/me'];
+    const publicPaths = ['/login', '/api/auth/login', '/api/auth/me', '/share/'];
     if (publicPaths.some((p) => pathname.startsWith(p))) {
+        return NextResponse.next();
+    }
+
+    // Public API: single inventory count (used by share page)
+    if (/^\/api\/inventory-counts\/\d+$/.test(pathname)) {
         return NextResponse.next();
     }
 
