@@ -48,6 +48,8 @@ def init_db():
             late_threshold_minutes INTEGER DEFAULT 15,
             off_days TEXT DEFAULT '[5,6]',
             is_active INTEGER DEFAULT 1,
+            pin_code TEXT DEFAULT '0000',
+            device_id TEXT,
             last_synced_at TEXT
         );
         CREATE TABLE IF NOT EXISTS attendance (
@@ -109,10 +111,61 @@ def index():
         sync_status=sync_status
     )
 
+@app.route('/link_device', methods=['POST'])
+def link_device():
+    data = request.get_json()
+    emp_id = int(data.get('employee_id', 0))
+    pin_code = str(data.get('pin_code', ''))
+    device_id = str(data.get('device_id', ''))
+    
+    db = get_db()
+    emp = db.execute("SELECT * FROM employees WHERE id=?", (emp_id,)).fetchone()
+    
+    if not emp:
+        db.close()
+        return jsonify({'success': False, 'message': 'موظف غير موجود'}), 404
+        
+    if str(emp['pin_code']) != pin_code:
+        db.close()
+        return jsonify({'success': False, 'message': 'الرمز السري غير صحيح'}), 401
+        
+    # Correct PIN. Link the device locally.
+    db.execute("UPDATE employees SET device_id=? WHERE id=?", (device_id, emp_id))
+    db.commit()
+    db.close()
+    
+    # We will also try to sync this device_id to the cloud
+    try_sync_device_id_to_cloud(emp_id, device_id)
+    
+    return jsonify({
+        'success': True,
+        'message': 'تم ربط الجهاز بنجاح',
+        'employee_name': emp['name']
+    })
+
+def try_sync_device_id_to_cloud(emp_id, device_id):
+    if not REQUESTS_OK or not has_internet():
+        return
+    cloud_url = cfg.get('cloud_base_url', '').rstrip('/')
+    if not cloud_url:
+        return
+    try:
+        # We only update the device_id in the cloud to avoid overwriting other fields
+        requests.put(
+            f"{cloud_url}/api/hr/employees/{emp_id}",
+            json={'device_id': device_id},
+            headers={'Authorization': f"Bearer {cfg.get('sync_api_key', '')}"},
+            timeout=5
+        )
+    except:
+        pass
+
+
 @app.route('/checkin', methods=['POST'])
 def checkin():
     data = request.get_json()
-    emp_id = int(data['employee_id'])
+    emp_id = int(data.get('employee_id', 0))
+    device_id = str(data.get('device_id', ''))
     today = date.today().isoformat()
     now_time = datetime.now().strftime('%H:%M')
 
@@ -121,6 +174,10 @@ def checkin():
     if not emp:
         db.close()
         return jsonify({'error': 'موظف غير موجود'}), 404
+        
+    if str(emp['device_id']) != device_id:
+        db.close()
+        return jsonify({'error': 'هذا الجهاز غير معتمد لهذا الموظف'}), 403
 
     existing = db.execute(
         "SELECT * FROM attendance WHERE employee_id=? AND attendance_date=?",
@@ -329,8 +386,8 @@ def sync_employees_from_cloud():
                 off_days = json.dumps(emp.get('off_days') or [5, 6])
                 db.execute("""
                     INSERT INTO employees (id, name, job_title, work_start_time, work_end_time,
-                        late_threshold_minutes, off_days, is_active, last_synced_at)
-                    VALUES (?,?,?,?,?,?,?,?,?)
+                        late_threshold_minutes, off_days, is_active, pin_code, device_id, last_synced_at)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?)
                     ON CONFLICT(id) DO UPDATE SET
                         name=excluded.name, job_title=excluded.job_title,
                         work_start_time=excluded.work_start_time,
@@ -338,11 +395,14 @@ def sync_employees_from_cloud():
                         late_threshold_minutes=excluded.late_threshold_minutes,
                         off_days=excluded.off_days,
                         is_active=excluded.is_active,
+                        pin_code=excluded.pin_code,
+                        device_id=excluded.device_id,
                         last_synced_at=excluded.last_synced_at
                 """, (emp['id'], emp['name'], emp.get('job_title',''),
                       emp.get('work_start_time','09:00'), emp.get('work_end_time','17:00'),
                       emp.get('late_threshold_minutes', 15), off_days,
                       1 if emp.get('is_active', True) else 0,
+                      emp.get('pin_code', '0000'), emp.get('device_id'),
                       datetime.now().isoformat()))
             db.commit()
             db.close()
@@ -374,7 +434,7 @@ if __name__ == '__main__':
     sync_thread.start()
     port = cfg.get('kiosk_port', 8080)
     print(f"\n{'='*50}")
-    print(f"  🏢 نظام تسجيل الحضور")
+    print(f"  نظام تسجيل الحضور")
     print(f"  رابط الكيوسك: http://localhost:{port}")
     print(f"  لوحة الإدارة: http://localhost:{port}/admin")
     print(f"{'='*50}\n")

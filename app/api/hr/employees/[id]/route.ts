@@ -22,6 +22,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         work_end_time: body.work_end_time || '17:00',
         late_threshold_minutes: body.late_threshold_minutes ?? 15,
         off_days: body.off_days || [5, 6],
+        pin_code: body.pin_code,
+        device_id: body.device_id !== undefined ? body.device_id : undefined,
     }).eq('id', id);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json({ success: true });

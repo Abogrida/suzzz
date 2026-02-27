@@ -31,6 +31,8 @@ export async function POST(req: NextRequest) {
         work_end_time: body.work_end_time || '17:00',
         late_threshold_minutes: body.late_threshold_minutes ?? 15,
         off_days: body.off_days || [5, 6],
+        pin_code: body.pin_code || '0000',
+        device_id: body.device_id || null,
     }).select().single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });

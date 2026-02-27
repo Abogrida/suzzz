@@ -274,6 +274,137 @@
       font-weight: 800;
       display: none;
     }
+
+    /* PIN Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    .modal-content {
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 30px;
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      transform: translateY(20px);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: translateY(0);
+    }
+
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+
+    .modal-subtitle {
+      color: #94a3b8;
+      font-size: 0.95rem;
+      margin-bottom: 24px;
+    }
+
+    .pin-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 16px;
+      font-size: 2rem;
+      text-align: center;
+      color: #fff;
+      font-family: monospace;
+      letter-spacing: 12px;
+      margin-bottom: 20px;
+      transition: border-color 0.2s;
+    }
+
+    .pin-input:focus {
+      outline: none;
+      border-color: #38bdf8;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-cancel {
+      flex: 1;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      font-family: 'Cairo';
+      font-weight: 800;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .btn-submit {
+      flex: 2;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+      color: #fff;
+      font-family: 'Cairo';
+      font-weight: 800;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .btn-cancel:hover,
+    .btn-submit:hover {
+      opacity: 0.9;
+    }
+
+    .btn-unlink {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      display: none;
+      transition: all 0.2s;
+    }
+
+    .btn-unlink:hover {
+      background: rgba(239, 68, 68, 0.4);
+    }
+
+    .hidden-card {
+      display: none !important;
+    }
   </style>
 </head>
 
@@ -343,10 +474,28 @@
 
   <a href="/admin" class="admin-link">⚙️ الإدارة</a>
   {% if sync_status.unsynced_count > 0 %}
-  <div class="unsynced-badge" style="display:block">📤 {{ sync_status.unsynced_count }} سجل غير مزامن</div>
+  <!-- Keeping this around but changing position statically if needed, or moved to left to avoid clash with unlink -->
+  <div class="unsynced-badge" style="display:block; right: auto; left: 120px;">📤 {{ sync_status.unsynced_count }} سجل
+    غير مزامن</div>
   {% endif %}
 
+  <button onclick="unlinkDevice()" class="btn-unlink" id="btnUnlink">🔓 فك ارتباط الهاتف</button>
+
   <div class="toast" id="toast"></div>
+
+  <!-- PIN Modal -->
+  <div class="modal-overlay" id="pinModal">
+    <div class="modal-content">
+      <div class="modal-title">تأكيد الهوية</div>
+      <div class="modal-subtitle">أدخل الرمز السري (PIN) الخاص بك لربط هذا الهاتف بحسابك بصفة دائمة.</div>
+      <input type="password" class="pin-input" id="pinInput" maxlength="4" placeholder="••••" autocomplete="off"
+        inputmode="numeric">
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closePinModal()">إلغاء</button>
+        <button class="btn-submit" onclick="submitPin()">تأكيد وربط الهاتف</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     // Clock
@@ -371,16 +520,27 @@
 
     // Punch in/out
     async function punch(empId) {
+      const deviceId = localStorage.getItem('kiosk_device_id');
+
+      if (!deviceId) {
+        // This device is not linked yet! Open the PIN modal instead.
+        openPinModal(empId);
+        return;
+      }
+
       const btn = document.getElementById('btn-' + empId);
       btn.disabled = true;
+      const originalText = btn.textContent;
       btn.textContent = '⏳ جاري...';
+      let res;
+      let data;
       try {
-        const res = await fetch('/checkin', {
+        res = await fetch('/checkin', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ employee_id: empId })
+          body: JSON.stringify({ employee_id: empId, device_id: deviceId })
         });
-        const data = await res.json();
+        data = await res.json();
         if (data.success) {
           const action = data.action;
           const rec = data.record;
@@ -405,11 +565,18 @@
           }
         } else {
           showToast(data.error || 'حدث خطأ', 'error');
+          if (res.status === 403) {
+            // Invalid device ID! Unlink forcefully
+            unlinkDevice(true);
+          }
         }
       } catch (e) {
         showToast('خطأ في الاتصال بالسيرفر', 'error');
       }
       btn.disabled = false;
+      if (!data?.success && res?.status !== 403) {
+        btn.textContent = originalText;
+      }
     }
 
     // Check internet connectivity
@@ -424,6 +591,108 @@
       }
     }
     setTimeout(checkConnectivity, 2000);
+
+    // --- Device Linking Logic ---
+    let pendingEmpId = null;
+
+    function generateDeviceId() {
+      return 'dev_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now().toString(36);
+    }
+
+    function checkDeviceStatus() {
+      const linkedEmployeeId = localStorage.getItem('kiosk_linked_employee_id');
+      const allCards = document.querySelectorAll('.emp-card');
+      const unlinkBtn = document.getElementById('btnUnlink');
+
+      if (linkedEmployeeId) {
+        // Device is linked. Hide all cards except the linked one.
+        allCards.forEach(card => {
+          if (card.dataset.empId === linkedEmployeeId) {
+            card.classList.remove('hidden-card');
+          } else {
+            card.classList.add('hidden-card');
+          }
+        });
+        unlinkBtn.style.display = 'block';
+      } else {
+        // Not linked. Show all cards.
+        allCards.forEach(card => card.classList.remove('hidden-card'));
+        unlinkBtn.style.display = 'none';
+      }
+    }
+
+    function openPinModal(empId) {
+      pendingEmpId = empId;
+      document.getElementById('pinInput').value = '';
+      document.getElementById('pinModal').classList.add('active');
+      setTimeout(() => document.getElementById('pinInput').focus(), 100);
+    }
+
+    function closePinModal() {
+      document.getElementById('pinModal').classList.remove('active');
+      pendingEmpId = null;
+    }
+
+    async function submitPin() {
+      const pin = document.getElementById('pinInput').value;
+      if (!pin || pin.length < 4) {
+        showToast('الرجاء إدخال الرمز السري المكون من 4 أرقام', 'error');
+        return;
+      }
+
+      const deviceId = generateDeviceId();
+      const btn = document.querySelector('.btn-submit');
+      const originalText = btn.textContent;
+      btn.textContent = '⏳ جاري التحقق...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/link_device', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            employee_id: pendingEmpId,
+            pin_code: pin,
+            device_id: deviceId
+          })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          // Store locally
+          localStorage.setItem('kiosk_device_id', deviceId);
+          localStorage.setItem('kiosk_linked_employee_id', pendingEmpId);
+
+          showToast(`تم ربط هذا الهاتف بحساب ${data.employee_name} بنجاح`, 'success');
+          closePinModal();
+          checkDeviceStatus();
+
+          // Auto punch in/out after linking successfully
+          setTimeout(() => punch(pendingEmpId), 500);
+        } else {
+          showToast(data.message || 'فشل التحقق', 'error');
+          document.getElementById('pinInput').value = '';
+        }
+      } catch (e) {
+        showToast('حدث خطأ أثناء الاتصال', 'error');
+      }
+
+      btn.textContent = originalText;
+      btn.disabled = false;
+    }
+
+    function unlinkDevice(silent = false) {
+      if (!silent && !confirm('هل أنت متأكد من فك ارتباط هذا الهاتف بحسابك؟ سيتطلب الدخول الرمز السري في المرة القادمة.')) return;
+
+      localStorage.removeItem('kiosk_device_id');
+      localStorage.removeItem('kiosk_linked_employee_id');
+      if (!silent) showToast('تم فك ارتباط الهاتف', 'success');
+      checkDeviceStatus();
+    }
+
+    // Initialize UI based on device link status
+    checkDeviceStatus();
+
   </script>
 </body>
 
