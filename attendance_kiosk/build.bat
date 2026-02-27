@@ -10,7 +10,7 @@ pip install -r requirements.txt
 pip install pyinstaller
 
 echo [2/3] Building EXE...
-pyinstaller --onefile --windowed ^
+python -m PyInstaller --onefile --windowed --clean ^
     --name "AttendanceKiosk" ^
     --add-data "templates;templates" ^
     --add-data "static;static" ^

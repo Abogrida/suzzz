@@ -463,40 +463,32 @@ export default function HRPage() {
                                                 </div>
                                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                                                     {status ? (
-                                                        <span style={{ background: attendanceLabels[status]?.bg, color: attendanceLabels[status]?.color, borderRadius: 10, padding: '6px 14px', fontSize: 14, fontWeight: 800 }}>
+                                                        <span style={{ background: attendanceLabels[status]?.bg, color: attendanceLabels[status]?.color, borderRadius: 10, padding: '6px 14px', fontSize: 13, fontWeight: 800 }}>
                                                             {attendanceLabels[status]?.icon} {attendanceLabels[status]?.label}
                                                         </span>
                                                     ) : (
-                                                        <span style={{ background: '#f1f5f9', color: '#94a3b8', borderRadius: 10, padding: '6px 14px', fontSize: 13, fontWeight: 700 }}>لم يُسجَّل</span>
+                                                        <span style={{ background: '#f1f5f9', color: '#94a3b8', borderRadius: 10, padding: '4px 10px', fontSize: 13, fontWeight: 700 }}>لم يُسجَّل حضور</span>
                                                     )}
                                                     {record?.source === 'kiosk' && (
-                                                        <span style={{ background: '#ede9fe', color: '#6366f1', borderRadius: 8, padding: '2px 8px', fontSize: 11, fontWeight: 800 }}>📱 كيوسك</span>
+                                                        <span style={{ background: '#ede9fe', color: '#6366f1', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 800 }}>💻 تطبيق البصمة</span>
                                                     )}
                                                 </div>
                                             </div>
-                                            {/* Check-in / Check-out times */}
-                                            {(record?.check_in_time || record?.check_out_time) && (
-                                                <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
-                                                    {record?.check_in_time && (
-                                                        <span style={{ background: '#f0fdf4', color: '#16a34a', borderRadius: 8, padding: '4px 10px', fontSize: 13, fontWeight: 800 }}>
-                                                            ↗️ {record.check_in_time.slice(0, 5)}
-                                                        </span>
-                                                    )}
-                                                    {record?.check_out_time && (
-                                                        <span style={{ background: '#fff7ed', color: '#ea580c', borderRadius: 8, padding: '4px 10px', fontSize: 13, fontWeight: 800 }}>
-                                                            ↘️ {record.check_out_time.slice(0, 5)}
-                                                        </span>
-                                                    )}
+                                            {/* Beautiful Check-in / Check-out Read-Only View */}
+                                            <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px', marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div style={{ textAlign: 'center' }}>
+                                                    <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, marginBottom: 2 }}>حضور</div>
+                                                    <div style={{ background: '#f0fdf4', color: '#16a34a', borderRadius: 8, padding: '4px 12px', fontSize: 14, fontWeight: 800 }}>
+                                                        {record?.check_in_time ? `↗️ ${record.check_in_time.slice(0, 5)}` : '—'}
+                                                    </div>
                                                 </div>
-                                            )}
-                                        </div>
-                                        <div style={{ padding: '10px 18px', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                                            {Object.entries(attendanceLabels).map(([key, cfg]) => (
-                                                <button key={key} onClick={() => handleAttendance(emp.id, key)}
-                                                    style={{ flex: 1, minWidth: 60, padding: '7px 4px', borderRadius: 10, border: `1.5px solid ${status === key ? cfg.color : '#e2e8f0'}`, background: status === key ? cfg.bg : '#fff', color: status === key ? cfg.color : '#64748b', cursor: 'pointer', fontFamily: 'Cairo', fontWeight: 800, fontSize: 13, transition: 'all 0.15s' }}>
-                                                    {cfg.icon}<br />{cfg.label}
-                                                </button>
-                                            ))}
+                                                <div style={{ textAlign: 'center' }}>
+                                                    <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, marginBottom: 2 }}>انصراف</div>
+                                                    <div style={{ background: '#fff7ed', color: '#ea580c', borderRadius: 8, padding: '4px 12px', fontSize: 14, fontWeight: 800 }}>
+                                                        {record?.check_out_time ? `↘️ ${record.check_out_time.slice(0, 5)}` : '—'}
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 );

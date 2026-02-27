@@ -352,11 +352,17 @@ def sync_employees_from_cloud():
         return {'success': False, 'message': str(e)}
 
 def background_sync_loop():
-    """Background thread: sync every 5 minutes when internet is available."""
+    """Background thread: sync every 30 seconds, and refresh employees."""
+    loops = 0
     while True:
-        time.sleep(300)  # 5 minutes
+        time.sleep(30)  # 30 seconds
+        loops += 1
         try:
             do_sync()
+            # Refresh employees every 10 loops (5 minutes)
+            if loops >= 10:
+                sync_employees_from_cloud()
+                loops = 0
         except:
             pass
 
