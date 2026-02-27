@@ -221,7 +221,7 @@
 <body>
     <div class="header">
         <h1>⚙️ لوحة الإدارة — {{ company }}</h1>
-        <a href="/">← العودة للكيوسك</a>
+        <a href="/">← العودة لتطبيق البصمة</a>
     </div>
     <div class="container">
 
@@ -304,7 +304,7 @@
                             </span>
                         </td>
                         <td><span class="badge {{ 'kiosk-badge' if row.source == 'kiosk' else 'manual-badge' }}">{{ '📱
-                                كيوسك' if row.source == 'kiosk' else '✏️ يدوي' }}</span></td>
+                                تطبيق البصمة' if row.source == 'kiosk' else '✏️ يدوي' }}</span></td>
                     </tr>
                     {% endfor %}
                     {% if not todays_att %}
