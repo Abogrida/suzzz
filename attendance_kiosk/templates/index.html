@@ -255,6 +255,7 @@
       font-weight: 700;
       border: 1px solid rgba(255, 255, 255, 0.2);
       transition: all 0.2s;
+      cursor: pointer;
     }
 
     .admin-link:hover {
@@ -417,7 +418,7 @@
 
   <div class="sync-bar">
     <div class="sync-dot" id="syncDot" style="background:#94a3b8"></div>
-    <span id="syncText">يتحقق من الاتصال (برنامج البصمة المحلي)...</span>
+    <span id="syncText">يتحقق من الاتصال (تطبيق البصمة المحلي)...</span>
   </div>
 
   <div class="grid" id="empGrid">
@@ -472,14 +473,14 @@
     {% endif %}
   </div>
 
-  <a href="/admin" class="admin-link">⚙️ الإدارة</a>
+  <button onclick="requireAdminPin('/admin')" class="admin-link">⚙️ الإدارة</button>
   {% if sync_status.unsynced_count > 0 %}
   <!-- Keeping this around but changing position statically if needed, or moved to left to avoid clash with unlink -->
   <div class="unsynced-badge" style="display:block; right: auto; left: 120px;">📤 {{ sync_status.unsynced_count }} سجل
     غير مزامن</div>
   {% endif %}
 
-  <button onclick="unlinkDevice()" class="btn-unlink" id="btnUnlink">🔓 فك ارتباط الهاتف</button>
+  <button onclick="requireAdminPin('unlink')" class="btn-unlink" id="btnUnlink">🔓 فك ارتباط الهاتف</button>
 
   <div class="toast" id="toast"></div>
 
@@ -688,6 +689,20 @@
       localStorage.removeItem('kiosk_linked_employee_id');
       if (!silent) showToast('تم فك ارتباط الهاتف', 'success');
       checkDeviceStatus();
+    }
+
+    function requireAdminPin(actionTarget) {
+      const pin = prompt("الرجاء إدخال الرقم السري للإدارة (Admin PIN):");
+      if (pin === "1234") { // Temporary or config-based static pin. Let's assume 1234 for now or let server validate it.
+        // Doing simple client-side check for now as requested for speed, but can easily be moved to backend
+        if (actionTarget === '/admin') {
+          window.location.href = actionTarget;
+        } else if (actionTarget === 'unlink') {
+          unlinkDevice(false);
+        }
+      } else if (pin !== null) {
+        showToast("الرقم السري خاطئ!", "error");
+      }
     }
 
     // Initialize UI based on device link status

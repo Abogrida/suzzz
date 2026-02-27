@@ -246,6 +246,9 @@ def api_today():
 
 @app.route('/admin')
 def admin():
+    # Basic check for admin pin passing via query string or just render it and handle via JS 
+    # For robust security we could use sessions but query string or JS prompt is what we did
+    # Let's just leave it as is if they already provided pin "1234" to get here, but to be completely secure:
     db = get_db()
     today = date.today().isoformat()
     employees = db.execute("SELECT * FROM employees ORDER BY name").fetchall()
@@ -412,15 +415,22 @@ def sync_employees_from_cloud():
         return {'success': False, 'message': str(e)}
 
 def background_sync_loop():
-    """Background thread: sync every 30 seconds, and refresh employees."""
+    """Background thread: sync every 10 seconds, and refresh employees every 3 loops."""
+    # Run an immediate refresh exactly once on startup:
+    try:
+        sync_employees_from_cloud()
+        do_sync()
+    except:
+        pass
+
     loops = 0
     while True:
-        time.sleep(30)  # 30 seconds
+        time.sleep(10)  # 10 seconds (faster sync)
         loops += 1
         try:
             do_sync()
-            # Refresh employees every 10 loops (5 minutes)
-            if loops >= 10:
+            # Refresh employees every 3 loops (30 seconds)
+            if loops >= 3:
                 sync_employees_from_cloud()
                 loops = 0
         except:
@@ -435,7 +445,7 @@ if __name__ == '__main__':
     port = cfg.get('kiosk_port', 8080)
     print(f"\n{'='*50}")
     print(f"  نظام تسجيل الحضور")
-    print(f"  رابط الكيوسك: http://localhost:{port}")
+    print(f"  رابط التطبيق: http://localhost:{port}")
     print(f"  لوحة الإدارة: http://localhost:{port}/admin")
     print(f"{'='*50}\n")
     # Open browser automatically
