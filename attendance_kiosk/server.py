@@ -197,7 +197,11 @@ def checkin():
         db.close()
         return jsonify({'error': 'موظف غير موجود'}), 404
         
-    if str(emp['pin_code']) != pin_code:
+    # Check if the punch is authorized by PIN or by a linked device ID
+    is_pin_correct = (str(emp['pin_code']) == pin_code)
+    is_device_linked = (str(emp['device_id']) == device_id and device_id != 'local_kiosk' and device_id != '')
+
+    if not is_pin_correct and not is_device_linked:
         db.close()
         return jsonify({'error': 'الرمز السري (PIN) غير صحيح'}), 403
 

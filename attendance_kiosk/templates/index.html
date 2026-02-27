@@ -443,7 +443,6 @@
       class="emp-card {% if record %}{% if record.check_out_time %}checked-out{% elif record.status == 'late' %}late checked-in{% else %}checked-in{% endif %}{% endif %}"
       id="card-{{ emp.id }}" data-emp-id="{{ emp.id }}">
       <div class="emp-name">{{ emp.name }}</div>
-      <div class="emp-title">{{ emp.job_title or 'موظف' }}</div>
       <div>
         {% if record %}
         {% if record.status == 'late' %}
@@ -491,8 +490,6 @@
   <!-- Desktop QR View Container -->
   <div class="desktop-qr-container">
     <h2>📱 امسح الرمز لتسجيل الحضور</h2>
-    <p>هذه الشاشة مخصصة للعرض فقط. يرجى استخدام كاميرا هاتفك المحمول لمسح الرمز الشريطي (QR Code) أدناه وفتح تطبيق تسجيل
-      الحضور على هاتفك لإتمام العملية.</p>
     <div class="qr-box" id="qrcode"></div>
   </div>
 
@@ -645,10 +642,18 @@
     function openPunchPinModal(empId) {
       const isMobile = window.innerWidth <= 600;
       const deviceId = localStorage.getItem('kiosk_device_id');
+      const linkedEmployeeId = localStorage.getItem('kiosk_linked_employee_id');
 
       // If mobile and not linked, perform linking flow
       if (isMobile && !deviceId) {
         openPinModal(empId);
+        return;
+      }
+
+      // If device is linked to this specific employee, bypass the PIN modal
+      if (deviceId && linkedEmployeeId === empId) {
+        // Send an empty PIN to the backend, the backend will verify using device_id
+        punch(empId, '');
         return;
       }
 

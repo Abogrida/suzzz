@@ -44,23 +44,46 @@ export async function POST(req: NextRequest) {
     const empMap = new Map((employees || []).map(e => [e.id, e]));
 
     // Build upsert payload
-    const upsertData = records.map(r => {
+    const upsertData = [];
+
+    // Fetch existing records for that specific date to merge
+    const activeDates = [...new Set(records.map(r => r.attendance_date))];
+    const { data: existingRecords } = await db
+        .from('hr_attendance')
+        .select('*')
+        .in('employee_id', empIds)
+        .in('attendance_date', activeDates);
+
+    const existingMap = new Map((existingRecords || []).map((r: any) => [`${r.employee_id}_${r.attendance_date}`, r]));
+
+    for (const r of records) {
         const emp = empMap.get(r.employee_id);
+        const existing = existingMap.get(`${r.employee_id}_${r.attendance_date}`);
+
         const resolvedStatus = r.status && r.status !== 'auto'
             ? r.status
-            : calcStatus(r.check_in_time, emp?.work_start_time, emp?.late_threshold_minutes ?? 15);
+            : calcStatus(r.check_in_time || existing?.check_in_time, emp?.work_start_time, emp?.late_threshold_minutes ?? 15);
 
-        return {
+        // Merge logic: keep cloud check_in_time if not provided locally. Keep latest check_out_time.
+        const mergedCheckIn = r.check_in_time || existing?.check_in_time || null;
+        let mergedCheckOut = r.check_out_time || existing?.check_out_time || null;
+
+        // If both exist, take the later one
+        if (r.check_out_time && existing?.check_out_time) {
+            mergedCheckOut = r.check_out_time > existing.check_out_time ? r.check_out_time : existing.check_out_time;
+        }
+
+        upsertData.push({
             employee_id: r.employee_id,
             attendance_date: r.attendance_date,
             status: resolvedStatus,
-            check_in_time: r.check_in_time || null,
-            check_out_time: r.check_out_time || null,
+            check_in_time: mergedCheckIn,
+            check_out_time: mergedCheckOut,
             source: 'kiosk',
             synced_from_local: true,
-            notes: r.notes || '',
-        };
-    });
+            notes: r.notes || existing?.notes || '',
+        });
+    }
 
     const { data, error } = await db
         .from('hr_attendance')

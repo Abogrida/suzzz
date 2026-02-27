@@ -76,8 +76,10 @@ export default function HRPage() {
     const [payModal, setPayModal] = useState(false);
     const [payForm, setPayForm] = useState<any>(emptyPay);
 
-    // Attendance date
+    // Attendance date & filters
     const [attDate, setAttDate] = useState(new Date().toISOString().split('T')[0]);
+    const [attSearch, setAttSearch] = useState('');
+    const [attStatusFilter, setAttStatusFilter] = useState('all');
     const [attLoading, setAttLoading] = useState(false);
 
     // Selected employee for profile view
@@ -85,6 +87,8 @@ export default function HRPage() {
     const [empPayments, setEmpPayments] = useState<Payment[]>([]);
     const [empAttendance, setEmpAttendance] = useState<Attendance[]>([]);
     const [empLeaves, setEmpLeaves] = useState<Leave[]>([]);
+    const [empProfileMonth, setEmpProfileMonth] = useState(new Date().toISOString().slice(0, 7));
+    const [empProfileLoading, setEmpProfileLoading] = useState(false);
 
     // Employee modal tab
     const [empModalTab, setEmpModalTab] = useState<'info' | 'schedule' | 'leaves'>('info');
@@ -163,16 +167,27 @@ export default function HRPage() {
         loadAttendance(attDate);
     };
 
+    const loadEmpProfileMonth = async (empId: number, month: string) => {
+        setEmpProfileLoading(true);
+        const a = await fetch(`/api/hr/attendance?employee_id=${empId}&date=${month}`).then(r => r.json());
+        setEmpAttendance(Array.isArray(a) ? a : []);
+        setEmpProfileLoading(false);
+    };
+
     const openEmpProfile = async (emp: HREmployee) => {
         setSelectedEmp(emp);
-        const [p, a, l] = await Promise.all([
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        setEmpProfileMonth(currentMonth);
+        setEmpProfileLoading(true);
+
+        const [p, l] = await Promise.all([
             fetch(`/api/hr/payments?employee_id=${emp.id}`).then(r => r.json()),
-            fetch(`/api/hr/attendance?employee_id=${emp.id}`).then(r => r.json()),
             fetch(`/api/hr/employees/${emp.id}/leaves`).then(r => r.json()),
         ]);
         setEmpPayments(Array.isArray(p) ? p : []);
-        setEmpAttendance(Array.isArray(a) ? a : []);
         setEmpLeaves(Array.isArray(l) ? l : []);
+
+        await loadEmpProfileMonth(emp.id, currentMonth);
     };
 
     const handleAddLeave = async (empId: number) => {
@@ -362,14 +377,120 @@ export default function HRPage() {
                                     </div>
 
                                     {/* Attendance Summary */}
-                                    <h3 style={{ fontSize: 17, fontWeight: 900, margin: '0 0 14px', color: '#1e293b' }}>📅 سجل الحضور (آخر 10 أيام)</h3>
-                                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                                        {empAttendance.slice(0, 10).map(a => {
-                                            const s = attendanceLabels[a.status] || attendanceLabels.present;
-                                            return <span key={a.id} title={new Date(a.attendance_date).toLocaleDateString('ar-EG')} style={{ background: s.bg, color: s.color, borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 800 }}>{s.icon} {new Date(a.attendance_date).toLocaleDateString('ar-EG')}</span>;
-                                        })}
-                                        {empAttendance.length === 0 && <span style={{ color: '#94a3b8', fontSize: 14 }}>لا توجد سجلات حضور</span>}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '24px 0 14px' }}>
+                                        <h3 style={{ fontSize: 17, fontWeight: 900, color: '#1e293b', margin: 0 }}>📅 سجل وإحصائيات الحضور</h3>
+                                        <input type="month" value={empProfileMonth} onChange={e => {
+                                            setEmpProfileMonth(e.target.value);
+                                            loadEmpProfileMonth(selectedEmp.id, e.target.value);
+                                        }} style={{ ...inp, width: 'auto', padding: '6px 12px', fontSize: 14 }} />
                                     </div>
+
+                                    {empProfileLoading ? (
+                                        <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontWeight: 800 }}>⏳ جاري التحميل...</div>
+                                    ) : (() => {
+                                        const appAtt = empAttendance.filter(a => a.source === 'kiosk');
+                                        const presentDays = appAtt.filter(a => a.status === 'present').length;
+                                        const lateDays = appAtt.filter(a => a.status === 'late').length;
+                                        const absentDays = appAtt.filter(a => a.status === 'absent').length;
+
+                                        // Calculate expected work days up to today (or end of selected month)
+                                        const y = parseInt(empProfileMonth.split('-')[0]);
+                                        const m = parseInt(empProfileMonth.split('-')[1]) - 1;
+                                        const isCurrentMonth = new Date().getFullYear() === y && new Date().getMonth() === m;
+                                        const daysInMonth = isCurrentMonth ? new Date().getDate() : new Date(y, m + 1, 0).getDate();
+
+                                        const offDaysKeys = selectedEmp.off_days || [5, 6];
+                                        let expectedWorkDays = 0;
+                                        for (let d = 1; d <= daysInMonth; d++) {
+                                            const date = new Date(y, m, d);
+                                            if (!offDaysKeys.includes(date.getDay())) {
+                                                expectedWorkDays++;
+                                            }
+                                        }
+
+                                        const actualAttended = presentDays + lateDays;
+                                        const calculatedAbsences = Math.max(0, expectedWorkDays - actualAttended);
+                                        const completionRate = expectedWorkDays > 0 ? Math.round((actualAttended / expectedWorkDays) * 100) : 0;
+
+                                        let rating = { label: 'ممتاز 🌟', color: '#16a34a', bg: '#dcfce7' };
+                                        if (completionRate < 70) rating = { label: 'ضعيف ⚠️', color: '#ef4444', bg: '#fee2e2' };
+                                        else if (completionRate < 90) rating = { label: 'متوسط 📊', color: '#f59e0b', bg: '#fef3c7' };
+
+                                        return (
+                                            <div style={{ background: '#f8fafc', borderRadius: 16, padding: '20px', border: '1.5px solid #e2e8f0' }}>
+                                                {/* Stats Grid */}
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+                                                    <div style={{ background: '#fff', borderRadius: 12, padding: '12px', textAlign: 'center', border: '1px solid #f1f5f9' }}>
+                                                        <div style={{ fontSize: 24, fontWeight: 900, color: '#16a34a' }}>{actualAttended}</div>
+                                                        <div style={{ fontSize: 12, color: '#64748b', fontWeight: 800 }}>يوم حضور</div>
+                                                    </div>
+                                                    <div style={{ background: '#fff', borderRadius: 12, padding: '12px', textAlign: 'center', border: '1px solid #f1f5f9' }}>
+                                                        <div style={{ fontSize: 24, fontWeight: 900, color: '#ef4444' }}>{calculatedAbsences}</div>
+                                                        <div style={{ fontSize: 12, color: '#64748b', fontWeight: 800 }}>غياب أو بدون بصمة</div>
+                                                    </div>
+                                                    <div style={{ background: '#fff', borderRadius: 12, padding: '12px', textAlign: 'center', border: '1px solid #f1f5f9' }}>
+                                                        <div style={{ fontSize: 24, fontWeight: 900, color: '#f59e0b' }}>{lateDays}</div>
+                                                        <div style={{ fontSize: 12, color: '#64748b', fontWeight: 800 }}>مرات تأخير</div>
+                                                    </div>
+                                                    <div style={{ background: rating.bg, borderRadius: 12, padding: '12px', textAlign: 'center', border: `1px solid ${rating.color}40` }}>
+                                                        <div style={{ fontSize: 24, fontWeight: 900, color: rating.color }}>{completionRate}%</div>
+                                                        <div style={{ fontSize: 12, color: rating.color, fontWeight: 800 }}>التقييم {rating.label}</div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Logs */}
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                                                    {/* Present/Late List */}
+                                                    <div>
+                                                        <div style={{ fontSize: 14, fontWeight: 900, color: '#374151', marginBottom: 12 }}>تفاصيل بصمات الحضور ({appAtt.length}):</div>
+                                                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', maxHeight: 160, overflowY: 'auto', paddingRight: 4 }}>
+                                                            {appAtt.sort((a, b) => new Date(a.attendance_date).getTime() - new Date(b.attendance_date).getTime()).map(a => {
+                                                                const s = attendanceLabels[a.status] || attendanceLabels.present;
+                                                                return (
+                                                                    <div key={a.id} style={{ background: '#fff', border: `1px solid ${s.bg}`, borderRadius: 8, padding: '6px 12px', fontSize: 13, fontWeight: 900, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                                                                        <span style={{ color: s.color }}>{s.icon} {new Date(a.attendance_date).getDate()}</span>
+                                                                        {a.check_in_time && <span style={{ color: '#94a3b8', fontSize: 11 }}>{a.check_in_time.slice(0, 5)}</span>}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                            {appAtt.length === 0 && <span style={{ color: '#94a3b8', fontSize: 13, fontWeight: 700 }}>لا توجد بصمات في هذا الشهر</span>}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Absent List */}
+                                                    <div>
+                                                        <div style={{ fontSize: 14, fontWeight: 900, color: '#ef4444', marginBottom: 12 }}>أيام الغياب ({calculatedAbsences}):</div>
+                                                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', maxHeight: 160, overflowY: 'auto', paddingRight: 4 }}>
+                                                            {(() => {
+                                                                const absentDates = [];
+                                                                for (let d = 1; d <= daysInMonth; d++) {
+                                                                    const date = new Date(y, m, d);
+                                                                    // Only count days up to today
+                                                                    if (date > new Date() && isCurrentMonth) break;
+
+                                                                    const isOffDay = offDaysKeys.includes(date.getDay());
+                                                                    if (!isOffDay) {
+                                                                        const dateStr = date.toISOString().split('T')[0];
+                                                                        const didAttend = appAtt.find(a => a.attendance_date === dateStr && ['present', 'late'].includes(a.status));
+                                                                        if (!didAttend) {
+                                                                            absentDates.push(d);
+                                                                        }
+                                                                    }
+                                                                }
+                                                                if (absentDates.length === 0) return <span style={{ color: '#16a34a', fontSize: 13, fontWeight: 800 }}>لم يغب أي يوم! 🎉</span>;
+
+                                                                return absentDates.map(dayNum => (
+                                                                    <div key={dayNum} style={{ background: '#fef2f2', border: `1px solid #fecaca`, borderRadius: 8, padding: '6px 14px', fontSize: 13, fontWeight: 900, display: 'flex', alignItems: 'center', color: '#ef4444' }}>
+                                                                        ❌ {dayNum} {new Date(y, m, dayNum).toLocaleDateString('ar-EG', { month: 'short' })}
+                                                                    </div>
+                                                                ));
+                                                            })()}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         </div>
@@ -442,102 +563,135 @@ export default function HRPage() {
 
             {/* ===== TAB: ATTENDANCE ===== */}
             {tab === 'attendance' && (() => {
-                const currentMonthPrefix = attDate.length === 10 ? attDate.slice(0, 7) : attDate;
                 const activeEmployees = employees.filter(e => e.is_active);
 
-                // Only show app (kiosk) attendance as requested by the user
-                const appAttendance = attendance.filter(a => a.source === 'kiosk');
+                // Provide a safe fallback if attendance state isn't an array
+                const safeAttendance = Array.isArray(attendance) ? attendance : [];
 
-                // Calculate month statistics based on app attendance
-                const totalPresent = appAttendance.filter(a => a.status === 'present').length;
-                const totalLate = appAttendance.filter(a => a.status === 'late').length;
-                const totalAbsent = appAttendance.filter(a => a.status === 'absent').length;
+                // Filter attendance based on the filters
+                const filteredAttendance = safeAttendance.filter(a => {
+                    if (a.source !== 'kiosk') return false; // Show only app attendance
+                    if (attStatusFilter !== 'all' && a.status !== attStatusFilter) return false;
+
+                    const emp = employees.find(e => e.id === a.employee_id);
+                    if (attSearch && emp && !emp.name.toLowerCase().includes(attSearch.toLowerCase())) return false;
+
+                    return true;
+                });
+
+                // Calculate month statistics based on filtered attendance
+                const totalPresent = filteredAttendance.filter(a => a.status === 'present').length;
+                const totalLate = filteredAttendance.filter(a => a.status === 'late').length;
+                const totalAbsent = filteredAttendance.filter(a => a.status === 'absent').length;
 
                 return (
                     <div>
-                        {/* Header Controls */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24, background: '#fff', borderRadius: 14, padding: '16px 20px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: 15, fontWeight: 800, color: '#374151' }}>📅 الشهر:</span>
-                            <input type="month" value={currentMonthPrefix} onChange={e => {
-                                const val = e.target.value;
-                                setAttDate(val);
-                                loadAttendance(val);
-                            }}
-                                style={{ ...inp, width: 'auto', padding: '8px 14px', fontFamily: 'Cairo' }} />
+                        {/* New Filter Bar Matching the Image */}
+                        <div style={{ background: '#fff', borderRadius: 16, padding: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', marginBottom: 24, border: '1px solid #f1f5f9' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                                <div style={{ fontSize: 18, fontWeight: 900, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <span>جدول الحضور والانصراف</span>
+                                    <span>📅</span>
+                                </div>
+                            </div>
 
-                            <div style={{ flex: 1 }}></div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                                <button onClick={() => { setAttDate(''); setAttSearch(''); setAttStatusFilter('all'); loadAttendance(''); }}
+                                    style={{ background: '#0ea5e9', color: '#fff', border: 'none', borderRadius: 12, padding: '12px 24px', fontWeight: 800, fontSize: 15, cursor: 'pointer', fontFamily: 'Cairo', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, whiteSpace: 'nowrap' }}>
+                                    إلغاء الفلاتر
+                                </button>
 
-                            <span style={{ fontSize: 14, color: '#64748b', fontWeight: 700 }}>{activeEmployees.length} موظف</span>
+                                <select value={attStatusFilter} onChange={e => setAttStatusFilter(e.target.value)}
+                                    style={{ ...inp, width: '200px', cursor: 'pointer' }}>
+                                    <option value="all">كل الحالات</option>
+                                    <option value="present">حاضر</option>
+                                    <option value="late">متأخر</option>
+                                    <option value="absent">غائب</option>
+                                </select>
+
+                                <input type="text" placeholder="ابحث باسم الموظف..." value={attSearch} onChange={e => setAttSearch(e.target.value)}
+                                    style={{ ...inp, flex: 1, minWidth: '200px' }} />
+
+                                <input type="date" value={attDate} onChange={e => {
+                                    const val = e.target.value;
+                                    setAttDate(val);
+                                    if (val) loadAttendance(val);
+                                    else loadAttendance(new Date().toISOString().slice(0, 7)); // reload month if date cleared
+                                }}
+                                    style={{ ...inp, width: '220px', color: '#0ea5e9', fontWeight: 800, background: '#f8fafc', borderColor: '#bae6fd' }} />
+                            </div>
                         </div>
 
                         {/* Stats Summary */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 24 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
                             {[
-                                { label: 'حاضر', value: totalPresent, color: '#16a34a', bg: '#dcfce7', icon: '✅' },
-                                { label: 'متأخر', value: totalLate, color: '#f59e0b', bg: '#fef3c7', icon: '⏰' },
-                                { label: 'غائب', value: totalAbsent, color: '#ef4444', bg: '#fee2e2', icon: '❌' },
+                                { label: 'حاضر', value: totalPresent, color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0', icon: '✅' },
+                                { label: 'متأخر', value: totalLate, color: '#f59e0b', bg: '#fffbeb', border: '#fef08a', icon: '⏰' },
+                                { label: 'غائب', value: totalAbsent, color: '#ef4444', bg: '#fef2f2', border: '#fecaca', icon: '❌' },
                             ].map(s => (
-                                <div key={s.label} style={{ background: '#fff', borderRadius: 16, padding: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', gap: 16, border: `1.5px solid ${s.bg}` }}>
-                                    <div style={{ fontSize: 32, background: s.bg, width: 60, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 16 }}>{s.icon}</div>
+                                <div key={s.label} style={{ background: '#fff', borderRadius: 16, padding: '20px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', gap: 16, border: `1px solid #e2e8f0`, borderRight: `5px solid ${s.color}` }}>
+                                    <div style={{ fontSize: 26, background: s.bg, width: 54, height: 54, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 14 }}>{s.icon}</div>
                                     <div>
-                                        <div style={{ fontSize: 28, fontWeight: 900, color: s.color }}>{s.value}</div>
-                                        <div style={{ fontSize: 13, color: '#64748b', fontWeight: 700 }}>إجمالي {s.label}</div>
+                                        <div style={{ fontSize: 24, fontWeight: 900, color: '#1e293b' }}>{s.value}</div>
+                                        <div style={{ fontSize: 13, color: '#64748b', fontWeight: 800 }}>إجمالي {s.label}</div>
                                     </div>
                                 </div>
                             ))}
                         </div>
 
                         {attLoading ? (
-                            <div style={{ textAlign: 'center', padding: 40, fontSize: 18, fontWeight: 800, color: '#64748b' }}>⏳ جاري تحميل السجلات...</div>
+                            <div style={{ textAlign: 'center', padding: 40, fontSize: 18, fontWeight: 800, color: '#64748b' }}>⏳ جاري الفلترة والتحميل...</div>
                         ) : (
-                            <div style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
+                            <div style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                                     <thead>
                                         <tr style={{ background: '#f8fafc' }}>
                                             {['الموظف', 'التاريخ', 'الحضور', 'الانصراف', 'الحالة', 'المصدر'].map(h => (
-                                                <th key={h} style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 800, color: '#374151', borderBottom: '1.5px solid #e2e8f0' }}>{h}</th>
+                                                <th key={h} style={{ padding: '16px 24px', textAlign: 'center', fontWeight: 900, color: '#1e293b', borderBottom: '2px solid #e2e8f0', fontSize: 15 }}>{h}</th>
                                             ))}
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {appAttendance.slice().sort((a, b) => new Date(b.attendance_date).getTime() - new Date(a.attendance_date).getTime()).map((record, i) => {
+                                        {filteredAttendance.slice().sort((a, b) => new Date(b.attendance_date).getTime() - new Date(a.attendance_date).getTime()).map((record, i) => {
                                             const emp = employees.find(e => e.id === record.employee_id);
                                             const statusObj = attendanceLabels[record.status] || attendanceLabels.present;
 
                                             return (
-                                                <tr key={record.id} style={{ background: i % 2 === 0 ? '#fff' : '#fafafa', borderBottom: '1px solid #f1f5f9' }}>
-                                                    <td style={{ padding: '12px 16px', fontWeight: 800 }}>
+                                                <tr key={record.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s', cursor: 'default' }}
+                                                    onMouseOver={e => e.currentTarget.style.background = '#f8fafc'}
+                                                    onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                                                >
+                                                    <td style={{ padding: '16px 24px', fontWeight: 900, color: '#0f172a', textAlign: 'center' }}>
                                                         {emp?.name || 'مجهول'}
-                                                        <div style={{ fontSize: 12, color: '#94a3b8' }}>{emp?.job_title || 'موظف'}</div>
                                                     </td>
-                                                    <td style={{ padding: '12px 16px', color: '#64748b', fontWeight: 700 }}>
-                                                        {new Date(record.attendance_date).toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'numeric', day: 'numeric' })}
+                                                    <td style={{ padding: '16px 24px', color: '#64748b', fontWeight: 800, textAlign: 'center' }}>
+                                                        {record.attendance_date}
                                                     </td>
-                                                    <td style={{ padding: '12px 16px', color: '#16a34a', fontWeight: 800 }}>
-                                                        {record.check_in_time ? `↗️ ${record.check_in_time.slice(0, 5)}` : '—'}
+                                                    <td style={{ padding: '16px 24px', color: '#16a34a', fontWeight: 900, textAlign: 'center', fontSize: 15 }}>
+                                                        {record.check_in_time ? record.check_in_time.slice(0, 5) : '—'}
                                                     </td>
-                                                    <td style={{ padding: '12px 16px', color: '#ea580c', fontWeight: 800 }}>
-                                                        {record.check_out_time ? `↘️ ${record.check_out_time.slice(0, 5)}` : '—'}
+                                                    <td style={{ padding: '16px 24px', color: '#ea580c', fontWeight: 900, textAlign: 'center', fontSize: 15 }}>
+                                                        {record.check_out_time ? record.check_out_time.slice(0, 5) : '—'}
                                                     </td>
-                                                    <td style={{ padding: '12px 16px' }}>
-                                                        <span style={{ background: statusObj.bg, color: statusObj.color, borderRadius: 8, padding: '4px 10px', fontSize: 13, fontWeight: 800 }}>
-                                                            {statusObj.icon} {statusObj.label}
+                                                    <td style={{ padding: '16px 24px', textAlign: 'center' }}>
+                                                        <span style={{ background: statusObj.bg, color: statusObj.color, borderRadius: 6, padding: '6px 14px', fontSize: 13, fontWeight: 900, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                                            {statusObj.label} {statusObj.icon}
                                                         </span>
                                                     </td>
-                                                    <td style={{ padding: '12px 16px' }}>
-                                                        {record.source === 'kiosk' ?
-                                                            <span style={{ background: '#ede9fe', color: '#6366f1', borderRadius: 6, padding: '4px 8px', fontSize: 12, fontWeight: 800 }}>💻 كشك البصمة</span> :
-                                                            <span style={{ background: '#f1f5f9', color: '#64748b', borderRadius: 6, padding: '4px 8px', fontSize: 12, fontWeight: 800 }}>✏️ تسجيل يدوي</span>
-                                                        }
+                                                    <td style={{ padding: '16px 24px', textAlign: 'center' }}>
+                                                        <span style={{ background: '#f3e8ff', color: '#7e22ce', borderRadius: 8, padding: '6px 14px', fontSize: 13, fontWeight: 900, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                                            تطبيق البصمة 📱
+                                                        </span>
                                                     </td>
                                                 </tr>
                                             );
                                         })}
-                                        {appAttendance.length === 0 && (
+                                        {filteredAttendance.length === 0 && (
                                             <tr>
                                                 <td colSpan={6} style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>
-                                                    <div style={{ fontSize: 40, marginBottom: 12 }}>📅</div>
-                                                    <div style={{ fontWeight: 800, fontSize: 16 }}>لا توجد سجلات حضور في هذا الشهر</div>
+                                                    <div style={{ fontSize: 40, marginBottom: 16 }}>📊</div>
+                                                    <div style={{ fontWeight: 800, fontSize: 18, color: '#475569' }}>لا توجد بيانات مطابقة للفلتر المحدد</div>
+                                                    <div style={{ fontSize: 14, marginTop: 8 }}>حاول تغيير التاريخ أو الغاء الفلاتر</div>
                                                 </td>
                                             </tr>
                                         )}
