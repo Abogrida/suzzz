@@ -403,25 +403,21 @@
     }
 
     /* Media query for desktop screens */
-    @media (min-width: 1024px) {
-      .grid {
+    @media screen and (min-width: 600px) {
+      body>.grid {
         display: none !important;
-        /* Hide employee grid on desktop */
+      }
+
+      body>.sync-bar {
+        display: none !important;
+      }
+
+      body>#toast {
+        display: none !important;
       }
 
       .desktop-qr-container {
-        display: flex;
-        /* Show QR container on desktop */
-      }
-
-      .sync-bar {
-        display: none;
-        /* Hide sync bar on desktop as it's not the primary interface */
-      }
-
-      #toast {
-        display: none !important;
-        /* Hide toasts on desktop view */
+        display: flex !important;
       }
     }
   </style>
@@ -473,7 +469,7 @@
       </div>
       <button
         class="punch-btn {% if record and not record.check_out_time %}btn-checkout{% else %}btn-checkin{% endif %}"
-        onclick="punch('{{ emp.id }}')" id="btn-{{ emp.id }}">
+        onclick="openPunchPinModal('{{ emp.id }}')" id="btn-{{ emp.id }}">
         {% if record %}
         {% if record.check_out_time %}🔄 تسجيل حضور جديد{% else %}🚪 تسجيل انصراف{% endif %}
         {% else %}
@@ -511,13 +507,14 @@
   <!-- PIN Modal -->
   <div class="modal-overlay" id="pinModal">
     <div class="modal-content">
-      <div class="modal-title">تأكيد الهوية</div>
-      <div class="modal-subtitle">أدخل الرمز السري (PIN) الخاص بك لربط هذا الهاتف بحسابك بصفة دائمة.</div>
+      <div class="modal-title" id="pinModalTitle">تأكيد الهوية</div>
+      <div class="modal-subtitle" id="pinModalSubtitle">أدخل الرمز السري (PIN) الخاص بك لربط هذا الهاتف بحسابك بصفة
+        دائمة.</div>
       <input type="password" class="pin-input" id="pinInput" maxlength="4" placeholder="••••" autocomplete="off"
         inputmode="numeric">
       <div class="modal-actions">
         <button class="btn-cancel" onclick="closePinModal()">إلغاء</button>
-        <button class="btn-submit" onclick="submitPin()">تأكيد وربط الهاتف</button>
+        <button class="btn-submit" id="pinModalSubmitBtn" onclick="submitPin()">تأكيد وربط الهاتف</button>
       </div>
     </div>
   </div>
@@ -544,14 +541,8 @@
     }
 
     // Punch in/out
-    async function punch(empId) {
-      const deviceId = localStorage.getItem('kiosk_device_id');
-
-      if (!deviceId) {
-        // This device is not linked yet! Open the PIN modal instead.
-        openPinModal(empId);
-        return;
-      }
+    async function punch(empId, pinCode) {
+      const deviceId = localStorage.getItem('kiosk_device_id') || 'local_kiosk';
 
       const btn = document.getElementById('btn-' + empId);
       btn.disabled = true;
@@ -563,7 +554,7 @@
         res = await fetch('/checkin', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ employee_id: empId, device_id: deviceId })
+          body: JSON.stringify({ employee_id: empId, device_id: deviceId, pin_code: pinCode })
         });
         data = await res.json();
         if (data.success) {
@@ -590,16 +581,12 @@
           }
         } else {
           showToast(data.error || 'حدث خطأ', 'error');
-          if (res.status === 403) {
-            // Invalid device ID! Unlink forcefully
-            unlinkDevice(true);
-          }
         }
       } catch (e) {
         showToast('خطأ في الاتصال بالسيرفر', 'error');
       }
       btn.disabled = false;
-      if (!data?.success && res?.status !== 403) {
+      if (!data?.success) {
         btn.textContent = originalText;
       }
     }
@@ -619,6 +606,7 @@
 
     // --- Device Linking Logic ---
     let pendingEmpId = null;
+    let pendingAction = null;
 
     function generateDeviceId() {
       return 'dev_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now().toString(36);
@@ -645,6 +633,31 @@
 
     function openPinModal(empId) {
       pendingEmpId = empId;
+      pendingAction = 'link';
+      document.getElementById('pinModalTitle').textContent = 'ربط الهاتف';
+      document.getElementById('pinModalSubtitle').textContent = 'أدخل الرمز السري (PIN) الخاص بك لربط هذا الهاتف بحسابك بصفة دائمة.';
+      document.getElementById('pinModalSubmitBtn').textContent = 'تأكيد وربط الهاتف';
+      document.getElementById('pinInput').value = '';
+      document.getElementById('pinModal').classList.add('active');
+      setTimeout(() => document.getElementById('pinInput').focus(), 100);
+    }
+
+    function openPunchPinModal(empId) {
+      const isMobile = window.innerWidth <= 600;
+      const deviceId = localStorage.getItem('kiosk_device_id');
+
+      // If mobile and not linked, perform linking flow
+      if (isMobile && !deviceId) {
+        openPinModal(empId);
+        return;
+      }
+
+      // Normal punch flow (PC or already linked mobile)
+      pendingEmpId = empId;
+      pendingAction = 'punch';
+      document.getElementById('pinModalTitle').textContent = 'تأكيد الحضور/الانصراف';
+      document.getElementById('pinModalSubtitle').textContent = 'الرجاء إدخال الرمز السري (PIN) الخاص بك لتسجيل الدخول أو الخروج.';
+      document.getElementById('pinModalSubmitBtn').textContent = 'التسجيل الآن';
       document.getElementById('pinInput').value = '';
       document.getElementById('pinModal').classList.add('active');
       setTimeout(() => document.getElementById('pinInput').focus(), 100);
@@ -662,6 +675,14 @@
         return;
       }
 
+      if (pendingAction === 'punch') {
+        const pEmpId = pendingEmpId;
+        closePinModal();
+        await punch(pEmpId, pin);
+        return;
+      }
+
+      // Link logic below
       const deviceId = generateDeviceId();
       const btn = document.querySelector('.btn-submit');
       const originalText = btn.textContent;
@@ -736,8 +757,8 @@
       const qrContainer = document.getElementById('qrcode');
       if (!qrContainer) return;
 
-      // Get the current URL (the local IP address of the server)
-      const currentUrl = window.location.href;
+      // Get the network URL provided by the server
+      const currentUrl = "{{ network_url }}";
 
       // Generate the QR code
       new QRCode(qrContainer, {

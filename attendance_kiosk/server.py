@@ -6,7 +6,7 @@ Employees connect via http://localhost:8080 on any device on the same network.
 Attendance is stored in SQLite and synced to the cloud when internet is available.
 """
 
-import json, os, sqlite3, threading, time, webbrowser
+import json, os, sqlite3, threading, time, webbrowser, socket
 from datetime import date, datetime
 from contextlib import contextmanager
 from flask import Flask, request, jsonify, render_template, redirect, url_for
@@ -29,6 +29,16 @@ def load_config():
 cfg = load_config()
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
+
+def get_local_ip():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
 
 # ── Database ────────────────────────────────
 def get_db():
@@ -111,12 +121,15 @@ def index():
     db.close()
     att_map = {a['employee_id']: dict(a) for a in attendance}
     sync_status = get_sync_status()
+    port = cfg.get('kiosk_port', 8080)
+    network_url = f"http://{get_local_ip()}:{port}"
     return render_template('index.html',
         employees=[dict(e) for e in employees],
         att_map=att_map,
         today=today,
         company=cfg.get('company_name', 'شركتي'),
-        sync_status=sync_status
+        sync_status=sync_status,
+        network_url=network_url
     )
 
 @app.route('/link_device', methods=['POST'])
@@ -174,6 +187,7 @@ def checkin():
     data = request.get_json()
     emp_id = int(data.get('employee_id', 0))
     device_id = str(data.get('device_id', ''))
+    pin_code = str(data.get('pin_code', ''))
     today = date.today().isoformat()
     now_time = datetime.now().strftime('%H:%M')
 
@@ -183,9 +197,9 @@ def checkin():
         db.close()
         return jsonify({'error': 'موظف غير موجود'}), 404
         
-    if str(emp['device_id']) != device_id:
+    if str(emp['pin_code']) != pin_code:
         db.close()
-        return jsonify({'error': 'هذا الجهاز غير معتمد لهذا الموظف'}), 403
+        return jsonify({'error': 'الرمز السري (PIN) غير صحيح'}), 403
 
     existing = db.execute(
         "SELECT * FROM attendance WHERE employee_id=? AND attendance_date=?",

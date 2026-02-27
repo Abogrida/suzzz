@@ -8,6 +8,7 @@ type HREmployee = {
     is_active: boolean; notes: string; created_at: string;
     work_start_time?: string; work_end_time?: string;
     late_threshold_minutes?: number; off_days?: number[];
+    pin_code?: string;
 };
 type Payment = {
     id: number; employee_id: number; payment_type: string; amount: number;
@@ -53,7 +54,7 @@ function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error';
 const inp: React.CSSProperties = { width: '100%', padding: '11px 14px', border: '1.5px solid #e2e8f0', borderRadius: 10, fontSize: 15, fontFamily: 'Cairo', outline: 'none', background: '#fff', boxSizing: 'border-box' };
 const label: React.CSSProperties = { display: 'block', fontWeight: 700, marginBottom: 6, fontSize: 14, color: '#475569' };
 
-const emptyEmp = { name: '', job_title: '', phone: '', national_id: '', hire_date: '', base_salary: '', is_active: true, notes: '' };
+const emptyEmp = { name: '', job_title: '', phone: '', national_id: '', hire_date: '', base_salary: '', is_active: true, notes: '', pin_code: '0000' };
 const emptyPay = { employee_id: '', payment_type: 'salary', amount: '', payment_date: new Date().toISOString().split('T')[0], notes: '' };
 
 export default function HRPage() {
@@ -640,6 +641,7 @@ export default function HRPage() {
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                     <div style={{ gridColumn: '1/-1' }}><label style={label}>الاسم الكامل *</label><input style={inp} value={empForm.name} onChange={e => setEmpForm({ ...empForm, name: e.target.value })} placeholder="مثال: أحمد محمد علي" /></div>
                                     <div><label style={label}>المسمى الوظيفي</label><input style={inp} value={empForm.job_title} onChange={e => setEmpForm({ ...empForm, job_title: e.target.value })} placeholder="مثال: كاشير" /></div>
+                                    <div><label style={label}>الرقم السري (PIN)</label><input type="text" style={inp} value={empForm.pin_code} onChange={e => setEmpForm({ ...empForm, pin_code: e.target.value })} placeholder="مثال: 1234" maxLength={4} title="رقم سري مكون من 4 أرقام للموظف" /></div>
                                     <div><label style={label}>رقم الهاتف</label><input style={inp} value={empForm.phone} onChange={e => setEmpForm({ ...empForm, phone: e.target.value })} placeholder="01xxxxxxxxx" /></div>
                                     <div><label style={label}>الرقم القومي</label><input style={inp} value={empForm.national_id} onChange={e => setEmpForm({ ...empForm, national_id: e.target.value })} placeholder="14 رقم" /></div>
                                     <div><label style={label}>تاريخ التعيين</label><input type="date" style={inp} value={empForm.hire_date} onChange={e => setEmpForm({ ...empForm, hire_date: e.target.value })} /></div>
