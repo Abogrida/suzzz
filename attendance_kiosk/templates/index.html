@@ -242,26 +242,6 @@
       }
     }
 
-    .admin-link {
-      position: fixed;
-      bottom: 20px;
-      left: 20px;
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
-      text-decoration: none;
-      padding: 10px 20px;
-      border-radius: 12px;
-      font-size: 14px;
-      font-weight: 700;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      transition: all 0.2s;
-      cursor: pointer;
-    }
-
-    .admin-link:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
-
     .unsynced-badge {
       position: fixed;
       bottom: 20px;
@@ -383,25 +363,7 @@
       opacity: 0.9;
     }
 
-    .btn-unlink {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: rgba(239, 68, 68, 0.2);
-      border: 1px solid rgba(239, 68, 68, 0.4);
-      color: #fca5a5;
-      padding: 10px 18px;
-      border-radius: 12px;
-      font-size: 13px;
-      font-weight: 800;
-      cursor: pointer;
-      display: none;
-      transition: all 0.2s;
-    }
 
-    .btn-unlink:hover {
-      background: rgba(239, 68, 68, 0.4);
-    }
 
     .hidden-card {
       display: none !important;
@@ -411,7 +373,7 @@
 
 <body>
   <div class="header">
-    <h1>🏢 {{ company }}</h1>
+    <h1 id="secretAdminTrigger" style="user-select:none; cursor:default;">🏢 {{ company }}</h1>
     <div class="clock" id="clock">--:--:--</div>
     <div class="date">{{ today }}</div>
   </div>
@@ -473,14 +435,11 @@
     {% endif %}
   </div>
 
-  <button onclick="requireAdminPin('/admin')" class="admin-link">⚙️ الإدارة</button>
   {% if sync_status.unsynced_count > 0 %}
   <!-- Keeping this around but changing position statically if needed, or moved to left to avoid clash with unlink -->
   <div class="unsynced-badge" style="display:block; right: auto; left: 120px;">📤 {{ sync_status.unsynced_count }} سجل
     غير مزامن</div>
   {% endif %}
-
-  <button onclick="requireAdminPin('unlink')" class="btn-unlink" id="btnUnlink">🔓 فك ارتباط الهاتف</button>
 
   <div class="toast" id="toast"></div>
 
@@ -603,7 +562,6 @@
     function checkDeviceStatus() {
       const linkedEmployeeId = localStorage.getItem('kiosk_linked_employee_id');
       const allCards = document.querySelectorAll('.emp-card');
-      const unlinkBtn = document.getElementById('btnUnlink');
 
       if (linkedEmployeeId) {
         // Device is linked. Hide all cards except the linked one.
@@ -614,11 +572,9 @@
             card.classList.add('hidden-card');
           }
         });
-        unlinkBtn.style.display = 'block';
       } else {
         // Not linked. Show all cards.
         allCards.forEach(card => card.classList.remove('hidden-card'));
-        unlinkBtn.style.display = 'none';
       }
     }
 
@@ -682,28 +638,30 @@
       btn.disabled = false;
     }
 
+    // Handle forcing device unlinking internally 
     function unlinkDevice(silent = false) {
-      if (!silent && !confirm('هل أنت متأكد من فك ارتباط هذا الهاتف بحسابك؟ سيتطلب الدخول الرمز السري في المرة القادمة.')) return;
-
       localStorage.removeItem('kiosk_device_id');
       localStorage.removeItem('kiosk_linked_employee_id');
-      if (!silent) showToast('تم فك ارتباط الهاتف', 'success');
+      if (!silent) showToast('تم إعادة تعيين الواجهة', 'success');
       checkDeviceStatus();
     }
 
-    function requireAdminPin(actionTarget) {
-      const pin = prompt("الرجاء إدخال الرقم السري للإدارة (Admin PIN):");
-      if (pin === "1234") { // Temporary or config-based static pin. Let's assume 1234 for now or let server validate it.
-        // Doing simple client-side check for now as requested for speed, but can easily be moved to backend
-        if (actionTarget === '/admin') {
-          window.location.href = actionTarget;
-        } else if (actionTarget === 'unlink') {
-          unlinkDevice(false);
+    // Secret Admin Trigger
+    let adminClickCount = 0;
+    let adminClickTimer = null;
+    document.getElementById('secretAdminTrigger').addEventListener('click', () => {
+      adminClickCount++;
+      clearTimeout(adminClickTimer);
+      if (adminClickCount >= 5) {
+        adminClickCount = 0;
+        const pin = prompt("الرجاء إدخال الرقم السري للإدارة (Admin PIN):");
+        if (pin) {
+          window.location.href = '/admin?pin=' + pin;
         }
-      } else if (pin !== null) {
-        showToast("الرقم السري خاطئ!", "error");
+      } else {
+        adminClickTimer = setTimeout(() => { adminClickCount = 0; }, 1500);
       }
-    }
+    });
 
     // Initialize UI based on device link status
     checkDeviceStatus();

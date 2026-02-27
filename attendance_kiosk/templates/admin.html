@@ -223,6 +223,8 @@
         <h1>⚙️ لوحة الإدارة — {{ company }}</h1>
         <a href="/">← العودة لتطبيق البصمة</a>
     </div>
+    <!-- Store PIN to use in API calls -->
+    <script>const adminPin = "{{ pin }}";</script>
     <div class="container">
 
         <!-- Stats -->
@@ -316,6 +318,43 @@
             </table>
         </div>
 
+        <!-- Manage Linked Devices -->
+        <div class="card" style="margin-top: 24px;">
+            <h2>📱 إدارة الأجهزة المرتبطة</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>الموظف</th>
+                        <th>حالة الجهاز</th>
+                        <th>إجراء</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for emp in employees %}
+                    <tr>
+                        <td style="font-weight:800">{{ emp.name }}</td>
+                        <td>
+                            {% if emp.device_id %}
+                            <span style="color:#16a34a; font-weight:bold;">✅ مرتبط</span>
+                            {% else %}
+                            <span style="color:#94a3b8;">غير مرتبط</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if emp.device_id %}
+                            <button class="btn"
+                                style="background:#fee2e2; color:#dc2626; padding:4px 12px; font-size:12px; height:auto;"
+                                onclick="unlinkDevice({{ emp.id }}, this)">فك الارتباط</button>
+                            {% else %}
+                            —
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
     </div>
 
     <script>
@@ -342,6 +381,32 @@
             el.textContent = data.message;
             btn.disabled = false; btn.textContent = '👥 تحديث بيانات الموظفين';
             if (data.success) setTimeout(() => location.reload(), 1500);
+        }
+
+        async function unlinkDevice(empId, btn) {
+            if (!confirm('هل أنت متأكد من فك ارتباط هاتف هذا الموظف؟ سيُطلب منه إعادة إدخال الرقم السري (PIN) في المرة القادمة.')) return;
+            btn.disabled = true;
+            btn.textContent = '⏳...';
+            try {
+                const res = await fetch('/unlink_employee_device', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ employee_id: empId, pin: adminPin })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('تم فك الارتباط بنجاح!');
+                    location.reload();
+                } else {
+                    alert('حدث خطأ: ' + (data.error || 'غير معروف'));
+                    btn.disabled = false;
+                    btn.textContent = 'فك الارتباط';
+                }
+            } catch (e) {
+                alert('خطأ في الاتصال بالسيرفر');
+                btn.disabled = false;
+                btn.textContent = 'فك الارتباط';
+            }
         }
     </script>
 </body>

@@ -12,8 +12,18 @@ export default function SettingsPage() {
     const [oldPass, setOldPass] = useState('');
     const [newPass, setNewPass] = useState('');
     const [confirmPass, setConfirmPass] = useState('');
+    const [kioskPin, setKioskPin] = useState('');
     const [loading, setLoading] = useState(false);
+    const [kioskLoading, setKioskLoading] = useState(false);
     const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+
+    // Fetch initial settings
+    useState(() => {
+        fetch('/api/settings/kiosk-pin')
+            .then(res => res.json())
+            .then(data => data.pin && setKioskPin(data.pin))
+            .catch(() => { });
+    });
 
     const handleChangePassword = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -58,6 +68,32 @@ export default function SettingsPage() {
             setToast({ msg: 'حدث خطأ في الاتصال بالسيرفر', type: 'error' });
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleKioskPinChange = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (kioskPin.length < 4) {
+            setToast({ msg: 'الرقم السري لتطبيق البصمة يجب أن يكون 4 أرقام على الأقل', type: 'error' });
+            return;
+        }
+        setKioskLoading(true);
+        try {
+            const res = await fetch('/api/settings/kiosk-pin', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin: kioskPin }),
+            });
+            if (res.ok) {
+                setToast({ msg: 'تم تحديث الرقم السري لتطبيق البصمة بنجاح!', type: 'success' });
+            } else {
+                const data = await res.json();
+                setToast({ msg: data.error || 'حدث خطأ أثناء التحديث', type: 'error' });
+            }
+        } catch {
+            setToast({ msg: 'حدث خطأ في الاتصال بالسيرفر', type: 'error' });
+        } finally {
+            setKioskLoading(false);
         }
     };
 
@@ -107,6 +143,26 @@ export default function SettingsPage() {
                         )}
                         <button type="submit" disabled={loading} className="btn btn-primary">
                             {loading ? <div className="spinner" /> : <><Lock className="w-4 h-4" /> تغيير كلمة المرور</>}
+                        </button>
+                    </form>
+                </div>
+
+                {/* Kiosk Admin PIN Settings */}
+                <div className="card">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
+                            <Lock className="w-5 h-5 text-orange-600" />
+                        </div>
+                        <h2 className="font-bold text-gray-800 text-lg">أمان تطبيق البصمة (Kiosk)</h2>
+                    </div>
+                    <form onSubmit={handleKioskPinChange} className="flex flex-col gap-4">
+                        <div className="form-group">
+                            <label className="form-label">الرقم السري لإدارة الشاشة (Admin PIN)</label>
+                            <input type="text" inputMode="numeric" pattern="[0-9]*" className="form-input" value={kioskPin} onChange={e => setKioskPin(e.target.value.replace(/[^0-9]/g, ''))} required minLength={4} maxLength={10} placeholder="مثال: 1234" />
+                            <p className="text-xs text-gray-500 mt-1">يُستخدم لفتح إعدادات تطبيق البصمة وفك ارتباط الهواتف للموظفين.</p>
+                        </div>
+                        <button type="submit" disabled={kioskLoading} className="btn btn-primary mt-auto">
+                            {kioskLoading ? <div className="spinner" /> : <><Settings className="w-4 h-4" /> حفظ التغييرات</>}
                         </button>
                     </form>
                 </div>

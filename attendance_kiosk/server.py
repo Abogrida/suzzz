@@ -52,26 +52,34 @@ def init_db():
             device_id TEXT,
             last_synced_at TEXT
         );
+    """)
+    db.execute('''
         CREATE TABLE IF NOT EXISTS attendance (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             employee_id INTEGER NOT NULL,
             attendance_date TEXT NOT NULL,
             check_in_time TEXT,
             check_out_time TEXT,
-            status TEXT DEFAULT 'present',
-            source TEXT DEFAULT 'kiosk',
+            status TEXT NOT NULL,
             synced INTEGER DEFAULT 0,
-            notes TEXT DEFAULT '',
             UNIQUE(employee_id, attendance_date)
-        );
+        )
+    ''')
+    db.execute('''
         CREATE TABLE IF NOT EXISTS sync_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            synced_at TEXT,
-            records_count INTEGER,
-            success INTEGER,
+            synced_at TEXT NOT NULL,
+            records_count INTEGER NOT NULL,
+            success INTEGER NOT NULL,
             message TEXT
-        );
-    """)
+        )
+    ''')
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+    ''')
     db.commit()
     db.close()
 
@@ -246,10 +254,17 @@ def api_today():
 
 @app.route('/admin')
 def admin():
-    # Basic check for admin pin passing via query string or just render it and handle via JS 
-    # For robust security we could use sessions but query string or JS prompt is what we did
-    # Let's just leave it as is if they already provided pin "1234" to get here, but to be completely secure:
+    pin = request.args.get('pin')
     db = get_db()
+    
+    # Check PIN
+    admin_pin_row = db.execute("SELECT value FROM settings WHERE key='admin_pin'").fetchone()
+    expected_pin = admin_pin_row['value'] if admin_pin_row else '1234'
+    
+    if pin != expected_pin:
+        db.close()
+        return "غير مصرح لك بالدخول", 401
+
     today = date.today().isoformat()
     employees = db.execute("SELECT * FROM employees ORDER BY name").fetchall()
     todays_att = db.execute(
@@ -266,8 +281,32 @@ def admin():
         unsynced_count=unsynced['cnt'],
         sync_logs=[dict(r) for r in sync_logs],
         today=today,
-        company=cfg.get('company_name', 'شركتي')
+        company=cfg.get('company_name', 'شركتي'),
+        pin=pin
     )
+
+@app.route('/unlink_employee_device', methods=['POST'])
+def unlink_employee_device():
+    # Only called from admin panel, but let's verify pin
+    data = request.json or {}
+    pin = data.get('pin')
+    emp_id = data.get('employee_id')
+    db = get_db()
+    admin_pin_row = db.execute("SELECT value FROM settings WHERE key='admin_pin'").fetchone()
+    expected_pin = admin_pin_row['value'] if admin_pin_row else '1234'
+    
+    if pin != expected_pin:
+        db.close()
+        return jsonify({'success': False, 'error': 'كلمة المرور غير صحيحة'}), 401
+    
+    # Remove device_id from local db
+    db.execute("UPDATE employees SET device_id=NULL WHERE id=?", (emp_id,))
+    db.commit()
+    db.close()
+    
+    # Unlink on cloud too
+    try_unlink_device_on_cloud(emp_id)
+    return jsonify({'success': True})
 
 @app.route('/sync_now', methods=['POST'])
 def sync_now():
@@ -407,12 +446,39 @@ def sync_employees_from_cloud():
                       1 if emp.get('is_active', True) else 0,
                       emp.get('pin_code', '0000'), emp.get('device_id'),
                       datetime.now().isoformat()))
+            
+            # Now fetch the admin PIN
+            resp_pin = requests.get(
+                f"{cloud_url}/api/settings/kiosk-pin",
+                headers={'Authorization': f"Bearer {cfg.get('sync_api_key', '')}"},
+                timeout=5
+            )
+            if resp_pin.status_code == 200:
+                pin_data = resp_pin.json()
+                if 'pin' in pin_data:
+                    db.execute("INSERT INTO settings (key, value) VALUES ('admin_pin', ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (pin_data['pin'],))
+
             db.commit()
             db.close()
             return {'success': True, 'message': f'تم تحديث {len(employees)} موظف', 'count': len(employees)}
         return {'success': False, 'message': f'فشل: {resp.status_code}'}
     except Exception as e:
         return {'success': False, 'message': str(e)}
+
+def try_unlink_device_on_cloud(emp_id):
+    """Helper to wipe device_id on cloud when unlinked by admin"""
+    cloud_url = cfg.get('cloud_base_url', '').rstrip('/')
+    if not cloud_url or not has_internet():
+        return
+    try:
+        requests.put(
+            f"{cloud_url}/api/hr/employees/{emp_id}",
+            json={'device_id': None},
+            headers={'Authorization': f"Bearer {cfg.get('sync_api_key', '')}"},
+            timeout=5
+        )
+    except:
+        pass
 
 def background_sync_loop():
     """Background thread: sync every 10 seconds, and refresh employees every 3 loops."""
