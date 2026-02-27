@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export function getAuthFromRequest(req: NextRequest): boolean {
-    const token = req.cookies.get('auth-token')?.value;
-    return token === process.env.NEXTAUTH_SECRET;
+    // 1. Check cookies (for browser/admin UI)
+    const cookieToken = req.cookies.get('auth-token')?.value;
+    if (cookieToken === process.env.NEXTAUTH_SECRET) return true;
+
+    // 2. Check Authorization header (for kiosk/API sync)
+    const authHeader = req.headers.get('Authorization');
+    const syncKey = process.env.ATTENDANCE_SYNC_KEY || 'attendance-sync-secret-2026';
+    if (authHeader === `Bearer ${syncKey}`) return true;
+
+    return false;
 }
 
 export function requireAuth(req: NextRequest): NextResponse | null {
