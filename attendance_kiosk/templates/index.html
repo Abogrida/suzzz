@@ -368,7 +368,64 @@
     .hidden-card {
       display: none !important;
     }
+
+    /* Desktop QR View Styles */
+    .desktop-qr-container {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 80vh;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .desktop-qr-container h2 {
+      font-size: 2.5rem;
+      font-weight: 900;
+      margin-bottom: 20px;
+      color: #38bdf8;
+    }
+
+    .desktop-qr-container p {
+      font-size: 1.2rem;
+      color: #94a3b8;
+      margin-bottom: 40px;
+      max-width: 600px;
+    }
+
+    .qr-box {
+      background: #fff;
+      padding: 20px;
+      border-radius: 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      display: inline-block;
+    }
+
+    /* Media query for desktop screens */
+    @media (min-width: 1024px) {
+      .grid {
+        display: none !important;
+        /* Hide employee grid on desktop */
+      }
+
+      .desktop-qr-container {
+        display: flex;
+        /* Show QR container on desktop */
+      }
+
+      .sync-bar {
+        display: none;
+        /* Hide sync bar on desktop as it's not the primary interface */
+      }
+
+      #toast {
+        display: none !important;
+        /* Hide toasts on desktop view */
+      }
+    }
   </style>
+  <script src="{{ url_for('static', filename='qrcode.min.js') }}"></script>
 </head>
 
 <body>
@@ -433,6 +490,14 @@
         بيانات الموظفين من السحابة</div>
     </div>
     {% endif %}
+  </div>
+
+  <!-- Desktop QR View Container -->
+  <div class="desktop-qr-container">
+    <h2>📱 امسح الرمز لتسجيل الحضور</h2>
+    <p>هذه الشاشة مخصصة للعرض فقط. يرجى استخدام كاميرا هاتفك المحمول لمسح الرمز الشريطي (QR Code) أدناه وفتح تطبيق تسجيل
+      الحضور على هاتفك لإتمام العملية.</p>
+    <div class="qr-box" id="qrcode"></div>
   </div>
 
   {% if sync_status.unsynced_count > 0 %}
@@ -665,6 +730,28 @@
 
     // Initialize UI based on device link status
     checkDeviceStatus();
+
+    // Generate QR Code for Desktop View
+    function initQRCode() {
+      const qrContainer = document.getElementById('qrcode');
+      if (!qrContainer) return;
+
+      // Get the current URL (the local IP address of the server)
+      const currentUrl = window.location.href;
+
+      // Generate the QR code
+      new QRCode(qrContainer, {
+        text: currentUrl,
+        width: 300,
+        height: 300,
+        colorDark: "#0f172a",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    }
+
+    // Initialize QR code after a slight delay to ensure library is loaded
+    setTimeout(initQRCode, 500);
 
   </script>
 </body>

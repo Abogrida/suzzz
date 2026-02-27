@@ -215,6 +215,32 @@
             background: #fee2e2;
             color: #dc2626;
         }
+
+        /* Search Bar Styles */
+        .search-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 10px;
+            font-family: 'Cairo';
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: #0ea5e9;
+        }
     </style>
 </head>
 
@@ -229,6 +255,7 @@
 
         <!-- Stats -->
         <div class="stats-grid">
+            {% set todays_att = all_attendance | selectattr('attendance_date','eq',today) | list %}
             {% set present_count = todays_att | selectattr('status','eq','present') | list | length %}
             {% set late_count = todays_att | selectattr('status','eq','late') | list | length %}
             {% set out_count = todays_att | selectattr('check_out_time','ne',None) | list | length %}
@@ -273,25 +300,45 @@
             {% endif %}
         </div>
 
-        <!-- Today's Attendance -->
+        <!-- Attendance Schedule -->
         <div class="card">
-            <h2>📅 حضور اليوم — {{ today }}</h2>
+            <h2>📅 جدول الحضور والانصراف</h2>
+
+            <div class="search-bar">
+                <input type="date" id="searchDate" class="search-input" value="{{ today }}" onchange="filterTable()">
+                <input type="text" id="searchName" class="search-input" placeholder="ابحث باسم الموظف..."
+                    oninput="filterTable()">
+                <select id="searchStatus" class="search-input" onchange="filterTable()" style="flex: 0.5;">
+                    <option value="">كل الحالات</option>
+                    <option value="present">حاضر</option>
+                    <option value="late">متأخر</option>
+                    <option value="absent">غائب</option>
+                    <option value="excused">إجازة</option>
+                </select>
+                <button class="btn btn-blue"
+                    onclick="document.getElementById('searchDate').value='';document.getElementById('searchName').value='';document.getElementById('searchStatus').value='';filterTable();"
+                    style="padding: 12px 20px;">إلغاء الفلاتر</button>
+            </div>
+
             <table>
                 <thead>
                     <tr>
                         <th>الموظف</th>
+                        <th>التاريخ</th>
                         <th>الحضور</th>
                         <th>الانصراف</th>
                         <th>الحالة</th>
                         <th>المصدر</th>
                     </tr>
                 </thead>
-                <tbody>
-                    {% for row in todays_att %}
-                    <tr>
+                <tbody id="attendanceTableBody">
+                    {% for row in all_attendance %}
+                    <tr class="att-row" data-date="{{ row.attendance_date }}" data-name="{{ row.name | lower }}"
+                        data-status="{{ row.status }}">
                         <td style="font-weight:800">{{ row.name }}<div style="font-size:12px;color:#94a3b8">{{
                                 row.job_title }}</div>
                         </td>
+                        <td style="font-weight:700;color:#64748b">{{ row.attendance_date }}</td>
                         <td style="color:#16a34a;font-weight:800">{{ row.check_in_time[:5] if row.check_in_time else '—'
                             }}</td>
                         <td style="color:#ea580c;font-weight:800">{{ row.check_out_time[:5] if row.check_out_time else
@@ -309,11 +356,10 @@
                                 تطبيق البصمة' if row.source == 'kiosk' else '✏️ يدوي' }}</span></td>
                     </tr>
                     {% endfor %}
-                    {% if not todays_att %}
-                    <tr>
-                        <td colspan="5" style="text-align:center;padding:40px;color:#94a3b8">لم يسجل أحد بعد اليوم</td>
+                    <tr id="noResultsRow" style="display: none;">
+                        <td colspan="6" style="text-align:center;padding:40px;color:#94a3b8">لا توجد سجلات مطابقة للبحث
+                        </td>
                     </tr>
-                    {% endif %}
                 </tbody>
             </table>
         </div>
@@ -408,6 +454,38 @@
                 btn.textContent = 'فك الارتباط';
             }
         }
+
+        // Search and Filter Logic
+        function filterTable() {
+            const searchDate = document.getElementById('searchDate').value;
+            const searchName = document.getElementById('searchName').value.toLowerCase();
+            const searchStatus = document.getElementById('searchStatus').value;
+
+            const rows = document.querySelectorAll('.att-row');
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const rowDate = row.getAttribute('data-date');
+                const rowName = row.getAttribute('data-name');
+                const rowStatus = row.getAttribute('data-status');
+
+                let dateMatch = !searchDate || rowDate === searchDate;
+                let nameMatch = !searchName || rowName.includes(searchName);
+                let statusMatch = !searchStatus || rowStatus === searchStatus;
+
+                if (dateMatch && nameMatch && statusMatch) {
+                    row.style.display = 'table-row';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            document.getElementById('noResultsRow').style.display = visibleCount === 0 ? 'table-row' : 'none';
+        }
+
+        // Initialize table
+        window.onload = filterTable;
     </script>
 </body>
 

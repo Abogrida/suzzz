@@ -101,15 +101,19 @@ export default function HRPage() {
         setPayments(Array.isArray(d) ? d : []);
     }, []);
 
-    const loadAttendance = useCallback(async (date: string) => {
+    const loadAttendance = useCallback(async (monthOrDate: string) => {
         setAttLoading(true);
-        const d = await fetch(`/api/hr/attendance?date=${date}`).then(r => r.json());
+        // If it's a full date (YYYY-MM-DD), use it. If it's just a month (YYYY-MM), the backend should be able to handle it
+        // and fetch all records starting with that month.
+        const d = await fetch(`/api/hr/attendance?date=${monthOrDate}`).then(r => r.json());
         setAttendance(Array.isArray(d) ? d : []);
         setAttLoading(false);
     }, []);
 
     useEffect(() => {
-        Promise.all([loadEmployees(), loadPayments(), loadAttendance(attDate)]).finally(() => setLoading(false));
+        // By default load the current month for attendance
+        const currentMonthPrefix = new Date().toISOString().slice(0, 7);
+        Promise.all([loadEmployees(), loadPayments(), loadAttendance(currentMonthPrefix)]).finally(() => setLoading(false));
     }, []);
 
     const handleSaveEmp = async () => {
@@ -436,73 +440,113 @@ export default function HRPage() {
             )}
 
             {/* ===== TAB: ATTENDANCE ===== */}
-            {tab === 'attendance' && (
-                <div>
-                    {/* Date Selector */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24, background: '#fff', borderRadius: 14, padding: '16px 20px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-                        <span style={{ fontSize: 15, fontWeight: 800, color: '#374151' }}>📅 تاريخ الحضور:</span>
-                        <input type="date" value={attDate} onChange={e => { setAttDate(e.target.value); loadAttendance(e.target.value); }}
-                            style={{ ...inp, width: 'auto', padding: '8px 14px', fontFamily: 'Cairo' }} />
-                        <span style={{ fontSize: 14, color: '#64748b', fontWeight: 700 }}>{employees.length} موظف كلي</span>
-                    </div>
+            {tab === 'attendance' && (() => {
+                const currentMonthPrefix = attDate.length === 10 ? attDate.slice(0, 7) : attDate;
+                const activeEmployees = employees.filter(e => e.is_active);
 
-                    {attLoading ? (
-                        <div style={{ textAlign: 'center', padding: 40 }}>⏳ جاري التحميل...</div>
-                    ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
-                            {employees.filter(e => e.is_active).map(emp => {
-                                const record = attendance.find(a => a.employee_id === emp.id);
-                                const status = record?.status || null;
-                                return (
-                                    <div key={emp.id} style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', border: `1.5px solid ${status ? (attendanceLabels[status]?.bg || '#e2e8f0') : '#e2e8f0'}` }}>
-                                        <div style={{ padding: '16px 18px', borderBottom: '1px solid #f1f5f9' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                                                <div>
-                                                    <div style={{ fontWeight: 900, fontSize: 17, color: '#1e293b' }}>{emp.name}</div>
-                                                    <div style={{ fontSize: 13, color: '#64748b' }}>{emp.job_title || 'موظف'}</div>
-                                                </div>
-                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                                                    {status ? (
-                                                        <span style={{ background: attendanceLabels[status]?.bg, color: attendanceLabels[status]?.color, borderRadius: 10, padding: '6px 14px', fontSize: 13, fontWeight: 800 }}>
-                                                            {attendanceLabels[status]?.icon} {attendanceLabels[status]?.label}
-                                                        </span>
-                                                    ) : (
-                                                        <span style={{ background: '#f1f5f9', color: '#94a3b8', borderRadius: 10, padding: '4px 10px', fontSize: 13, fontWeight: 700 }}>لم يُسجَّل حضور</span>
-                                                    )}
-                                                    {record?.source === 'kiosk' && (
-                                                        <span style={{ background: '#ede9fe', color: '#6366f1', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 800 }}>💻 تطبيق البصمة</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            {/* Beautiful Check-in / Check-out Read-Only View */}
-                                            <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px', marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <div style={{ textAlign: 'center' }}>
-                                                    <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, marginBottom: 2 }}>حضور</div>
-                                                    <div style={{ background: '#f0fdf4', color: '#16a34a', borderRadius: 8, padding: '4px 12px', fontSize: 14, fontWeight: 800 }}>
-                                                        {record?.check_in_time ? `↗️ ${record.check_in_time.slice(0, 5)}` : '—'}
-                                                    </div>
-                                                </div>
-                                                <div style={{ textAlign: 'center' }}>
-                                                    <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, marginBottom: 2 }}>انصراف</div>
-                                                    <div style={{ background: '#fff7ed', color: '#ea580c', borderRadius: 8, padding: '4px 12px', fontSize: 14, fontWeight: 800 }}>
-                                                        {record?.check_out_time ? `↘️ ${record.check_out_time.slice(0, 5)}` : '—'}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                            {employees.filter(e => e.is_active).length === 0 && (
-                                <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>
-                                    <div style={{ fontSize: 48, marginBottom: 12 }}>📅</div>
-                                    <div style={{ fontWeight: 800, fontSize: 18 }}>لا يوجد موظفون نشطون</div>
-                                </div>
-                            )}
+                // Only show app (kiosk) attendance as requested by the user
+                const appAttendance = attendance.filter(a => a.source === 'kiosk');
+
+                // Calculate month statistics based on app attendance
+                const totalPresent = appAttendance.filter(a => a.status === 'present').length;
+                const totalLate = appAttendance.filter(a => a.status === 'late').length;
+                const totalAbsent = appAttendance.filter(a => a.status === 'absent').length;
+
+                return (
+                    <div>
+                        {/* Header Controls */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24, background: '#fff', borderRadius: 14, padding: '16px 20px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: 15, fontWeight: 800, color: '#374151' }}>📅 الشهر:</span>
+                            <input type="month" value={currentMonthPrefix} onChange={e => {
+                                const val = e.target.value;
+                                setAttDate(val);
+                                loadAttendance(val);
+                            }}
+                                style={{ ...inp, width: 'auto', padding: '8px 14px', fontFamily: 'Cairo' }} />
+
+                            <div style={{ flex: 1 }}></div>
+
+                            <span style={{ fontSize: 14, color: '#64748b', fontWeight: 700 }}>{activeEmployees.length} موظف</span>
                         </div>
-                    )}
-                </div>
-            )}
+
+                        {/* Stats Summary */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 24 }}>
+                            {[
+                                { label: 'حاضر', value: totalPresent, color: '#16a34a', bg: '#dcfce7', icon: '✅' },
+                                { label: 'متأخر', value: totalLate, color: '#f59e0b', bg: '#fef3c7', icon: '⏰' },
+                                { label: 'غائب', value: totalAbsent, color: '#ef4444', bg: '#fee2e2', icon: '❌' },
+                            ].map(s => (
+                                <div key={s.label} style={{ background: '#fff', borderRadius: 16, padding: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', gap: 16, border: `1.5px solid ${s.bg}` }}>
+                                    <div style={{ fontSize: 32, background: s.bg, width: 60, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 16 }}>{s.icon}</div>
+                                    <div>
+                                        <div style={{ fontSize: 28, fontWeight: 900, color: s.color }}>{s.value}</div>
+                                        <div style={{ fontSize: 13, color: '#64748b', fontWeight: 700 }}>إجمالي {s.label}</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {attLoading ? (
+                            <div style={{ textAlign: 'center', padding: 40, fontSize: 18, fontWeight: 800, color: '#64748b' }}>⏳ جاري تحميل السجلات...</div>
+                        ) : (
+                            <div style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                                    <thead>
+                                        <tr style={{ background: '#f8fafc' }}>
+                                            {['الموظف', 'التاريخ', 'الحضور', 'الانصراف', 'الحالة', 'المصدر'].map(h => (
+                                                <th key={h} style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 800, color: '#374151', borderBottom: '1.5px solid #e2e8f0' }}>{h}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {appAttendance.slice().sort((a, b) => new Date(b.attendance_date).getTime() - new Date(a.attendance_date).getTime()).map((record, i) => {
+                                            const emp = employees.find(e => e.id === record.employee_id);
+                                            const statusObj = attendanceLabels[record.status] || attendanceLabels.present;
+
+                                            return (
+                                                <tr key={record.id} style={{ background: i % 2 === 0 ? '#fff' : '#fafafa', borderBottom: '1px solid #f1f5f9' }}>
+                                                    <td style={{ padding: '12px 16px', fontWeight: 800 }}>
+                                                        {emp?.name || 'مجهول'}
+                                                        <div style={{ fontSize: 12, color: '#94a3b8' }}>{emp?.job_title || 'موظف'}</div>
+                                                    </td>
+                                                    <td style={{ padding: '12px 16px', color: '#64748b', fontWeight: 700 }}>
+                                                        {new Date(record.attendance_date).toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'numeric', day: 'numeric' })}
+                                                    </td>
+                                                    <td style={{ padding: '12px 16px', color: '#16a34a', fontWeight: 800 }}>
+                                                        {record.check_in_time ? `↗️ ${record.check_in_time.slice(0, 5)}` : '—'}
+                                                    </td>
+                                                    <td style={{ padding: '12px 16px', color: '#ea580c', fontWeight: 800 }}>
+                                                        {record.check_out_time ? `↘️ ${record.check_out_time.slice(0, 5)}` : '—'}
+                                                    </td>
+                                                    <td style={{ padding: '12px 16px' }}>
+                                                        <span style={{ background: statusObj.bg, color: statusObj.color, borderRadius: 8, padding: '4px 10px', fontSize: 13, fontWeight: 800 }}>
+                                                            {statusObj.icon} {statusObj.label}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ padding: '12px 16px' }}>
+                                                        {record.source === 'kiosk' ?
+                                                            <span style={{ background: '#ede9fe', color: '#6366f1', borderRadius: 6, padding: '4px 8px', fontSize: 12, fontWeight: 800 }}>💻 كشك البصمة</span> :
+                                                            <span style={{ background: '#f1f5f9', color: '#64748b', borderRadius: 6, padding: '4px 8px', fontSize: 12, fontWeight: 800 }}>✏️ تسجيل يدوي</span>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                        {appAttendance.length === 0 && (
+                                            <tr>
+                                                <td colSpan={6} style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>
+                                                    <div style={{ fontSize: 40, marginBottom: 12 }}>📅</div>
+                                                    <div style={{ fontWeight: 800, fontSize: 16 }}>لا توجد سجلات حضور في هذا الشهر</div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                );
+            })()}
 
             {/* ===== TAB: REPORTS ===== */}
             {tab === 'reports' && (

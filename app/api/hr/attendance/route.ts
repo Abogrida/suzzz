@@ -28,9 +28,16 @@ export async function GET(req: NextRequest) {
     const date = searchParams.get('date');
     const employeeId = searchParams.get('employee_id');
     let qb = db.from('hr_attendance')
-        .select('*, hr_employees(name, job_title, work_start_time, work_end_time, late_threshold_minutes)')
+        .select('*, hr_employees!inner(name, job_title, work_start_time, work_end_time, late_threshold_minutes)')
         .order('attendance_date', { ascending: false });
-    if (date) qb = qb.eq('attendance_date', date);
+    if (date) {
+        if (date.length === 7) {
+            // YYYY-MM prefix -> query the whole month
+            qb = qb.gte('attendance_date', `${date}-01`).lte('attendance_date', `${date}-31`);
+        } else {
+            qb = qb.eq('attendance_date', date);
+        }
+    }
     if (employeeId) qb = qb.eq('employee_id', employeeId);
     const { data, error } = await qb;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

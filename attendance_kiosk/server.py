@@ -266,24 +266,28 @@ def admin():
         return "غير مصرح لك بالدخول", 401
 
     today = date.today().isoformat()
+    # Support filtering in the backend, or just send everything to frontend
+    # Since it's a kiosk, sending all attendance is fine for local SQLite
     employees = db.execute("SELECT * FROM employees ORDER BY name").fetchall()
-    todays_att = db.execute(
+    all_attendance = db.execute(
         """SELECT a.*, e.name, e.job_title FROM attendance a
            JOIN employees e ON a.employee_id=e.id
-           WHERE a.attendance_date=? ORDER BY e.name""", (today,)
+           ORDER BY a.attendance_date DESC, e.name"""
     ).fetchall()
     unsynced = db.execute("SELECT COUNT(*) as cnt FROM attendance WHERE synced=0").fetchone()
     sync_logs = db.execute("SELECT * FROM sync_log ORDER BY id DESC LIMIT 10").fetchall()
     db.close()
+    
     return render_template('admin.html',
         employees=[dict(e) for e in employees],
-        todays_att=[dict(r) for r in todays_att],
+        all_attendance=[dict(r) for r in all_attendance],
         unsynced_count=unsynced['cnt'],
         sync_logs=[dict(r) for r in sync_logs],
         today=today,
         company=cfg.get('company_name', 'شركتي'),
         pin=pin
     )
+
 
 @app.route('/unlink_employee_device', methods=['POST'])
 def unlink_employee_device():
