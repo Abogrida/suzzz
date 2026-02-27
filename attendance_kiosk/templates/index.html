@@ -416,7 +416,7 @@
       </div>
       <button
         class="punch-btn {% if record and not record.check_out_time %}btn-checkout{% else %}btn-checkin{% endif %}"
-        onclick="punch({{ emp.id }})" id="btn-{{ emp.id }}">
+        onclick="punch('{{ emp.id }}')" id="btn-{{ emp.id }}">
         {% if record %}
         {% if record.check_out_time %}🔄 تسجيل حضور جديد{% else %}🚪 تسجيل انصراف{% endif %}
         {% else %}

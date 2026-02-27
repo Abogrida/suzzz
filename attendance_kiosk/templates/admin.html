@@ -344,7 +344,7 @@
                             {% if emp.device_id %}
                             <button class="btn"
                                 style="background:#fee2e2; color:#dc2626; padding:4px 12px; font-size:12px; height:auto;"
-                                onclick="unlinkDevice({{ emp.id }}, this)">فك الارتباط</button>
+                                onclick="unlinkDevice('{{ emp.id }}', this)">فك الارتباط</button>
                             {% else %}
                             —
                             {% endif %}
