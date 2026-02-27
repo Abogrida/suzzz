@@ -16,13 +16,13 @@ export default function EmployeeInventoryPage() {
     const [done, setDone] = useState(false);
     const [countId, setCountId] = useState<number | null>(null);
     const [error, setError] = useState('');
-    const [todayCounts, setTodayCounts] = useState<{ id: number; shift: string; branch: string; created_at: string }[]>([]);
+    const [todayCounts, setTodayCounts] = useState<{ id: number; shift: string; branch: string; created_at: string; employees?: { name: string } | null }[]>([]);
     const [showTodayCounts, setShowTodayCounts] = useState(false);
 
     const ALL_ITEMS = [...HOT_ITEMS, ...COLD_ITEMS];
 
-    const fetchTodayCounts = (empId: number, date: string) => {
-        fetch(`/api/inventory-counts?employee_id=${empId}&count_date=${date}`)
+    const fetchTodayCounts = (_empId: number, date: string) => {
+        fetch(`/api/inventory-counts?count_date=${date}`)
             .then(r => r.json())
             .then(data => { if (Array.isArray(data)) setTodayCounts(data); })
             .catch(() => { });
@@ -192,6 +192,7 @@ export default function EmployeeInventoryPage() {
                                         <div key={c.id} style={{ background: i % 2 === 0 ? '#fff' : '#f8fafc', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, borderTop: i > 0 ? '1px solid #f1f5f9' : 'none' }}>
                                             <div style={{ flex: 1 }}>
                                                 <div style={{ fontWeight: 800, fontSize: 16, color: '#1e293b' }}>{SHIFT_LABELS[c.shift] || c.shift}</div>
+                                                <div style={{ fontSize: 14, color: '#1e293b', fontWeight: 700, marginTop: 3 }}>👤 {c.employees?.name || '—'}</div>
                                                 <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>🏪 {c.branch}&nbsp;•&nbsp;🕐 {time}</div>
                                             </div>
                                             <a

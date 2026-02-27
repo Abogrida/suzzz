@@ -1,0 +1,15 @@
+{
+    "supabase_url": "https://vmkfwhnpevbamrfbjkzv.supabase.co",
+    "sync_api_key": "attendance-sync-secret-2026",
+    "sync_endpoint": "https://vmkfwhnpevbamrfbjkzv.supabase.co",
+    "cloud_base_url": "https://suzzz.vercel.app",
+    "company_name": "\u0634\u0631\u0643\u062a\u064a",
+    "work_start_time": "09:00",
+    "work_end_time": "17:00",
+    "late_threshold_minutes": 15,
+    "kiosk_port": 8085,
+    "off_days": [
+        5,
+        6
+    ]
+}

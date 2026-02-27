@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تسجيل الحضور — {{ company }}</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Cairo', sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%); min-height: 100vh; color: #fff; }
+  .header { text-align: center; padding: 30px 20px 20px; }
+  .header h1 { font-size: 2rem; font-weight: 900; margin-bottom: 4px; }
+  .header .date { color: #7dd3fc; font-size: 1rem; font-weight: 600; }
+  .clock { font-size: 3rem; font-weight: 900; color: #38bdf8; text-align: center; margin: 8px 0 4px; letter-spacing: 2px; }
+  .sync-bar { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 8px 20px; font-size: 13px; font-weight: 700; }
+  .sync-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .sync-dot.green { background: #22c55e; box-shadow: 0 0 8px #22c55e; animation: pulse 2s infinite; }
+  .sync-dot.orange { background: #f59e0b; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; padding: 20px; max-width: 1100px; margin: 0 auto; }
+  .emp-card { background: rgba(255,255,255,0.07); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 20px; transition: transform 0.2s, background 0.2s; cursor: pointer; }
+  .emp-card:hover { transform: translateY(-4px); background: rgba(255,255,255,0.12); }
+  .emp-card.checked-in { border-color: #22c55e; background: rgba(34,197,94,0.1); }
+  .emp-card.checked-out { border-color: #f59e0b; background: rgba(245,158,11,0.1); }
+  .emp-card.late { border-color: #f59e0b; }
+  .emp-name { font-size: 1.2rem; font-weight: 900; margin-bottom: 4px; }
+  .emp-title { font-size: 0.85rem; color: #94a3b8; margin-bottom: 14px; }
+  .status-badge { display: inline-block; padding: 4px 12px; border-radius: 8px; font-size: 13px; font-weight: 800; }
+  .badge-none { background: rgba(148,163,184,0.2); color: #94a3b8; }
+  .badge-in { background: rgba(34,197,94,0.2); color: #4ade80; }
+  .badge-out { background: rgba(245,158,11,0.2); color: #fbbf24; }
+  .badge-late { background: rgba(245,158,11,0.25); color: #fb923c; }
+  .time-row { display: flex; gap: 8px; margin: 10px 0; flex-wrap: wrap; }
+  .time-chip { padding: 3px 10px; border-radius: 8px; font-size: 13px; font-weight: 800; }
+  .punch-btn { width: 100%; padding: 12px; border-radius: 14px; border: none; font-family: 'Cairo'; font-size: 16px; font-weight: 900; cursor: pointer; transition: all 0.2s; margin-top: 12px; }
+  .btn-checkin { background: linear-gradient(135deg, #0ea5e9, #38bdf8); color: #fff; }
+  .btn-checkout { background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #fff; }
+  .btn-checkin:hover { transform: scale(1.03); }
+  .btn-checkout:hover { transform: scale(1.03); }
+  .toast { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); padding: 14px 32px; border-radius: 16px; font-size: 18px; font-weight: 900; z-index: 9999; animation: slideIn 0.3s ease; display: none; }
+  .toast.success { background: linear-gradient(135deg,#16a34a,#22c55e); }
+  .toast.error { background: linear-gradient(135deg,#dc2626,#ef4444); }
+  @keyframes slideIn { from{top:0;opacity:0} to{top:24px;opacity:1} }
+  .admin-link { position: fixed; bottom: 20px; left: 20px; background: rgba(255,255,255,0.1); color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 12px; font-size: 14px; font-weight: 700; border: 1px solid rgba(255,255,255,0.2); transition: all 0.2s; }
+  .admin-link:hover { background: rgba(255,255,255,0.2); }
+  .unsynced-badge { position: fixed; bottom: 20px; right: 20px; background: rgba(245,158,11,0.3); border: 1px solid #f59e0b; color: #fbbf24; padding: 10px 18px; border-radius: 12px; font-size: 13px; font-weight: 800; display: none; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🏢 {{ company }}</h1>
+  <div class="clock" id="clock">--:--:--</div>
+  <div class="date">{{ today }}</div>
+</div>
+
+<div class="sync-bar">
+  <div class="sync-dot" id="syncDot" style="background:#94a3b8"></div>
+  <span id="syncText">يتحقق من الاتصال...</span>
+</div>
+
+<div class="grid" id="empGrid">
+{% for emp in employees %}
+{% set record = att_map.get(emp.id) %}
+<div class="emp-card {% if record %}{% if record.check_out_time %}checked-out{% elif record.status == 'late' %}late checked-in{% else %}checked-in{% endif %}{% endif %}"
+     id="card-{{ emp.id }}" data-emp-id="{{ emp.id }}">
+  <div class="emp-name">{{ emp.name }}</div>
+  <div class="emp-title">{{ emp.job_title or 'موظف' }}</div>
+  <div>
+    {% if record %}
+      {% if record.status == 'late' %}
+        <span class="status-badge badge-late">⏰ متأخر</span>
+      {% elif record.check_out_time %}
+        <span class="status-badge badge-out">✅ انصرف</span>
+      {% else %}
+        <span class="status-badge badge-in">🟢 حاضر</span>
+      {% endif %}
+    {% else %}
+      <span class="status-badge badge-none">لم يسجل بعد</span>
+    {% endif %}
+  </div>
+  <div class="time-row" id="times-{{ emp.id }}">
+    {% if record and record.check_in_time %}
+      <span class="time-chip" style="background:rgba(34,197,94,0.2);color:#4ade80">↗ {{ record.check_in_time[:5] }}</span>
+    {% endif %}
+    {% if record and record.check_out_time %}
+      <span class="time-chip" style="background:rgba(245,158,11,0.2);color:#fbbf24">↘ {{ record.check_out_time[:5] }}</span>
+    {% endif %}
+  </div>
+  <button class="punch-btn {% if record and not record.check_out_time %}btn-checkout{% else %}btn-checkin{% endif %}"
+          onclick="punch({{ emp.id }})" id="btn-{{ emp.id }}">
+    {% if record %}
+      {% if record.check_out_time %}🔄 تسجيل حضور جديد{% else %}🚪 تسجيل انصراف{% endif %}
+    {% else %}
+      ✅ تسجيل حضور
+    {% endif %}
+  </button>
+</div>
+{% endfor %}
+{% if not employees %}
+<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:#94a3b8">
+  <div style="font-size:4rem;margin-bottom:16px">👤</div>
+  <div style="font-size:1.2rem;font-weight:800">لا يوجد موظفون</div>
+  <div style="margin-top:8px;font-size:0.9rem">اضغط <a href="/admin" style="color:#38bdf8">لوحة الإدارة</a> لاسترداد بيانات الموظفين من السحابة</div>
+</div>
+{% endif %}
+</div>
+
+<a href="/admin" class="admin-link">⚙️ الإدارة</a>
+{% if sync_status.unsynced_count > 0 %}
+<div class="unsynced-badge" style="display:block">📤 {{ sync_status.unsynced_count }} سجل غير مزامن</div>
+{% endif %}
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Clock
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    String(now.getHours()).padStart(2,'0') + ':' +
+    String(now.getMinutes()).padStart(2,'0') + ':' +
+    String(now.getSeconds()).padStart(2,'0');
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// Toast
+function showToast(msg, type='success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast ' + type;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3500);
+}
+
+// Punch in/out
+async function punch(empId) {
+  const btn = document.getElementById('btn-' + empId);
+  btn.disabled = true;
+  btn.textContent = '⏳ جاري...';
+  try {
+    const res = await fetch('/checkin', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({employee_id: empId})
+    });
+    const data = await res.json();
+    if (data.success) {
+      const action = data.action;
+      const rec = data.record;
+      const timesEl = document.getElementById('times-' + empId);
+      const card = document.getElementById('card-' + empId);
+      // Update times
+      let timesHtml = '';
+      if (rec.check_in_time) timesHtml += `<span class="time-chip" style="background:rgba(34,197,94,0.2);color:#4ade80">↗ ${rec.check_in_time.slice(0,5)}</span>`;
+      if (rec.check_out_time) timesHtml += `<span class="time-chip" style="background:rgba(245,158,11,0.2);color:#fbbf24">↘ ${rec.check_out_time.slice(0,5)}</span>`;
+      timesEl.innerHTML = timesHtml;
+      // Update card style and button
+      if (action === 'check_in') {
+        card.className = 'emp-card ' + (rec.status === 'late' ? 'late checked-in' : 'checked-in');
+        btn.className = 'punch-btn btn-checkout';
+        btn.textContent = '🚪 تسجيل انصراف';
+        showToast(`✅ مرحباً ${data.employee_name}${rec.status==='late' ? ' — متأخر' : ''}`, rec.status==='late' ? 'error' : 'success');
+      } else {
+        card.className = 'emp-card checked-out';
+        btn.className = 'punch-btn btn-checkin';
+        btn.textContent = '🔄 تسجيل حضور جديد';
+        showToast(`👋 مع السلامة ${data.employee_name}`, 'success');
+      }
+    } else {
+      showToast(data.error || 'حدث خطأ', 'error');
+    }
+  } catch(e) {
+    showToast('خطأ في الاتصال بالسيرفر', 'error');
+  }
+  btn.disabled = false;
+}
+
+// Check internet connectivity
+async function checkConnectivity() {
+  try {
+    await fetch('/sync_now', {method:'POST'});
+    document.getElementById('syncDot').className = 'sync-dot green';
+    document.getElementById('syncText').textContent = 'متصل — يتم المزامنة التلقائية';
+  } catch {
+    document.getElementById('syncDot').style.background = '#f59e0b';
+    document.getElementById('syncText').textContent = 'وضع بدون إنترنت — البيانات محفوظة محلياً';
+  }
+}
+setTimeout(checkConnectivity, 2000);
+</script>
+</body>
+</html>

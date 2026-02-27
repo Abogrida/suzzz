@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# python / pyinstaller
+attendance_kiosk/build/
+attendance_kiosk/dist/
+attendance_kiosk/__pycache__/
+attendance_kiosk/*.spec
+attendance_kiosk/*.db

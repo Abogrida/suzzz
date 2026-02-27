@@ -18,6 +18,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         base_salary: parseFloat(body.base_salary) || 0,
         is_active: body.is_active !== false,
         notes: body.notes || '',
+        work_start_time: body.work_start_time || '09:00',
+        work_end_time: body.work_end_time || '17:00',
+        late_threshold_minutes: body.late_threshold_minutes ?? 15,
+        off_days: body.off_days || [5, 6],
     }).eq('id', id);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json({ success: true });
