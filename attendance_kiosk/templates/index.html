@@ -679,11 +679,11 @@
           showSuccessOverlay(data.employee_name, action, action === 'check_in' ? rec.check_in_time : rec.check_out_time);
 
         } else {
-          showToast(data.error || 'حدث خطأ', 'error');
+          showToast(data.error || 'حدث خطأ غير معروف', 'error');
         }
       } catch (e) {
         console.error(e);
-        showToast('خطأ في الاتصال بالسيرفر', 'error');
+        showToast('خطأ في الاتصال بالخادم: تعذر الوصول إلى السيرفر', 'error');
       }
       btn.disabled = false;
       if (!data?.success) {
@@ -726,8 +726,16 @@
       }, 1000);
     }
 
-    // Check internet connectivity
+    // Check connectivity and date consistency
+    let lastCheckedDate = "{{ today }}";
     async function checkConnectivity() {
+      // Date Check: Refresh if day changed
+      const currentDay = new Date().toISOString().split('T')[0];
+      if (currentDay !== lastCheckedDate) {
+        location.reload();
+        return;
+      }
+
       try {
         await fetch('/sync_now', { method: 'POST' });
         document.getElementById('syncDot').className = 'sync-dot green';
@@ -737,6 +745,8 @@
         document.getElementById('syncText').textContent = 'وضع بدون إنترنت — البيانات محفوظة محلياً';
       }
     }
+    // Check every 30 seconds for date change/connectivity
+    setInterval(checkConnectivity, 30000);
     setTimeout(checkConnectivity, 2000);
 
     // --- Device Linking Logic ---

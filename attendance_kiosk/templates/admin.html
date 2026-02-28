@@ -449,7 +449,8 @@
                     btn.textContent = 'فك الارتباط';
                 }
             } catch (e) {
-                alert('خطأ في الاتصال بالسيرفر');
+                console.error(e);
+                alert('خطأ في الاتصال بالخادم: تأكد أن تطبيق البصمة يعمل.');
                 btn.disabled = false;
                 btn.textContent = 'فك الارتباط';
             }

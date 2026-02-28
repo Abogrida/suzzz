@@ -181,75 +181,95 @@ def try_sync_device_id_to_cloud(emp_id, device_id):
     except:
         pass
 
+def try_unlink_device_on_cloud(emp_id):
+    if not REQUESTS_OK or not has_internet():
+        return
+    cloud_url = cfg.get('cloud_base_url', '').rstrip('/')
+    if not cloud_url:
+        return
+    try:
+        requests.put(
+            f"{cloud_url}/api/hr/employees/{emp_id}",
+            json={'device_id': None},
+            headers={'Authorization': f"Bearer {cfg.get('sync_api_key', '')}"},
+            timeout=5
+        )
+    except Exception as e:
+        print(f"Error unlinking on cloud: {e}")
+
 
 @app.route('/checkin', methods=['POST'])
 def checkin():
-    data = request.get_json()
-    emp_id = int(data.get('employee_id', 0))
-    device_id = str(data.get('device_id', ''))
-    pin_code = str(data.get('pin_code', ''))
-    today = date.today().isoformat()
-    now_time = datetime.now().strftime('%H:%M')
+    try:
+        data = request.get_json()
+        emp_id = int(data.get('employee_id', 0))
+        device_id = str(data.get('device_id', ''))
+        pin_code = str(data.get('pin_code', ''))
+        today = date.today().isoformat()
+        now_time = datetime.now().strftime('%H:%M')
 
-    db = get_db()
-    emp = db.execute("SELECT * FROM employees WHERE id=?", (emp_id,)).fetchone()
-    if not emp:
+        db = get_db()
+        emp = db.execute("SELECT * FROM employees WHERE id=?", (emp_id,)).fetchone()
+        if not emp:
+            db.close()
+            return jsonify({'error': 'موظف غير موجود'}), 404
+            
+        # Check if the punch is authorized by PIN or by a linked device ID
+        is_pin_correct = (str(emp['pin_code']) == pin_code)
+        is_device_linked = (str(emp['device_id']) == device_id and device_id != 'local_kiosk' and device_id != '')
+
+        if not is_pin_correct and not is_device_linked:
+            db.close()
+            return jsonify({'error': 'الرمز السري (PIN) غير صحيح'}), 403
+
+        existing = db.execute(
+            "SELECT * FROM attendance WHERE employee_id=? AND attendance_date=?",
+            (emp_id, today)
+        ).fetchone()
+
+        off_days = json.loads(emp['off_days'] or '[5,6]')
+        weekday = date.today().weekday()  # 0=Mon...6=Sun; python
+        # Convert Python weekday (Mon=0) to JS-style (Sun=0)
+        js_weekday = (weekday + 1) % 7
+        is_off_day = js_weekday in off_days
+
+        if not existing:
+            # First punch = check-in
+            status = calculate_status(now_time, emp['work_start_time'], emp['late_threshold_minutes'])
+            if is_off_day:
+                status = 'present'  # working on off-day is fine
+            db.execute(
+                """INSERT INTO attendance (employee_id, attendance_date, check_in_time, status, synced)
+                   VALUES (?,?,?,?,0) ON CONFLICT(employee_id,attendance_date)
+                   DO UPDATE SET check_in_time=excluded.check_in_time, status=excluded.status, synced=0""",
+                (emp_id, today, now_time, status)
+            )
+            action = 'check_in'
+        else:
+            # Second punch = check-out
+            db.execute(
+                "UPDATE attendance SET check_out_time=?, synced=0 WHERE employee_id=? AND attendance_date=?",
+                (now_time, emp_id, today)
+            )
+            action = 'check_out'
+
+        db.commit()
+        record = db.execute(
+            "SELECT * FROM attendance WHERE employee_id=? AND attendance_date=?",
+            (emp_id, today)
+        ).fetchone()
         db.close()
-        return jsonify({'error': 'موظف غير موجود'}), 404
-        
-    # Check if the punch is authorized by PIN or by a linked device ID
-    is_pin_correct = (str(emp['pin_code']) == pin_code)
-    is_device_linked = (str(emp['device_id']) == device_id and device_id != 'local_kiosk' and device_id != '')
 
-    if not is_pin_correct and not is_device_linked:
-        db.close()
-        return jsonify({'error': 'الرمز السري (PIN) غير صحيح'}), 403
-
-    existing = db.execute(
-        "SELECT * FROM attendance WHERE employee_id=? AND attendance_date=?",
-        (emp_id, today)
-    ).fetchone()
-
-    off_days = json.loads(emp['off_days'] or '[5,6]')
-    weekday = date.today().weekday()  # 0=Mon...6=Sun; python
-    # Convert Python weekday (Mon=0) to JS-style (Sun=0)
-    js_weekday = (weekday + 1) % 7
-    is_off_day = js_weekday in off_days
-
-    if not existing:
-        # First punch = check-in
-        status = calculate_status(now_time, emp['work_start_time'], emp['late_threshold_minutes'])
-        if is_off_day:
-            status = 'present'  # working on off-day is fine
-        db.execute(
-            """INSERT INTO attendance (employee_id, attendance_date, check_in_time, status, synced)
-               VALUES (?,?,?,?,0) ON CONFLICT(employee_id,attendance_date)
-               DO UPDATE SET check_in_time=excluded.check_in_time, status=excluded.status, synced=0""",
-            (emp_id, today, now_time, status)
-        )
-        action = 'check_in'
-    else:
-        # Second punch = check-out
-        db.execute(
-            "UPDATE attendance SET check_out_time=?, synced=0 WHERE employee_id=? AND attendance_date=?",
-            (now_time, emp_id, today)
-        )
-        action = 'check_out'
-
-    db.commit()
-    record = db.execute(
-        "SELECT * FROM attendance WHERE employee_id=? AND attendance_date=?",
-        (emp_id, today)
-    ).fetchone()
-    db.close()
-
-    return jsonify({
-        'success': True,
-        'action': action,
-        'record': dict(record),
-        'employee_name': emp['name'],
-        'time': now_time
-    })
+        return jsonify({
+            'success': True,
+            'action': action,
+            'record': dict(record),
+            'employee_name': emp['name'],
+            'time': now_time
+        })
+    except Exception as e:
+        print(f"Error in checkin: {e}")
+        return jsonify({'error': f'حدث خطأ في السيرفر: {str(e)}'}), 500
 
 @app.route('/api/employees')
 def api_employees():
@@ -309,26 +329,30 @@ def admin():
 
 @app.route('/unlink_employee_device', methods=['POST'])
 def unlink_employee_device():
-    # Only called from admin panel, but let's verify pin
-    data = request.json or {}
-    pin = data.get('pin')
-    emp_id = data.get('employee_id')
-    db = get_db()
-    admin_pin_row = db.execute("SELECT value FROM settings WHERE key='admin_pin'").fetchone()
-    expected_pin = admin_pin_row['value'] if admin_pin_row else '1234'
-    
-    if pin != expected_pin:
+    try:
+        # Only called from admin panel, but let's verify pin
+        data = request.json or {}
+        pin = data.get('pin')
+        emp_id = data.get('employee_id')
+        db = get_db()
+        admin_pin_row = db.execute("SELECT value FROM settings WHERE key='admin_pin'").fetchone()
+        expected_pin = admin_pin_row['value'] if admin_pin_row else '1234'
+        
+        if pin != expected_pin:
+            db.close()
+            return jsonify({'success': False, 'error': 'كلمة المرور غير صحيحة'}), 401
+        
+        # Remove device_id from local db
+        db.execute("UPDATE employees SET device_id=NULL WHERE id=?", (emp_id,))
+        db.commit()
         db.close()
-        return jsonify({'success': False, 'error': 'كلمة المرور غير صحيحة'}), 401
-    
-    # Remove device_id from local db
-    db.execute("UPDATE employees SET device_id=NULL WHERE id=?", (emp_id,))
-    db.commit()
-    db.close()
-    
-    # Unlink on cloud too
-    try_unlink_device_on_cloud(emp_id)
-    return jsonify({'success': True})
+        
+        # Unlink on cloud too
+        try_unlink_device_on_cloud(emp_id)
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"Error unlinking device locally: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/sync_now', methods=['POST'])
 def sync_now():
