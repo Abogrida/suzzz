@@ -358,6 +358,88 @@
       cursor: pointer;
     }
 
+    /* Success Overlay */
+    .success-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.98);
+      z-index: 2000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .success-overlay.active {
+      display: flex;
+    }
+
+    .success-icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes popIn {
+      0% {
+        transform: scale(0);
+      }
+
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    .success-title {
+      font-size: 32px;
+      font-weight: 900;
+      color: #1e293b;
+      margin-bottom: 10px;
+    }
+
+    .success-msg {
+      font-size: 18px;
+      color: #64748b;
+      margin-bottom: 30px;
+      max-width: 400px;
+    }
+
+    .success-timer {
+      font-size: 14px;
+      color: #94a3b8;
+      margin-top: 40px;
+    }
+
+    .btn-whatsapp {
+      background: #25D366;
+      color: white;
+      text-decoration: none;
+      padding: 16px 32px;
+      border-radius: 50px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 18px;
+      box-shadow: 0 10px 20px rgba(37, 211, 102, 0.2);
+      transition: transform 0.2s;
+      border: none;
+    }
+
+    .btn-whatsapp:hover {
+      transform: scale(1.05);
+    }
+
+    .btn-whatsapp svg {
+      width: 24px;
+      height: 24px;
+    }
+
     .btn-cancel:hover,
     .btn-submit:hover {
       opacity: 0.9;
@@ -516,6 +598,23 @@
     </div>
   </div>
 
+  <!-- Success Overlay -->
+  <div class="success-overlay" id="successOverlay">
+    <div class="success-icon" id="successIcon">✅</div>
+    <div class="success-title" id="successTitle">شكراً لك!</div>
+    <div class="success-msg" id="successMsg">تم تسجيل حضورك بنجاح. نتمنى لك يوماً سعيداً.</div>
+
+    <a href="#" target="_blank" class="btn-whatsapp" id="whatsappBtn">
+      <span>مشاركة عبر واتساب</span>
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+        <path
+          d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.185-.573c.948.517 1.947.887 3.145.887 3.18 0 5.768-2.587 5.768-5.766 0-3.18-2.587-5.729-5.767-5.729zm3.425 8.121c-.131.369-.74.675-1.022.716-.279.043-.639.068-1.503-.311-.475-.205-1.082-.501-1.89-1.258-.696-.642-1.31-1.464-1.611-2.07-.301-.603-.049-.927.251-1.229.175-.175.365-.417.48-.616.115-.199.115-.369.057-.517-.057-.147-.513-1.238-.703-1.693-.185-.445-.371-.383-.513-.39l-.438-.007c-.151 0-.397.057-.604.284-.207.227-.79.773-.79 1.884 0 1.112.808 2.185.922 2.341.115.155 1.589 2.428 3.851 3.407.538.232 1.037.402 1.488.544.576.182 1.101.156 1.516.095.448-.067 1.38-.564 1.575-1.109.196-.546.196-1.012.138-1.109-.058-.097-.213-.155-.447-.272z" />
+      </svg>
+    </a>
+
+    <div class="success-timer" id="successTimer">سيتم العودة تلقائياً خلال 10 ثواني</div>
+  </div>
+
   <script>
     // Clock
     function updateClock() {
@@ -559,33 +658,72 @@
           const rec = data.record;
           const timesEl = document.getElementById('times-' + empId);
           const card = document.getElementById('card-' + empId);
-          // Update times
+
+          // Update UI
           let timesHtml = '';
           if (rec.check_in_time) timesHtml += `<span class="time-chip" style="background:rgba(34,197,94,0.2);color:#4ade80">↗ ${rec.check_in_time.slice(0, 5)}</span>`;
           if (rec.check_out_time) timesHtml += `<span class="time-chip" style="background:rgba(245,158,11,0.2);color:#fbbf24">↘ ${rec.check_out_time.slice(0, 5)}</span>`;
           timesEl.innerHTML = timesHtml;
-          // Update card style and button
+
           if (action === 'check_in') {
             card.className = 'emp-card ' + (rec.status === 'late' ? 'late checked-in' : 'checked-in');
             btn.className = 'punch-btn btn-checkout';
             btn.textContent = '🚪 تسجيل انصراف';
-            showToast(`✅ مرحباً ${data.employee_name}${rec.status === 'late' ? ' — متأخر' : ''}`, rec.status === 'late' ? 'error' : 'success');
           } else {
             card.className = 'emp-card checked-out';
             btn.className = 'punch-btn btn-checkin';
             btn.textContent = '🔄 تسجيل حضور جديد';
-            showToast(`👋 مع السلامة ${data.employee_name}`, 'success');
           }
+
+          // Show Success Overlay
+          showSuccessOverlay(data.employee_name, action, action === 'check_in' ? rec.check_in_time : rec.check_out_time);
+
         } else {
           showToast(data.error || 'حدث خطأ', 'error');
         }
       } catch (e) {
+        console.error(e);
         showToast('خطأ في الاتصال بالسيرفر', 'error');
       }
       btn.disabled = false;
       if (!data?.success) {
         btn.textContent = originalText;
       }
+    }
+
+    let successTimerInterval = null;
+    function showSuccessOverlay(name, action, time) {
+      const overlay = document.getElementById('successOverlay');
+      const title = document.getElementById('successTitle');
+      const msg = document.getElementById('successMsg');
+      const timerEl = document.getElementById('successTimer');
+      const waBtn = document.getElementById('whatsappBtn');
+
+      const actionText = action === 'check_in' ? 'حضور' : 'انصراف';
+      title.textContent = action === 'check_in' ? 'مرحباً بك!' : 'إلى اللقاء!';
+      msg.textContent = `تم تسجيل ${actionText} الموظف (${name}) بنجاح.`;
+
+      // WhatsApp Message
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('ar-EG');
+      const timeStr = time.slice(0, 5);
+      const text = `تم تسجيل ${actionText} الموظف: ${name} بنجاح في شركة suzz.\nالموعد: ${dateStr} الساعة ${timeStr}\nنتمنى لكم يوماً سعيداً!`;
+      waBtn.href = `https://wa.me/?text=${encodeURIComponent(text)}`;
+
+      overlay.classList.add('active');
+
+      let timeLeft = 10;
+      timerEl.textContent = `سيتم العودة تلقائياً خلال ${timeLeft} ثواني`;
+
+      clearInterval(successTimerInterval);
+      successTimerInterval = setInterval(() => {
+        timeLeft--;
+        timerEl.textContent = `سيتم العودة تلقائياً خلال ${timeLeft} ثواني`;
+        if (timeLeft <= 0) {
+          clearInterval(successTimerInterval);
+          overlay.classList.remove('active');
+        }
+      }, 1000);
     }
 
     // Check internet connectivity
