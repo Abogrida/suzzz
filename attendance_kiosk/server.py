@@ -90,6 +90,28 @@ def init_db():
             value TEXT
         )
     ''')
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS products (
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            category TEXT,
+            barcode TEXT,
+            sku TEXT,
+            price REAL DEFAULT 0,
+            active INTEGER DEFAULT 1,
+            unit TEXT
+        )
+    ''')
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS inventory_counts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_id INTEGER NOT NULL,
+            counted_quantity INTEGER NOT NULL,
+            timestamp TEXT NOT NULL,
+            employee_id INTEGER,
+            synced INTEGER DEFAULT 0
+        )
+    ''')
     db.commit()
     db.close()
 
@@ -131,6 +153,31 @@ def index():
         sync_status=sync_status,
         network_url=network_url
     )
+
+@app.route('/inventory')
+def inventory():
+    db = get_db()
+    products = db.execute("SELECT * FROM products WHERE active=1 ORDER BY category, name").fetchall()
+    employees = db.execute("SELECT * FROM employees WHERE is_active=1 ORDER BY name").fetchall()
+    db.close()
+    return render_template('inventory.html',
+        products=[dict(p) for p in products],
+        employees=[dict(e) for e in employees],
+        company=cfg.get('company_name', 'شركتي')
+    )
+
+@app.route('/api/local/inventory', methods=['POST'])
+def save_local_inventory():
+    data = request.json
+    db = get_db()
+    for item in data.get('items', []):
+        db.execute('''
+            INSERT INTO inventory_counts (product_id, counted_quantity, timestamp, employee_id, synced)
+            VALUES (?, ?, ?, ?, 0)
+        ''', (item['product_id'], item['counted_quantity'], item['timestamp'], data.get('employee_id')))
+    db.commit()
+    db.close()
+    return jsonify({'success': True})
 
 @app.route('/link_device', methods=['POST'])
 def link_device():
@@ -473,6 +520,62 @@ def do_sync():
         db.close()
         return {'success': False, 'message': str(e)}
 
+def do_inventory_sync():
+    """Sync offline inventory counts and fetch new products."""
+    if not REQUESTS_OK or not has_internet(): return
+    cloud_url = cfg.get('cloud_base_url', '').rstrip('/')
+    if not cloud_url: return
+
+    db = get_db()
+    
+    # 1. PUSH unsynced inventory counts
+    unsynced_inv = db.execute("SELECT * FROM inventory_counts WHERE synced=0").fetchall()
+    if unsynced_inv:
+        payload = []
+        for row in unsynced_inv:
+            payload.append({
+                'product_id': row['product_id'],
+                'counted_quantity': row['counted_quantity'],
+                'timestamp': row['timestamp'],
+                'employee_id': row['employee_id']
+            })
+        try:
+            resp = requests.post(
+                f"{cloud_url}/api/inventory/sync",
+                json=payload,
+                headers={'Authorization': f"Bearer {cfg.get('sync_api_key', '')}"},
+                timeout=15
+            )
+            if resp.status_code == 200:
+                ids = [r['id'] for r in unsynced_inv]
+                db.execute(f"UPDATE inventory_counts SET synced=1 WHERE id IN ({','.join('?'*len(ids))})", ids)
+                db.commit()
+        except:
+            pass
+
+    # 2. PULL fresh products catalog
+    try:
+        resp = requests.get(
+            f"{cloud_url}/api/products",
+            headers={'Authorization': f"Bearer {cfg.get('sync_api_key', '')}"},
+            timeout=10
+        )
+        if resp.status_code == 200:
+            products = resp.json()
+            # Clear old products and insert fresh ones (fastest way to sync static catalog)
+            db.execute("DELETE FROM products")
+            for p in products:
+                db.execute('''
+                    INSERT INTO products (id, name, category, barcode, sku, price, active, unit)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (p['id'], p['name'], p.get('category'), p.get('barcode'), p.get('sku'), p.get('price', 0), p.get('active', 1) and 1 or 0, p.get('unit')))
+            db.commit()
+    except Exception as e:
+        print("Failed pulling products:", e)
+        pass
+
+    db.close()
+
 def sync_employees_from_cloud():
     """Pull latest employee list from Supabase directly."""
     if not REQUESTS_OK:
@@ -560,6 +663,7 @@ def background_sync_loop():
         loops += 1
         try:
             do_sync()
+            do_inventory_sync()
             # Refresh employees every 3 loops (30 seconds)
             if loops >= 3:
                 sync_employees_from_cloud()

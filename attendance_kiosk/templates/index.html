@@ -508,7 +508,12 @@
 
 <body>
   <div class="header">
-    <h1 id="secretAdminTrigger" style="user-select:none; cursor:default;">🏢 {{ company }}</h1>
+    <div style="display: flex; justify-content: space-between; align-items: center; max-width: 1100px; margin: 0 auto;">
+      <h1 id="secretAdminTrigger" style="user-select:none; cursor:default; margin: 0;">🏢 {{ company }}</h1>
+      <button onclick="window.location.href='/inventory'"
+        style="background: linear-gradient(135deg, #6366f1, #818cf8); color: white; border: none; padding: 10px 20px; border-radius: 12px; font-weight: 800; font-family: 'Cairo'; cursor: pointer; font-size: 16px; box-shadow: 0 4px 12px rgba(99,102,241,0.3);">📦
+        تسجيل الجرد</button>
+    </div>
     <div class="clock" id="clock">--:--:--</div>
     <div class="date">{{ today }}</div>
   </div>
@@ -707,7 +712,7 @@
       const now = new Date();
       const dateStr = now.toLocaleDateString('ar-EG');
       const timeStr = (time && typeof time === 'string') ? time.slice(0, 5) : now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-      const text = `تم تسجيل ${actionText}: ${name} بنجاح في شركة suzz.\nالموعد: ${dateStr} الساعة ${timeStr}\nنتمنى لكم يوماً سعيداً!`;
+      const text = `تم تسجيل ${actionText}: ${name} بنجاح في شركة suzz.\nالموعد: ${dateStr} الساعة ${timeStr}`;
       waBtn.href = `https://wa.me/?text=${encodeURIComponent(text)}`;
 
       overlay.classList.add('active');

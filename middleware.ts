@@ -4,8 +4,8 @@ import { getAuthFromRequest } from '@/lib/auth';
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    // Public paths that don't need auth
-    const publicPaths = ['/login', '/api/auth/login', '/api/auth/me', '/share/'];
+    // Public paths that don't need auth (or handle it with their own API keys)
+    const publicPaths = ['/login', '/api/auth/login', '/api/auth/me', '/share/', '/api/employee/profile', '/api/products', '/api/inventory/sync'];
     if (publicPaths.some((p) => pathname.startsWith(p))) {
         return NextResponse.next();
     }

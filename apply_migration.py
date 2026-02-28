@@ -6,13 +6,20 @@ PASSWORD = "ISLam@2006#@"
 
 # Read the latest migrations
 sql_files = [
-    "supabase/migrations/003_settings.sql",
-    "supabase/migrations/004_branches_and_edits.sql"
+    "supabase/migrations/005_purchases.sql"
 ]
 
 HOSTS_TO_TRY = [
+    # Direct connection (IPv6)
+    ("db.vmkfwhnpevbamrfbjkzv.supabase.co", 5432, "postgres"),
     ("aws-0-eu-central-1.pooler.supabase.com", 6543, f"postgres.{PROJECT_REF}"),
     ("aws-0-eu-central-1.pooler.supabase.com", 5432, f"postgres.{PROJECT_REF}"),
+    ("aws-0-eu-west-1.pooler.supabase.com", 6543, f"postgres.{PROJECT_REF}"),
+    ("aws-0-eu-west-2.pooler.supabase.com", 6543, f"postgres.{PROJECT_REF}"),
+    ("aws-0-us-east-1.pooler.supabase.com", 6543, f"postgres.{PROJECT_REF}"),
+    ("aws-0-us-west-1.pooler.supabase.com", 6543, f"postgres.{PROJECT_REF}"),
+    ("aws-0-ap-southeast-1.pooler.supabase.com", 6543, f"postgres.{PROJECT_REF}"),
+    ("aws-0-ap-northeast-1.pooler.supabase.com", 6543, f"postgres.{PROJECT_REF}")
 ]
 
 conn = None

@@ -4,8 +4,14 @@ import { createAdminClient } from '@/lib/supabase';
 
 // GET /api/products
 export async function GET(req: NextRequest) {
+    // allow access if either an admin cookie exists or if it's the kiosk using the sync API key
     const authError = requireAuth(req);
-    if (authError) return authError;
+    const authHeader = req.headers.get('Authorization');
+    const expectedKey = `Bearer ${process.env.SYNC_API_KEY || 'default_sync_key'}`;
+
+    if (authError && authHeader !== expectedKey) {
+        return authError;
+    }
 
     try {
         const db = createAdminClient();

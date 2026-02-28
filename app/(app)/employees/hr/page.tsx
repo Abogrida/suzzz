@@ -24,6 +24,10 @@ type Leave = {
     id: number; employee_id: number; leave_start: string; leave_end: string;
     leave_type: string; notes: string;
 };
+type Purchase = {
+    id: string; employee_id: number; item_name: string; amount: number;
+    purchase_date: string; notes: string; hr_employees?: { name: string };
+};
 
 const DAY_NAMES = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const leaveTypeLabels: Record<string, { label: string; color: string; bg: string }> = {
@@ -56,12 +60,14 @@ const label: React.CSSProperties = { display: 'block', fontWeight: 700, marginBo
 
 const emptyEmp = { name: '', job_title: '', phone: '', national_id: '', hire_date: '', base_salary: '', is_active: true, notes: '', pin_code: '0000' };
 const emptyPay = { employee_id: '', payment_type: 'salary', amount: '', payment_date: new Date().toISOString().split('T')[0], notes: '' };
+const emptyPurchase = { employee_id: '', item_name: '', amount: '', purchase_date: new Date().toISOString().split('T')[0], notes: '' };
 
 export default function HRPage() {
     const router = useRouter();
     const [tab, setTab] = useState<'employees' | 'payments' | 'attendance' | 'reports'>('employees');
     const [employees, setEmployees] = useState<HREmployee[]>([]);
     const [payments, setPayments] = useState<Payment[]>([]);
+    const [allPurchases, setAllPurchases] = useState<Purchase[]>([]);
     const [attendance, setAttendance] = useState<Attendance[]>([]);
     const [loading, setLoading] = useState(true);
     const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
@@ -75,6 +81,10 @@ export default function HRPage() {
     // Payment modal
     const [payModal, setPayModal] = useState(false);
     const [payForm, setPayForm] = useState<any>(emptyPay);
+
+    // Purchase modal
+    const [purchaseModal, setPurchaseModal] = useState(false);
+    const [purchaseForm, setPurchaseForm] = useState<any>(emptyPurchase);
 
     // Attendance date & filters
     // Helper to get local date string YYYY-MM-DD avoiding UTC shift bugs
@@ -91,6 +101,7 @@ export default function HRPage() {
     // Selected employee for profile view
     const [selectedEmp, setSelectedEmp] = useState<HREmployee | null>(null);
     const [empPayments, setEmpPayments] = useState<Payment[]>([]);
+    const [empPurchases, setEmpPurchases] = useState<Purchase[]>([]);
     const [empAttendance, setEmpAttendance] = useState<Attendance[]>([]);
     const [empLeaves, setEmpLeaves] = useState<Leave[]>([]);
     const [empProfileMonth, setEmpProfileMonth] = useState(getLocalYYYYMMDD().slice(0, 7));
@@ -112,6 +123,11 @@ export default function HRPage() {
         setPayments(Array.isArray(d) ? d : []);
     }, []);
 
+    const loadPurchases = useCallback(async (monthOrDate: string) => {
+        const d = await fetch(`/api/hr/purchases?month=${monthOrDate}`).then(r => r.json());
+        setAllPurchases(Array.isArray(d) ? d : []);
+    }, []);
+
     const loadAttendance = useCallback(async (monthOrDate: string) => {
         setAttLoading(true);
         // If it's a full date (YYYY-MM-DD), use it. If it's just a month (YYYY-MM), the backend should be able to handle it
@@ -124,7 +140,7 @@ export default function HRPage() {
     useEffect(() => {
         // By default load the current month for attendance
         const currentMonthPrefix = getLocalYYYYMMDD().slice(0, 7);
-        Promise.all([loadEmployees(), loadPayments(), loadAttendance(currentMonthPrefix)]).finally(() => setLoading(false));
+        Promise.all([loadEmployees(), loadPayments(), loadPurchases(currentMonthPrefix), loadAttendance(currentMonthPrefix)]).finally(() => setLoading(false));
     }, []);
 
     const handleSaveEmp = async () => {
@@ -161,6 +177,15 @@ export default function HRPage() {
         else setToast({ msg: 'حدث خطأ', type: 'error' });
     };
 
+    const handleSavePurchase = async () => {
+        if (!purchaseForm.employee_id || !purchaseForm.item_name || !purchaseForm.amount) return;
+        setSaving(true);
+        const res = await fetch('/api/hr/purchases', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(purchaseForm) });
+        setSaving(false);
+        if (res.ok) { setToast({ msg: 'تم تسجيل المسحوبة', type: 'success' }); setPurchaseModal(false); setPurchaseForm(emptyPurchase); loadPurchases(getLocalYYYYMMDD().slice(0, 7)); if (selectedEmp) { const pur = await fetch(`/api/hr/purchases?employee_id=${selectedEmp.id}`).then(r => r.json()); setEmpPurchases(Array.isArray(pur) ? pur : []); } }
+        else setToast({ msg: 'حدث خطأ', type: 'error' });
+    };
+
     const handleDeletePay = async (id: number) => {
         if (!confirm('حذف هذه المدفوعة؟')) return;
         const r = await fetch(`/api/hr/payments/${id}`, { method: 'DELETE' }).then(r => r.json());
@@ -186,11 +211,13 @@ export default function HRPage() {
         setEmpProfileMonth(currentMonth);
         setEmpProfileLoading(true);
 
-        const [p, l] = await Promise.all([
+        const [p, pur, l] = await Promise.all([
             fetch(`/api/hr/payments?employee_id=${emp.id}`).then(r => r.json()),
+            fetch(`/api/hr/purchases?employee_id=${emp.id}`).then(r => r.json()),
             fetch(`/api/hr/employees/${emp.id}/leaves`).then(r => r.json()),
         ]);
         setEmpPayments(Array.isArray(p) ? p : []);
+        setEmpPurchases(Array.isArray(pur) ? pur : []);
         setEmpLeaves(Array.isArray(l) ? l : []);
 
         await loadEmpProfileMonth(emp.id, currentMonth);
@@ -230,6 +257,7 @@ export default function HRPage() {
     // Reports calculations
     const currentMonth = getLocalYYYYMMDD().slice(0, 7);
     const monthPayments = payments.filter(p => p.payment_date?.startsWith(currentMonth));
+    const monthPurchases = allPurchases.filter(p => p.purchase_date?.startsWith(currentMonth));
 
     if (loading) return <div style={{ textAlign: 'center', padding: 80 }}><div style={{ fontSize: 52 }}>⏳</div><div style={{ color: '#64748b', fontSize: 18, marginTop: 12 }}>جاري التحميل...</div></div>;
 
@@ -308,8 +336,10 @@ export default function HRPage() {
                                             style={{ flex: 1, background: '#f0f9ff', color: '#0ea5e9', border: '1.5px solid #bae6fd', borderRadius: 10, padding: '8px', fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: 'Cairo' }}>✏️ تعديل</button>
                                         <button onClick={() => handleDeleteEmp(emp.id)}
                                             style={{ background: '#fef2f2', color: '#ef4444', border: '1.5px solid #fecaca', borderRadius: 10, padding: '8px 12px', fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: 'Cairo' }}>🗑</button>
+                                        <button onClick={() => { setPurchaseForm({ ...emptyPurchase, employee_id: emp.id.toString() }); setPurchaseModal(true); }}
+                                            style={{ flex: 1, background: '#fef2f2', color: '#ef4444', border: '1.5px solid #fecaca', borderRadius: 10, padding: '8px', fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: 'Cairo' }}>🍔 مسحوبات</button>
                                         <button onClick={() => { setPayForm({ ...emptyPay, employee_id: emp.id.toString() }); setPayModal(true); }}
-                                            style={{ flex: 1, background: '#f0fdf4', color: '#16a34a', border: '1.5px solid #bbf7d0', borderRadius: 10, padding: '8px', fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: 'Cairo' }}>💰 دفع</button>
+                                            style={{ flex: 1, background: '#f0fdf4', color: '#16a34a', border: '1.5px solid #bbf7d0', borderRadius: 10, padding: '8px', fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: 'Cairo' }}>💰 حساب</button>
                                     </div>
                                 </div>
                             </div>
@@ -343,7 +373,7 @@ export default function HRPage() {
                                         {[
                                             { label: 'الراتب الأساسي', value: `${selectedEmp.base_salary.toLocaleString()} ج.م`, color: '#4ade80' },
                                             { label: 'إجمالي مدفوعاته', value: `${empPayments.filter(p => p.payment_type !== 'deduction').reduce((s, p) => s + p.amount, 0).toLocaleString()} ج.م`, color: '#60a5fa' },
-                                            { label: 'إجمالي الخصومات', value: `${empPayments.filter(p => p.payment_type === 'deduction').reduce((s, p) => s + p.amount, 0).toLocaleString()} ج.م`, color: '#f87171' },
+                                            { label: 'إجمالي الخصومات', value: `${(empPayments.filter(p => p.payment_type === 'deduction').reduce((s, p) => s + p.amount, 0) + empPurchases.reduce((s, p) => s + Number(p.amount), 0)).toLocaleString()} ج.م`, color: '#f87171' },
                                         ].map(s => (
                                             <div key={s.label} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 16px', textAlign: 'center' }}>
                                                 <div style={{ fontSize: 20, fontWeight: 900, color: s.color }}>{s.value}</div>
@@ -376,6 +406,34 @@ export default function HRPage() {
                                                     </div>
                                                     <div style={{ fontWeight: 900, fontSize: 16, color: p.payment_type === 'deduction' ? '#ef4444' : '#16a34a' }}>
                                                         {p.payment_type === 'deduction' ? '-' : '+'}{p.amount.toLocaleString()} ج.م
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Purchases History */}
+                                    <h3 style={{ fontSize: 17, fontWeight: 900, margin: '24px 0 14px', color: '#1e293b' }}>🍔 سجل المسحوبات كافيتيريا</h3>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 200, overflowY: 'auto', marginBottom: 20 }}>
+                                        {empPurchases.length === 0 ? <div style={{ textAlign: 'center', color: '#94a3b8', padding: '20px 0' }}>لا توجد مسحوبات</div> : empPurchases.map(p => {
+                                            return (
+                                                <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', borderRadius: 12, padding: '12px 16px', border: `1.5px solid #fecaca` }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                        <span style={{ background: '#fee2e2', borderRadius: 8, padding: '4px 10px', fontSize: 13, fontWeight: 800, color: '#ef4444' }}>🥤 {p.item_name}</span>
+                                                        <span style={{ fontSize: 13, color: '#64748b' }}>{new Date(p.purchase_date).toLocaleDateString('ar-EG')}</span>
+                                                        {p.notes && <span style={{ fontSize: 12, color: '#94a3b8' }}>— {p.notes}</span>}
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                        <div style={{ fontWeight: 900, fontSize: 16, color: '#ef4444' }}>
+                                                            -{Number(p.amount).toLocaleString()} ج.م
+                                                        </div>
+                                                        <button onClick={async () => {
+                                                            if (!confirm('حذف هذه المسحوبة؟')) return;
+                                                            await fetch(`/api/hr/purchases/${p.id}`, { method: 'DELETE' });
+                                                            const pur = await fetch(`/api/hr/purchases?employee_id=${selectedEmp.id}`).then(r => r.json());
+                                                            setEmpPurchases(Array.isArray(pur) ? pur : []);
+                                                            loadPurchases(getLocalYYYYMMDD().slice(0, 7)); // update reports
+                                                        }} style={{ background: '#fef2f2', color: '#ef4444', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontFamily: 'Cairo', fontWeight: 800, fontSize: 13 }}>🗑</button>
                                                     </div>
                                                 </div>
                                             );
@@ -806,7 +864,7 @@ export default function HRPage() {
                             { label: 'إجمالي الرواتب', value: monthPayments.filter(p => p.payment_type === 'salary').reduce((s, p) => s + p.amount, 0), color: '#16a34a', icon: '💵' },
                             { label: 'إجمالي السلف', value: monthPayments.filter(p => p.payment_type === 'advance').reduce((s, p) => s + p.amount, 0), color: '#f59e0b', icon: '💳' },
                             { label: 'إجمالي الحوافز', value: monthPayments.filter(p => p.payment_type === 'bonus').reduce((s, p) => s + p.amount, 0), color: '#6366f1', icon: '🎁' },
-                            { label: 'إجمالي الخصومات', value: monthPayments.filter(p => p.payment_type === 'deduction').reduce((s, p) => s + p.amount, 0), color: '#ef4444', icon: '✂️' },
+                            { label: 'الخصومات + المسحوبات', value: monthPayments.filter(p => p.payment_type === 'deduction').reduce((s, p) => s + p.amount, 0) + monthPurchases.reduce((s, p) => s + Number(p.amount), 0), color: '#ef4444', icon: '✂️' },
                         ].map(s => (
                             <div key={s.label} style={{ background: '#fff', borderRadius: 16, padding: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', textAlign: 'center' }}>
                                 <div style={{ fontSize: 28, marginBottom: 8 }}>{s.icon}</div>
@@ -822,7 +880,7 @@ export default function HRPage() {
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                             <thead>
                                 <tr style={{ background: '#f8fafc' }}>
-                                    {['الموظف', 'الراتب الأساسي', 'الرواتب المدفوعة', 'السلف', 'الحوافز', 'الخصومات', 'الصافي'].map(h => (
+                                    {['الموظف', 'الراتب الأساسي', 'الرواتب المدفوعة', 'السلف', 'الحوافز', 'الخصومات + المسحوبات', 'الصافي'].map(h => (
                                         <th key={h} style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 800, color: '#374151', borderBottom: '1.5px solid #e2e8f0' }}>{h}</th>
                                     ))}
                                 </tr>
@@ -833,8 +891,11 @@ export default function HRPage() {
                                     const salaries = empPays.filter(p => p.payment_type === 'salary').reduce((s, p) => s + p.amount, 0);
                                     const advances = empPays.filter(p => p.payment_type === 'advance').reduce((s, p) => s + p.amount, 0);
                                     const bonuses = empPays.filter(p => p.payment_type === 'bonus').reduce((s, p) => s + p.amount, 0);
-                                    const deductions = empPays.filter(p => p.payment_type === 'deduction').reduce((s, p) => s + p.amount, 0);
-                                    const net = salaries + bonuses - deductions - advances;
+
+                                    const empPur = monthPurchases.filter(p => p.employee_id === emp.id);
+                                    const deductionsAndPurchases = empPays.filter(p => p.payment_type === 'deduction').reduce((s, p) => s + p.amount, 0) + empPur.reduce((s, p) => s + Number(p.amount), 0);
+
+                                    const net = salaries + bonuses - deductionsAndPurchases - advances;
                                     return (
                                         <tr key={emp.id} style={{ background: i % 2 === 0 ? '#fff' : '#fafafa', borderBottom: '1px solid #f1f5f9' }}>
                                             <td style={{ padding: '12px 16px', fontWeight: 900 }}>{emp.name}<div style={{ fontSize: 12, color: '#94a3b8' }}>{emp.job_title}</div></td>
@@ -842,7 +903,7 @@ export default function HRPage() {
                                             <td style={{ padding: '12px 16px', color: '#16a34a', fontWeight: 800 }}>{salaries.toLocaleString()}</td>
                                             <td style={{ padding: '12px 16px', color: '#f59e0b', fontWeight: 800 }}>{advances.toLocaleString()}</td>
                                             <td style={{ padding: '12px 16px', color: '#6366f1', fontWeight: 800 }}>{bonuses.toLocaleString()}</td>
-                                            <td style={{ padding: '12px 16px', color: '#ef4444', fontWeight: 800 }}>{deductions.toLocaleString()}</td>
+                                            <td style={{ padding: '12px 16px', color: '#ef4444', fontWeight: 800 }}>{deductionsAndPurchases.toLocaleString()}</td>
                                             <td style={{ padding: '12px 16px', fontWeight: 900, fontSize: 16, color: net >= 0 ? '#16a34a' : '#ef4444' }}>{net.toLocaleString()} ج.م</td>
                                         </tr>
                                     );
@@ -1029,6 +1090,36 @@ export default function HRPage() {
                                 {saving ? 'جاري التسجيل...' : '✅ تسجيل'}
                             </button>
                             <button onClick={() => { setPayModal(false); setPayForm(emptyPay); }}
+                                style={{ flex: 1, background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: 14, padding: '14px', fontWeight: 800, fontSize: 16, cursor: 'pointer', fontFamily: 'Cairo' }}>إلغاء</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ===== PURCHASE MODAL ===== */}
+            {purchaseModal && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+                    <div style={{ background: '#fff', borderRadius: 24, padding: 32, width: '100%', maxWidth: 480, boxShadow: '0 30px 80px rgba(0,0,0,0.25)' }}>
+                        <h2 style={{ margin: '0 0 24px', fontSize: 22, fontWeight: 900, color: '#1e293b' }}>🍔 تسجيل مسحوبة (كافيتيريا)</h2>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                            <div>
+                                <label style={label}>الموظف *</label>
+                                <select style={inp} value={purchaseForm.employee_id} onChange={e => setPurchaseForm({ ...purchaseForm, employee_id: e.target.value })}>
+                                    <option value="">اختر موظف...</option>
+                                    {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                                </select>
+                            </div>
+                            <div><label style={label}>الصنف / المسحوبة *</label><input style={inp} value={purchaseForm.item_name} onChange={e => setPurchaseForm({ ...purchaseForm, item_name: e.target.value })} placeholder="مثال: قهوة، شاي، وجبة..." /></div>
+                            <div><label style={label}>المبلغ (ج.م) *</label><input type="number" style={inp} value={purchaseForm.amount} onChange={e => setPurchaseForm({ ...purchaseForm, amount: e.target.value })} placeholder="0" /></div>
+                            <div><label style={label}>التاريخ</label><input type="date" style={inp} value={purchaseForm.purchase_date} onChange={e => setPurchaseForm({ ...purchaseForm, purchase_date: e.target.value })} /></div>
+                            <div><label style={label}>ملاحظات</label><input style={inp} value={purchaseForm.notes} onChange={e => setPurchaseForm({ ...purchaseForm, notes: e.target.value })} placeholder="اختياري" /></div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+                            <button onClick={handleSavePurchase} disabled={saving || !purchaseForm.employee_id || !purchaseForm.amount || !purchaseForm.item_name}
+                                style={{ flex: 1, background: '#ef4444', color: '#fff', border: 'none', borderRadius: 14, padding: '14px', fontWeight: 800, fontSize: 16, cursor: 'pointer', fontFamily: 'Cairo', opacity: (!purchaseForm.employee_id || !purchaseForm.amount || !purchaseForm.item_name) ? 0.6 : 1 }}>
+                                {saving ? 'جاري التسجيل...' : '✅ خصم'}
+                            </button>
+                            <button onClick={() => { setPurchaseModal(false); setPurchaseForm(emptyPurchase); }}
                                 style={{ flex: 1, background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: 14, padding: '14px', fontWeight: 800, fontSize: 16, cursor: 'pointer', fontFamily: 'Cairo' }}>إلغاء</button>
                         </div>
                     </div>
