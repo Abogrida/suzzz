@@ -522,8 +522,8 @@
     {% for emp in employees %}
     {% set record = att_map.get(emp.id) %}
     <div
-      class="emp-card {% if record %}{% if record.check_out_time %}checked-out{% elif record.status == 'late' %}late checked-in{% else %}checked-in{% endif %}{% endif %}"
-      id="card-{{ emp.id }}" data-emp-id="{{ emp.id }}">
+      class="emp-card {% if emp.device_id %}already-linked{% endif %} {% if record %}{% if record.check_out_time %}checked-out{% elif record.status == 'late' %}late checked-in{% else %}checked-in{% endif %}{% endif %}"
+      id="card-{{ emp.id }}" data-emp-id="{{ emp.id }}" data-linked="{{ '1' if emp.device_id else '0' }}">
       <div class="emp-name">{{ emp.name }}</div>
       <div>
         {% if record %}
@@ -701,13 +701,13 @@
 
       const actionText = action === 'check_in' ? 'حضور' : 'انصراف';
       title.textContent = action === 'check_in' ? 'مرحباً بك!' : 'إلى اللقاء!';
-      msg.textContent = `تم تسجيل ${actionText} الموظف (${name}) بنجاح.`;
+      msg.textContent = `تم تسجيل ${actionText}: ${name} بنجاح.`;
 
       // WhatsApp Message
       const now = new Date();
       const dateStr = now.toLocaleDateString('ar-EG');
-      const timeStr = time.slice(0, 5);
-      const text = `تم تسجيل ${actionText} الموظف: ${name} بنجاح في شركة suzz.\nالموعد: ${dateStr} الساعة ${timeStr}\nنتمنى لكم يوماً سعيداً!`;
+      const timeStr = (time && typeof time === 'string') ? time.slice(0, 5) : now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+      const text = `تم تسجيل ${actionText}: ${name} بنجاح في شركة suzz.\nالموعد: ${dateStr} الساعة ${timeStr}\nنتمنى لكم يوماً سعيداً!`;
       waBtn.href = `https://wa.me/?text=${encodeURIComponent(text)}`;
 
       overlay.classList.add('active');
@@ -729,22 +729,37 @@
     // Check connectivity and date consistency
     let lastCheckedDate = "{{ today }}";
     async function checkConnectivity() {
-      // Date Check: Refresh if day changed
-      const currentDay = new Date().toISOString().split('T')[0];
+      // Date Check: Refresh if day changed (using local timezone)
+      const date = new Date();
+      const currentDay = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
       if (currentDay !== lastCheckedDate) {
         location.reload();
         return;
       }
 
+      // We no longer call /sync_now here to avoid hanging the JS thread every 5s.
+      // The background_sync_loop in python handles actual syncing.
+      // We will instead fetch /api/employees to see if linkage status changed
       try {
-        await fetch('/sync_now', { method: 'POST' });
-        document.getElementById('syncDot').className = 'sync-dot green';
-        document.getElementById('syncText').textContent = 'متصل — يتم المزامنة التلقائية';
+        const res = await fetch('/api/employees');
+        if (res.ok) {
+          const empList = await res.json();
+          updateEmployeesVisibility(empList);
 
-        // --- Link Integrity Check ---
-        const linkedEmpId = localStorage.getItem('kiosk_linked_employee_id');
-        const deviceId = localStorage.getItem('kiosk_device_id');
-        if (linkedEmpId && deviceId) {
+          document.getElementById('syncDot').className = 'sync-dot green';
+          document.getElementById('syncText').textContent = 'متصل — يتم المزامنة التلقائية';
+        }
+      } catch (err) {
+        console.error("Connection error:", err);
+        document.getElementById('syncDot').style.background = '#f59e0b';
+        document.getElementById('syncText').textContent = 'وضع بدون إنترنت — البيانات محفوظة محلياً';
+      }
+
+      // --- Link Integrity Check ---
+      const linkedEmpId = localStorage.getItem('kiosk_linked_employee_id');
+      const deviceId = localStorage.getItem('kiosk_device_id');
+      if (linkedEmpId && deviceId) {
+        try {
           const verifyRes = await fetch('/verify_link', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -756,12 +771,10 @@
             localStorage.removeItem('kiosk_device_id');
             localStorage.removeItem('kiosk_linked_employee_id');
             location.reload();
-            return;
           }
+        } catch (e) {
+          console.error("Link verification failed:", e);
         }
-      } catch {
-        document.getElementById('syncDot').style.background = '#f59e0b';
-        document.getElementById('syncText').textContent = 'وضع بدون إنترنت — البيانات محفوظة محلياً';
       }
     }
     // Check every 5 seconds for date change/connectivity/link integrity
@@ -774,6 +787,17 @@
 
     function generateDeviceId() {
       return 'dev_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now().toString(36);
+    }
+
+    function updateEmployeesVisibility(empList) {
+      if (!empList) return;
+      empList.forEach(emp => {
+        const card = document.getElementById('card-' + emp.id);
+        if (card) {
+          card.dataset.linked = emp.device_id ? '1' : '0';
+        }
+      });
+      checkDeviceStatus();
     }
 
     function checkDeviceStatus() {
@@ -790,8 +814,14 @@
           }
         });
       } else {
-        // Not linked. Show all cards.
-        allCards.forEach(card => card.classList.remove('hidden-card'));
+        // Not linked. Show all cards EXCEPT those linked to OTHER devices.
+        allCards.forEach(card => {
+          if (card.dataset.linked === '1') {
+            card.classList.add('hidden-card');
+          } else {
+            card.classList.remove('hidden-card');
+          }
+        });
       }
     }
 
@@ -945,6 +975,9 @@
 
     // Initialize QR code after a slight delay to ensure library is loaded
     setTimeout(initQRCode, 500);
+
+    // Initial check of device status (important for linked devices on load)
+    checkDeviceStatus();
 
   </script>
 </body>

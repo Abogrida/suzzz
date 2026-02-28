@@ -393,24 +393,89 @@ export default function HRPage() {
                                         const lateDays = appAtt.filter(a => a.status === 'late').length;
                                         const absentDays = appAtt.filter(a => a.status === 'absent').length;
 
-                                        // Calculate expected work days up to today (or end of selected month)
                                         const y = parseInt(empProfileMonth.split('-')[0]);
                                         const m = parseInt(empProfileMonth.split('-')[1]) - 1;
                                         const isCurrentMonth = new Date().getFullYear() === y && new Date().getMonth() === m;
-                                        const daysInMonth = isCurrentMonth ? new Date().getDate() : new Date(y, m + 1, 0).getDate();
+                                        const daysInMonth = new Date(y, m + 1, 0).getDate();
+                                        const todayDay = new Date().getDate();
 
                                         const offDaysKeys = selectedEmp.off_days || [5, 6];
                                         let expectedWorkDays = 0;
+                                        let attendedDays = 0;
+                                        let approvedLeaveDays = 0;
+                                        let calculatedAbsences = 0;
+
+                                        // Generate the detailed daily logs to view
+                                        const dailyLogs = [];
+
                                         for (let d = 1; d <= daysInMonth; d++) {
                                             const date = new Date(y, m, d);
-                                            if (!offDaysKeys.includes(date.getDay())) {
+                                            const dateStr = date.toISOString().split('T')[0];
+                                            const isFuture = date > new Date();
+                                            const isOffDay = offDaysKeys.includes(date.getDay());
+
+                                            // Check if employee has an approved leave for this day (sick/annual/etc)
+                                            // Ensure leaves are loaded from empLeaves array
+                                            const hasLeave = empLeaves.find(lv => {
+                                                const ls = new Date(lv.leave_start).getTime();
+                                                const le = new Date(lv.leave_end).getTime();
+                                                const curr = date.getTime();
+                                                return curr >= ls && curr <= le && !['unpaid'].includes(lv.leave_type);
+                                            });
+
+                                            // Find attendance record if any
+                                            const record = empAttendance.find(a => a.attendance_date === dateStr);
+                                            const didAttend = record && ['present', 'late'].includes(record.status);
+                                            const isExcused = record && record.status === 'excused';
+
+                                            let displayStatus = '—';
+                                            let displayObj = null;
+
+                                            if (record) {
+                                                displayObj = attendanceLabels[record.status] || attendanceLabels.present;
+                                                displayStatus = displayObj.label;
+                                            } else if (isFuture) {
+                                                displayStatus = 'مستقبل';
+                                            } else if (hasLeave) {
+                                                displayStatus = 'إجازة معتمدة';
+                                                displayObj = attendanceLabels.excused;
+                                            } else if (isOffDay) {
+                                                displayStatus = 'عطلة أسبوعية';
+                                            } else {
+                                                displayStatus = 'غائب';
+                                                displayObj = attendanceLabels.absent;
+                                            }
+
+                                            dailyLogs.push({
+                                                dayNum: d,
+                                                dateStr,
+                                                date,
+                                                record,
+                                                hasLeave,
+                                                isOffDay,
+                                                isFuture,
+                                                displayStatus,
+                                                displayObj
+                                            });
+
+                                            // Stop counting stats for days that haven't arrived yet
+                                            if (isFuture && isCurrentMonth) continue;
+
+                                            if (!isOffDay) {
                                                 expectedWorkDays++;
+                                                if (hasLeave || isExcused) {
+                                                    approvedLeaveDays++;
+                                                } else if (didAttend) {
+                                                    attendedDays++;
+                                                } else {
+                                                    calculatedAbsences++;
+                                                }
                                             }
                                         }
 
-                                        const actualAttended = presentDays + lateDays;
-                                        const calculatedAbsences = Math.max(0, expectedWorkDays - actualAttended);
-                                        const completionRate = expectedWorkDays > 0 ? Math.round((actualAttended / expectedWorkDays) * 100) : 0;
+                                        const actualAttended = attendedDays; // pure work days!
+                                        const actualBase = Math.max(0, expectedWorkDays - approvedLeaveDays);
+                                        const completionRate = actualBase > 0 ? Math.round((actualAttended / actualBase) * 100) : (approvedLeaveDays > 0 ? 100 : 0);
 
                                         let rating = { label: 'ممتاز 🌟', color: '#16a34a', bg: '#dcfce7' };
                                         if (completionRate < 70) rating = { label: 'ضعيف ⚠️', color: '#ef4444', bg: '#fee2e2' };
@@ -422,15 +487,15 @@ export default function HRPage() {
                                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
                                                     <div style={{ background: '#fff', borderRadius: 12, padding: '12px', textAlign: 'center', border: '1px solid #f1f5f9' }}>
                                                         <div style={{ fontSize: 24, fontWeight: 900, color: '#16a34a' }}>{actualAttended}</div>
-                                                        <div style={{ fontSize: 12, color: '#64748b', fontWeight: 800 }}>يوم حضور</div>
+                                                        <div style={{ fontSize: 12, color: '#64748b', fontWeight: 800 }}>يوم عمل (حضور)</div>
                                                     </div>
                                                     <div style={{ background: '#fff', borderRadius: 12, padding: '12px', textAlign: 'center', border: '1px solid #f1f5f9' }}>
-                                                        <div style={{ fontSize: 24, fontWeight: 900, color: '#ef4444' }}>{calculatedAbsences}</div>
-                                                        <div style={{ fontSize: 12, color: '#64748b', fontWeight: 800 }}>غياب أو بدون بصمة</div>
+                                                        <div style={{ fontSize: 24, fontWeight: 900, color: calculatedAbsences > 0 ? '#ef4444' : '#64748b' }}>{calculatedAbsences}</div>
+                                                        <div style={{ fontSize: 12, color: '#64748b', fontWeight: 800 }}>يوم غياب (بدون عذر)</div>
                                                     </div>
                                                     <div style={{ background: '#fff', borderRadius: 12, padding: '12px', textAlign: 'center', border: '1px solid #f1f5f9' }}>
                                                         <div style={{ fontSize: 24, fontWeight: 900, color: '#f59e0b' }}>{lateDays}</div>
-                                                        <div style={{ fontSize: 12, color: '#64748b', fontWeight: 800 }}>مرات تأخير</div>
+                                                        <div style={{ fontSize: 12, color: '#64748b', fontWeight: 800 }}>مرات تأخير من الحضور</div>
                                                     </div>
                                                     <div style={{ background: rating.bg, borderRadius: 12, padding: '12px', textAlign: 'center', border: `1px solid ${rating.color}40` }}>
                                                         <div style={{ fontSize: 24, fontWeight: 900, color: rating.color }}>{completionRate}%</div>
@@ -438,54 +503,75 @@ export default function HRPage() {
                                                     </div>
                                                 </div>
 
-                                                {/* Logs */}
-                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                                                    {/* Present/Late List */}
-                                                    <div>
-                                                        <div style={{ fontSize: 14, fontWeight: 900, color: '#374151', marginBottom: 12 }}>تفاصيل بصمات الحضور ({appAtt.length}):</div>
-                                                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', maxHeight: 160, overflowY: 'auto', paddingRight: 4 }}>
-                                                            {appAtt.sort((a, b) => new Date(a.attendance_date).getTime() - new Date(b.attendance_date).getTime()).map(a => {
-                                                                const s = attendanceLabels[a.status] || attendanceLabels.present;
-                                                                return (
-                                                                    <div key={a.id} style={{ background: '#fff', border: `1px solid ${s.bg}`, borderRadius: 8, padding: '6px 12px', fontSize: 13, fontWeight: 900, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                                                                        <span style={{ color: s.color }}>{s.icon} {new Date(a.attendance_date).getDate()}</span>
-                                                                        {a.check_in_time && <span style={{ color: '#94a3b8', fontSize: 11 }}>{a.check_in_time.slice(0, 5)}</span>}
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                            {appAtt.length === 0 && <span style={{ color: '#94a3b8', fontSize: 13, fontWeight: 700 }}>لا توجد بصمات في هذا الشهر</span>}
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Absent List */}
-                                                    <div>
-                                                        <div style={{ fontSize: 14, fontWeight: 900, color: '#ef4444', marginBottom: 12 }}>أيام الغياب ({calculatedAbsences}):</div>
-                                                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', maxHeight: 160, overflowY: 'auto', paddingRight: 4 }}>
-                                                            {(() => {
-                                                                const absentDates = [];
-                                                                for (let d = 1; d <= daysInMonth; d++) {
-                                                                    const date = new Date(y, m, d);
-                                                                    // Only count days up to today
-                                                                    if (date > new Date() && isCurrentMonth) break;
-
-                                                                    const isOffDay = offDaysKeys.includes(date.getDay());
-                                                                    if (!isOffDay) {
-                                                                        const dateStr = date.toISOString().split('T')[0];
-                                                                        const didAttend = appAtt.find(a => a.attendance_date === dateStr && ['present', 'late'].includes(a.status));
-                                                                        if (!didAttend) {
-                                                                            absentDates.push(d);
-                                                                        }
-                                                                    }
-                                                                }
-                                                                if (absentDates.length === 0) return <span style={{ color: '#16a34a', fontSize: 13, fontWeight: 800 }}>لم يغب أي يوم! 🎉</span>;
-
-                                                                return absentDates.map(dayNum => (
-                                                                    <div key={dayNum} style={{ background: '#fef2f2', border: `1px solid #fecaca`, borderRadius: 8, padding: '6px 14px', fontSize: 13, fontWeight: 900, display: 'flex', alignItems: 'center', color: '#ef4444' }}>
-                                                                        ❌ {dayNum} {new Date(y, m, dayNum).toLocaleDateString('ar-EG', { month: 'short' })}
-                                                                    </div>
-                                                                ));
-                                                            })()}
-                                                        </div>
+                                                {/* Daily Logs Table */}
+                                                <div>
+                                                    <div style={{ fontSize: 16, fontWeight: 900, color: '#1e293b', marginBottom: 12 }}>تفاصيل السجل اليومي لشهر {new Date(y, m).toLocaleDateString('ar-EG', { month: 'long' })}:</div>
+                                                    <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, textAlign: 'center' }}>
+                                                            <thead>
+                                                                <tr style={{ background: '#f1f5f9', color: '#475569', fontWeight: 800 }}>
+                                                                    <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>التاريخ</th>
+                                                                    <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>الحالة</th>
+                                                                    <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>حضور</th>
+                                                                    <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>انصراف</th>
+                                                                    <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>إجراء</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {dailyLogs.reverse().map((log) => (
+                                                                    <tr key={log.dayNum} style={{ borderBottom: '1px solid #f1f5f9', background: log.isOffDay ? '#f8fafc' : log.isFuture && isCurrentMonth ? '#F9FAFB' : '#fff', opacity: log.isFuture && isCurrentMonth ? 0.6 : 1 }}>
+                                                                        <td style={{ padding: '10px', fontWeight: 800, color: '#374151' }}>
+                                                                            {log.dayNum} {log.date.toLocaleDateString('ar-EG', { weekday: 'short' })}
+                                                                        </td>
+                                                                        <td style={{ padding: '10px' }}>
+                                                                            {log.displayObj ? (
+                                                                                <span style={{ background: log.displayObj.bg, color: log.displayObj.color, borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 800 }}>
+                                                                                    {log.displayObj.icon} {log.displayObj.label}
+                                                                                </span>
+                                                                            ) : (
+                                                                                <span style={{ color: '#94a3b8', fontSize: 12 }}>{log.displayStatus}</span>
+                                                                            )}
+                                                                        </td>
+                                                                        <td style={{ padding: '10px', fontWeight: 900, color: '#16a34a' }}>
+                                                                            {log.record?.check_in_time ? log.record.check_in_time.slice(0, 5) : '—'}
+                                                                        </td>
+                                                                        <td style={{ padding: '10px', fontWeight: 900, color: '#ea580c' }}>
+                                                                            {log.record?.check_out_time ? log.record.check_out_time.slice(0, 5) : '—'}
+                                                                        </td>
+                                                                        <td style={{ padding: '10px' }}>
+                                                                            {!log.isFuture && (
+                                                                                <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                                                                                    {log.record ? (
+                                                                                        <>
+                                                                                            <button
+                                                                                                onClick={async () => {
+                                                                                                    if (!confirm('حذف بصمة هذا اليوم نهائياً؟')) return;
+                                                                                                    await fetch(`/api/hr/attendance/${log.record?.id}`, { method: 'DELETE' });
+                                                                                                    loadEmpProfileMonth(selectedEmp.id, empProfileMonth); // Refresh
+                                                                                                }}
+                                                                                                style={{ background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 700, fontFamily: 'Cairo' }}>🗑</button>
+                                                                                        </>
+                                                                                    ) : !log.hasLeave && !log.isOffDay ? (
+                                                                                        <button
+                                                                                            onClick={async () => {
+                                                                                                const time = prompt('أدخل وقت الحضور التقريبي بـ 24-hr (مثال: 09:00):');
+                                                                                                if (!time) return;
+                                                                                                await fetch(`/api/hr/attendance`, {
+                                                                                                    method: 'POST',
+                                                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                                                    body: JSON.stringify({ employee_id: selectedEmp.id, attendance_date: log.dateStr, status: 'present', check_in_time: time, source: 'manual' })
+                                                                                                });
+                                                                                                loadEmpProfileMonth(selectedEmp.id, empProfileMonth); // Refresh
+                                                                                            }}
+                                                                                            style={{ background: '#e0f2fe', color: '#0284c7', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 700, fontFamily: 'Cairo' }}>تحضير يدوي</button>
+                                                                                    ) : null}
+                                                                                </div>
+                                                                            )}
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
                                                     </div>
                                                 </div>
                                             </div>
