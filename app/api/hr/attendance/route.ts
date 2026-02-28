@@ -33,7 +33,9 @@ export async function GET(req: NextRequest) {
     if (date) {
         if (date.length === 7) {
             // YYYY-MM prefix -> query the whole month
-            qb = qb.gte('attendance_date', `${date}-01`).lte('attendance_date', `${date}-31`);
+            const [y, m] = date.split('-');
+            const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
+            qb = qb.gte('attendance_date', `${date}-01`).lte('attendance_date', `${date}-${lastDay}`);
         } else {
             qb = qb.eq('attendance_date', date);
         }

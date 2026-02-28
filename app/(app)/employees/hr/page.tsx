@@ -77,7 +77,13 @@ export default function HRPage() {
     const [payForm, setPayForm] = useState<any>(emptyPay);
 
     // Attendance date & filters
-    const [attDate, setAttDate] = useState(new Date().toISOString().split('T')[0]);
+    // Helper to get local date string YYYY-MM-DD avoiding UTC shift bugs
+    const getLocalYYYYMMDD = (d = new Date()) => {
+        const off = d.getTimezoneOffset() * 60000;
+        return new Date(d.getTime() - off).toISOString().split('T')[0];
+    };
+
+    const [attDate, setAttDate] = useState(getLocalYYYYMMDD());
     const [attSearch, setAttSearch] = useState('');
     const [attStatusFilter, setAttStatusFilter] = useState('all');
     const [attLoading, setAttLoading] = useState(false);
@@ -87,7 +93,7 @@ export default function HRPage() {
     const [empPayments, setEmpPayments] = useState<Payment[]>([]);
     const [empAttendance, setEmpAttendance] = useState<Attendance[]>([]);
     const [empLeaves, setEmpLeaves] = useState<Leave[]>([]);
-    const [empProfileMonth, setEmpProfileMonth] = useState(new Date().toISOString().slice(0, 7));
+    const [empProfileMonth, setEmpProfileMonth] = useState(getLocalYYYYMMDD().slice(0, 7));
     const [empProfileLoading, setEmpProfileLoading] = useState(false);
 
     // Employee modal tab
@@ -117,7 +123,7 @@ export default function HRPage() {
 
     useEffect(() => {
         // By default load the current month for attendance
-        const currentMonthPrefix = new Date().toISOString().slice(0, 7);
+        const currentMonthPrefix = getLocalYYYYMMDD().slice(0, 7);
         Promise.all([loadEmployees(), loadPayments(), loadAttendance(currentMonthPrefix)]).finally(() => setLoading(false));
     }, []);
 
@@ -176,7 +182,7 @@ export default function HRPage() {
 
     const openEmpProfile = async (emp: HREmployee) => {
         setSelectedEmp(emp);
-        const currentMonth = new Date().toISOString().slice(0, 7);
+        const currentMonth = getLocalYYYYMMDD().slice(0, 7);
         setEmpProfileMonth(currentMonth);
         setEmpProfileLoading(true);
 
@@ -222,7 +228,7 @@ export default function HRPage() {
     ] as const;
 
     // Reports calculations
-    const currentMonth = new Date().toISOString().slice(0, 7);
+    const currentMonth = getLocalYYYYMMDD().slice(0, 7);
     const monthPayments = payments.filter(p => p.payment_date?.startsWith(currentMonth));
 
     if (loading) return <div style={{ textAlign: 'center', padding: 80 }}><div style={{ fontSize: 52 }}>⏳</div><div style={{ color: '#64748b', fontSize: 18, marginTop: 12 }}>جاري التحميل...</div></div>;
