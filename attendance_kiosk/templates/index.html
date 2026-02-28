@@ -740,6 +740,22 @@
         await fetch('/sync_now', { method: 'POST' });
         document.getElementById('syncDot').className = 'sync-dot green';
         document.getElementById('syncText').textContent = 'متصل — يتم المزامنة التلقائية';
+
+        // --- Link Integrity Check ---
+        const linkedEmpId = localStorage.getItem('kiosk_linked_employee_id');
+        const deviceId = localStorage.getItem('kiosk_device_id');
+        if (linkedEmpId && deviceId) {
+          const verifyRes = await fetch('/verify_link', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ employee_id: linkedEmpId, device_id: deviceId })
+          });
+          const verifyData = await verifyRes.json();
+          if (!verifyData.linked) {
+            console.warn("Device link broken remotely. Logging out.");
+            unlinkDevice(true); // Silent logout
+          }
+        }
       } catch {
         document.getElementById('syncDot').style.background = '#f59e0b';
         document.getElementById('syncText').textContent = 'وضع بدون إنترنت — البيانات محفوظة محلياً';

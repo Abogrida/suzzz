@@ -164,6 +164,22 @@ def link_device():
         'employee_name': emp['name']
     })
 
+@app.route('/verify_link', methods=['POST'])
+def verify_link():
+    data = request.json or {}
+    emp_id = data.get('employee_id')
+    dev_id = data.get('device_id')
+    if not emp_id or not dev_id:
+        return jsonify({'linked': False})
+    
+    db = get_db()
+    emp = db.execute("SELECT device_id FROM employees WHERE id=?", (emp_id,)).fetchone()
+    db.close()
+    
+    # Check if the device_id in DB matches the one from the request
+    is_linked = emp and emp['device_id'] == dev_id
+    return jsonify({'linked': bool(is_linked)})
+
 def try_sync_device_id_to_cloud(emp_id, device_id):
     if not REQUESTS_OK or not has_internet():
         return
