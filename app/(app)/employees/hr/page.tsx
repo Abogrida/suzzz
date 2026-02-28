@@ -388,10 +388,8 @@ export default function HRPage() {
                                     {empProfileLoading ? (
                                         <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontWeight: 800 }}>⏳ جاري التحميل...</div>
                                     ) : (() => {
-                                        const appAtt = empAttendance.filter(a => a.source === 'kiosk');
-                                        const presentDays = appAtt.filter(a => a.status === 'present').length;
-                                        const lateDays = appAtt.filter(a => a.status === 'late').length;
-                                        const absentDays = appAtt.filter(a => a.status === 'absent').length;
+                                        // Calculate late days directly from all records
+                                        const lateDays = empAttendance.filter(a => a.status === 'late').length;
 
                                         const y = parseInt(empProfileMonth.split('-')[0]);
                                         const m = parseInt(empProfileMonth.split('-')[1]) - 1;
@@ -410,7 +408,7 @@ export default function HRPage() {
 
                                         for (let d = 1; d <= daysInMonth; d++) {
                                             const date = new Date(y, m, d);
-                                            const dateStr = date.toISOString().split('T')[0];
+                                            const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                                             const isFuture = date > new Date();
                                             const isOffDay = offDaysKeys.includes(date.getDay());
 
