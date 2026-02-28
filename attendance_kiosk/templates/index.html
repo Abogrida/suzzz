@@ -752,8 +752,11 @@
           });
           const verifyData = await verifyRes.json();
           if (!verifyData.linked) {
-            console.warn("Device link broken remotely. Logging out.");
-            unlinkDevice(true); // Silent logout
+            console.warn("Device link broken remotely. Clearing storage and reloading.");
+            localStorage.removeItem('kiosk_device_id');
+            localStorage.removeItem('kiosk_linked_employee_id');
+            location.reload();
+            return;
           }
         }
       } catch {
@@ -761,9 +764,9 @@
         document.getElementById('syncText').textContent = 'وضع بدون إنترنت — البيانات محفوظة محلياً';
       }
     }
-    // Check every 30 seconds for date change/connectivity
-    setInterval(checkConnectivity, 30000);
-    setTimeout(checkConnectivity, 2000);
+    // Check every 5 seconds for date change/connectivity/link integrity
+    setInterval(checkConnectivity, 5000);
+    setTimeout(checkConnectivity, 1500);
 
     // --- Device Linking Logic ---
     let pendingEmpId = null;

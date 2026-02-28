@@ -167,7 +167,10 @@ def link_device():
 @app.route('/verify_link', methods=['POST'])
 def verify_link():
     data = request.json or {}
-    emp_id = data.get('employee_id')
+    try:
+        emp_id = int(data.get('employee_id', 0))
+    except:
+        emp_id = 0
     dev_id = data.get('device_id')
     if not emp_id or not dev_id:
         return jsonify({'linked': False})
