@@ -56,7 +56,7 @@ def init_db():
             work_start_time TEXT DEFAULT '09:00',
             work_end_time TEXT DEFAULT '17:00',
             late_threshold_minutes INTEGER DEFAULT 15,
-            off_days TEXT DEFAULT '[5,6]',
+            off_days TEXT DEFAULT '[]',
             is_active INTEGER DEFAULT 1,
             pin_code TEXT DEFAULT '0000',
             device_id TEXT,
@@ -246,7 +246,7 @@ def checkin():
             (emp_id, today)
         ).fetchone()
 
-        off_days = json.loads(emp['off_days'] or '[5,6]')
+        off_days = json.loads(emp['off_days'] or '[]')
         weekday = date.today().weekday()  # 0=Mon...6=Sun; python
         # Convert Python weekday (Mon=0) to JS-style (Sun=0)
         js_weekday = (weekday + 1) % 7
@@ -490,7 +490,7 @@ def sync_employees_from_cloud():
             employees = resp.json()
             db = get_db()
             for emp in employees:
-                off_days = json.dumps(emp.get('off_days') or [5, 6])
+                off_days = json.dumps(emp.get('off_days') or [])
                 db.execute("""
                     INSERT INTO employees (id, name, job_title, work_start_time, work_end_time,
                         late_threshold_minutes, off_days, is_active, pin_code, device_id, last_synced_at)

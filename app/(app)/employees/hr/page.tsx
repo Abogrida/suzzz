@@ -129,7 +129,7 @@ export default function HRPage() {
             ...empForm,
             base_salary: parseFloat(empForm.base_salary) || 0,
             late_threshold_minutes: empForm.late_threshold_minutes ?? 15,
-            off_days: empForm.off_days || [5, 6],
+            off_days: empForm.off_days || [],
         };
         const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         setSaving(false);
@@ -399,7 +399,7 @@ export default function HRPage() {
                                         const daysInMonth = new Date(y, m + 1, 0).getDate();
                                         const todayDay = new Date().getDate();
 
-                                        const offDaysKeys = selectedEmp.off_days || [5, 6];
+                                        const offDaysKeys = selectedEmp.off_days || [];
                                         let expectedWorkDays = 0;
                                         let attendedDays = 0;
                                         let approvedLeaveDays = 0;
@@ -906,7 +906,7 @@ export default function HRPage() {
                                         <label style={{ ...label, marginBottom: 12 }}>📅 أيام الراحة الأسبوعية</label>
                                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                                             {DAY_NAMES.map((day, idx) => {
-                                                const offDays: number[] = empForm.off_days || [5, 6];
+                                                const offDays: number[] = empForm.off_days || [];
                                                 const isOff = offDays.includes(idx);
                                                 return (
                                                     <button key={idx} onClick={() => {

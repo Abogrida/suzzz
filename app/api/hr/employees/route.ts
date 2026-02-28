@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
         work_start_time: body.work_start_time || '09:00',
         work_end_time: body.work_end_time || '17:00',
         late_threshold_minutes: body.late_threshold_minutes ?? 15,
-        off_days: body.off_days || [5, 6],
+        off_days: body.off_days || [],
         pin_code: body.pin_code || '0000',
         device_id: body.device_id || null,
     }).select().single();

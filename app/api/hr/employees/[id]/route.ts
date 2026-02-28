@@ -23,7 +23,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (body.work_start_time !== undefined) updateData.work_start_time = body.work_start_time || '09:00';
     if (body.work_end_time !== undefined) updateData.work_end_time = body.work_end_time || '17:00';
     if (body.late_threshold_minutes !== undefined) updateData.late_threshold_minutes = body.late_threshold_minutes ?? 15;
-    if (body.off_days !== undefined) updateData.off_days = body.off_days || [5, 6];
+    if (body.off_days !== undefined) updateData.off_days = body.off_days || [];
     if (body.pin_code !== undefined) updateData.pin_code = body.pin_code;
     if (body.device_id !== undefined) updateData.device_id = body.device_id;
 
