@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase';
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const authError = requireAuth(req);
     if (authError) return authError;
 
+    const resolvedParams = await params;
     const db = createAdminClient();
     const body = await req.json();
 
@@ -19,7 +20,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const { data, error } = await db
         .from('hr_attendance')
         .update(updateData)
-        .eq('id', params.id)
+        .eq('id', resolvedParams.id)
         .select()
         .single();
 
@@ -27,12 +28,13 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ success: true, data });
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const authError = requireAuth(req);
     if (authError) return authError;
 
+    const resolvedParams = await params;
     const db = createAdminClient();
-    const { error } = await db.from('hr_attendance').delete().eq('id', params.id);
+    const { error } = await db.from('hr_attendance').delete().eq('id', resolvedParams.id);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json({ success: true });
