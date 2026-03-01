@@ -3,7 +3,7 @@
     "sync_api_key": "attendance-sync-secret-2026",
     "sync_endpoint": "https://vmkfwhnpevbamrfbjkzv.supabase.co",
     "cloud_base_url": "https://suzzz.vercel.app",
-    "company_name": "\u0634\u0631\u0643\u062a\u064a",
+    "company_name": "suzz",
     "work_start_time": "09:00",
     "work_end_time": "17:00",
     "late_threshold_minutes": 15,
