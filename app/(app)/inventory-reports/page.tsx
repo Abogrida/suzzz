@@ -18,7 +18,11 @@ type InventoryCount = {
 export default function InventoryReportsPage() {
     const [counts, setCounts] = useState<InventoryCount[]>([]);
     const [employees, setEmployees] = useState<Employee[]>([]);
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [startDate, setStartDate] = useState(() => {
+        const d = new Date();
+        return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0];
+    });
+    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
     const [branch, setBranch] = useState<'all' | 'Suzz 1' | 'Suzz 2'>('all');
     const [employeeId, setEmployeeId] = useState<string>('all');
     const [expandedCount, setExpandedCount] = useState<number | null>(null);
@@ -32,7 +36,7 @@ export default function InventoryReportsPage() {
 
     const loadCounts = async () => {
         setLoading(true);
-        let url = `/api/inventory-counts?count_date=${date}&branch=${branch}`;
+        let url = `/api/inventory-counts?start_date=${startDate}&end_date=${endDate}&branch=${branch}`;
         if (employeeId !== 'all') url += `&employee_id=${employeeId}`;
 
         const data = await fetch(url).then(r => r.json());
@@ -42,7 +46,7 @@ export default function InventoryReportsPage() {
 
     useEffect(() => {
         loadCounts();
-    }, [date, branch, employeeId]);
+    }, [startDate, endDate, branch, employeeId]);
 
     return (
         <div className="page-content" style={{ direction: 'rtl', minHeight: '100vh' }}>
@@ -55,8 +59,14 @@ export default function InventoryReportsPage() {
             {/* Filters */}
             <div className="card" style={{ marginBottom: 16, display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 <div style={{ flex: 1, minWidth: 150 }}>
-                    <label style={{ display: 'block', fontWeight: 800, marginBottom: 10, fontSize: 15, color: '#475569' }}>📅 التاريخ</label>
-                    <input type="date" value={date} onChange={e => setDate(e.target.value)}
+                    <label style={{ display: 'block', fontWeight: 800, marginBottom: 10, fontSize: 15, color: '#475569' }}>📅 من تاريخ</label>
+                    <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
+                        style={{ width: '100%', padding: '12px 14px', border: '2px solid #e2e8f0', borderRadius: 12, fontSize: 16, fontFamily: 'Cairo', outline: 'none', background: '#f8fafc' }} />
+                </div>
+
+                <div style={{ flex: 1, minWidth: 150 }}>
+                    <label style={{ display: 'block', fontWeight: 800, marginBottom: 10, fontSize: 15, color: '#475569' }}>📅 إلى تاريخ</label>
+                    <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
                         style={{ width: '100%', padding: '12px 14px', border: '2px solid #e2e8f0', borderRadius: 12, fontSize: 16, fontFamily: 'Cairo', outline: 'none', background: '#f8fafc' }} />
                 </div>
 

@@ -217,10 +217,12 @@ export default function EmployeeInventoryPage() {
                     <div style={{ display: 'flex', gap: 10 }}>
                         <button onClick={() => setBranch('Suzz 1')}
                             style={{ flex: 1, padding: '15px 0', borderRadius: 14, border: '2.5px solid', borderColor: branch === 'Suzz 1' ? '#6366f1' : '#e2e8f0', background: branch === 'Suzz 1' ? '#6366f1' : '#fff', color: branch === 'Suzz 1' ? '#fff' : '#1e293b', fontWeight: 800, fontSize: 18, cursor: 'pointer', fontFamily: 'Cairo', transition: 'all 0.2s' }}>
+                            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>(تحت)</div>
                             Suzz 1
                         </button>
                         <button onClick={() => setBranch('Suzz 2')}
                             style={{ flex: 1, padding: '15px 0', borderRadius: 14, border: '2.5px solid', borderColor: branch === 'Suzz 2' ? '#6366f1' : '#e2e8f0', background: branch === 'Suzz 2' ? '#6366f1' : '#fff', color: branch === 'Suzz 2' ? '#fff' : '#1e293b', fontWeight: 800, fontSize: 18, cursor: 'pointer', fontFamily: 'Cairo', transition: 'all 0.2s' }}>
+                            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>(تحت)</div>
                             Suzz 2
                         </button>
                     </div>

@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         const employeeId = searchParams.get('employee_id');
         const countDate = searchParams.get('count_date');
+        const startDate = searchParams.get('start_date');
+        const endDate = searchParams.get('end_date');
         const branch = searchParams.get('branch');
 
         const supabase = createAdminClient();
@@ -13,6 +17,8 @@ export async function GET(req: NextRequest) {
 
         if (employeeId) query = query.eq('employee_id', employeeId);
         if (countDate) query = query.eq('count_date', countDate);
+        if (startDate) query = query.gte('count_date', startDate);
+        if (endDate) query = query.lte('count_date', endDate);
         if (branch && branch !== 'all') query = query.eq('branch', branch);
 
         const { data, error } = await query;

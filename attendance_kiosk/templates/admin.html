@@ -867,7 +867,7 @@
                     <tr>
                         <td>${i.count_date}</td>
                         <td>${i.branch}</td>
-                        <td>${i.shift}</td>
+                        <td>${i.shift === 'morning' ? 'صباحي' : (i.shift === 'evening' ? 'مسائي' : 'ليلي')}</td>
                         <td><button class="btn btn-outline" style="padding: 0.2rem;" onclick="viewInventoryDetails(${i.id})">👁️</button></td>
                     </tr>
                 `;
@@ -880,7 +880,7 @@
             const tbody = document.getElementById('inv-details-tbody');
             tbody.innerHTML = '';
             data.items.forEach(item => {
-                tbody.innerHTML += `<tr><td>${item.name}</td><td><b>${item.count}</b></td></tr>`;
+                tbody.innerHTML += `<tr><td>${item.item_name}</td><td><b>${item.quantity}</b></td></tr>`;
             });
             document.getElementById('inventoryDetailsModal').style.display = 'flex';
             document.getElementById('inventoryDetailsModal').style.zIndex = 1100;

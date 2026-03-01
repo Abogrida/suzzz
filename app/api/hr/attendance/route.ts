@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 // Helper: calculate status from check-in time vs. work schedule
 function calcStatus(
     checkInTime: string | null,
