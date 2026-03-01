@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>تسجيل الحضور — {{ company }}</title>
+  <title>تسجيل الحضور — شركتي</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
   <style>
     *,
@@ -503,25 +503,19 @@
       }
     }
   </style>
-  <script src="{{ url_for('static', filename='qrcode.min.js') }}"></script>
+  <script src="/static/qrcode.min.js"></script>
 </head>
 
 <body>
   <div class="header">
     <div style="display: flex; justify-content: space-between; align-items: center; max-width: 1100px; margin: 0 auto;">
-      <h1 id="secretAdminTrigger"
-        style="user-select:none; cursor:pointer; margin: 0; display: flex; align-items: center; gap: 15px;">
-        <img src="/static/logo.jpg" alt="Suzz"
-          style="width: 50px; height: 50px; border-radius: 10px; object-fit: cover;"
-          onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
-        <span style="display: none;">🏢</span>
-      </h1>
+      <h1 id="secretAdminTrigger" style="user-select:none; cursor:default; margin: 0;">🏢 شركتي</h1>
       <button onclick="window.location.href='/inventory'"
         style="background: linear-gradient(135deg, #6366f1, #818cf8); color: white; border: none; padding: 10px 20px; border-radius: 12px; font-weight: 800; font-family: 'Cairo'; cursor: pointer; font-size: 16px; box-shadow: 0 4px 12px rgba(99,102,241,0.3);">📦
         تسجيل الجرد</button>
     </div>
     <div class="clock" id="clock">--:--:--</div>
-    <div class="date">{{ today }}</div>
+    <div class="date">2026-02-28</div>
   </div>
 
   <div class="sync-bar">
@@ -530,54 +524,232 @@
   </div>
 
   <div class="grid" id="empGrid">
-    {% for emp in employees %}
-    {% set record = att_map.get(emp.id) %}
+    
+    
     <div
-      class="emp-card {% if emp.device_id %}already-linked{% endif %} {% if record %}{% if record.check_out_time %}checked-out{% elif record.status == 'late' %}late checked-in{% else %}checked-in{% endif %}{% endif %}"
-      id="card-{{ emp.id }}" data-emp-id="{{ emp.id }}" data-linked="{{ '1' if emp.device_id else '0' }}">
-      <div class="emp-name">{{ emp.name }}</div>
+      class="emp-card  checked-out"
+      id="card-7" data-emp-id="7" data-linked="0">
+      <div class="emp-name">احمد سعيد</div>
       <div>
-        {% if record %}
-        {% if record.status == 'late' %}
-        <span class="status-badge badge-late">⏰ متأخر</span>
-        {% elif record.check_out_time %}
+        
+        
         <span class="status-badge badge-out">✅ انصرف</span>
-        {% else %}
-        <span class="status-badge badge-in">🟢 حاضر</span>
-        {% endif %}
-        {% else %}
-        <span class="status-badge badge-none">لم يسجل بعد</span>
-        {% endif %}
+        
+        
       </div>
-      <div class="time-row" id="times-{{ emp.id }}">
-        {% if record and record.check_in_time %}
-        <span class="time-chip" style="background:rgba(34,197,94,0.2);color:#4ade80">↗ {{ record.check_in_time[:5]
-          }}</span>
-        {% endif %}
-        {% if record and record.check_out_time %}
-        <span class="time-chip" style="background:rgba(245,158,11,0.2);color:#fbbf24">↘ {{ record.check_out_time[:5]
-          }}</span>
-        {% endif %}
+      <div class="time-row" id="times-7">
+        
+        <span class="time-chip" style="background:rgba(34,197,94,0.2);color:#4ade80">↗ 01:47</span>
+        
+        
+        <span class="time-chip" style="background:rgba(245,158,11,0.2);color:#fbbf24">↘ 01:48</span>
+        
       </div>
       <button
-        class="punch-btn {% if record and not record.check_out_time %}btn-checkout{% else %}btn-checkin{% endif %}"
-        onclick="openPunchPinModal('{{ emp.id }}')" id="btn-{{ emp.id }}">
-        {% if record %}
-        {% if record.check_out_time %}🔄 تسجيل حضور جديد{% else %}🚪 تسجيل انصراف{% endif %}
-        {% else %}
-        ✅ تسجيل حضور
-        {% endif %}
+        class="punch-btn btn-checkin"
+        onclick="openPunchPinModal('7')" id="btn-7">
+        
+        🔄 تسجيل حضور جديد
+        
       </button>
     </div>
-    {% endfor %}
-    {% if not employees %}
-    <div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:#94a3b8">
-      <div style="font-size:4rem;margin-bottom:16px">👤</div>
-      <div style="font-size:1.2rem;font-weight:800">لا يوجد موظفون</div>
-      <div style="margin-top:8px;font-size:0.9rem">اضغط <a href="/admin" style="color:#38bdf8">لوحة الإدارة</a> لاسترداد
-        بيانات الموظفين من السحابة</div>
+    
+    
+    <div
+      class="emp-card already-linked checked-out"
+      id="card-6" data-emp-id="6" data-linked="1">
+      <div class="emp-name">رنا</div>
+      <div>
+        
+        
+        <span class="status-badge badge-out">✅ انصرف</span>
+        
+        
+      </div>
+      <div class="time-row" id="times-6">
+        
+        <span class="time-chip" style="background:rgba(34,197,94,0.2);color:#4ade80">↗ 02:13</span>
+        
+        
+        <span class="time-chip" style="background:rgba(245,158,11,0.2);color:#fbbf24">↘ 03:03</span>
+        
+      </div>
+      <button
+        class="punch-btn btn-checkin"
+        onclick="openPunchPinModal('6')" id="btn-6">
+        
+        🔄 تسجيل حضور جديد
+        
+      </button>
     </div>
-    {% endif %}
+    
+    
+    <div
+      class="emp-card already-linked checked-out"
+      id="card-2" data-emp-id="2" data-linked="1">
+      <div class="emp-name">صلاح </div>
+      <div>
+        
+        
+        <span class="status-badge badge-out">✅ انصرف</span>
+        
+        
+      </div>
+      <div class="time-row" id="times-2">
+        
+        <span class="time-chip" style="background:rgba(34,197,94,0.2);color:#4ade80">↗ 02:29</span>
+        
+        
+        <span class="time-chip" style="background:rgba(245,158,11,0.2);color:#fbbf24">↘ 03:39</span>
+        
+      </div>
+      <button
+        class="punch-btn btn-checkin"
+        onclick="openPunchPinModal('2')" id="btn-2">
+        
+        🔄 تسجيل حضور جديد
+        
+      </button>
+    </div>
+    
+    
+    <div
+      class="emp-card  checked-out"
+      id="card-8" data-emp-id="8" data-linked="0">
+      <div class="emp-name">كريم </div>
+      <div>
+        
+        
+        <span class="status-badge badge-out">✅ انصرف</span>
+        
+        
+      </div>
+      <div class="time-row" id="times-8">
+        
+        <span class="time-chip" style="background:rgba(34,197,94,0.2);color:#4ade80">↗ 02:58</span>
+        
+        
+        <span class="time-chip" style="background:rgba(245,158,11,0.2);color:#fbbf24">↘ 02:59</span>
+        
+      </div>
+      <button
+        class="punch-btn btn-checkin"
+        onclick="openPunchPinModal('8')" id="btn-8">
+        
+        🔄 تسجيل حضور جديد
+        
+      </button>
+    </div>
+    
+    
+    <div
+      class="emp-card  checked-out"
+      id="card-3" data-emp-id="3" data-linked="0">
+      <div class="emp-name">محمد حكم</div>
+      <div>
+        
+        
+        <span class="status-badge badge-out">✅ انصرف</span>
+        
+        
+      </div>
+      <div class="time-row" id="times-3">
+        
+        <span class="time-chip" style="background:rgba(34,197,94,0.2);color:#4ade80">↗ 03:51</span>
+        
+        
+        <span class="time-chip" style="background:rgba(245,158,11,0.2);color:#fbbf24">↘ 08:37</span>
+        
+      </div>
+      <button
+        class="punch-btn btn-checkin"
+        onclick="openPunchPinModal('3')" id="btn-3">
+        
+        🔄 تسجيل حضور جديد
+        
+      </button>
+    </div>
+    
+    
+    <div
+      class="emp-card  checked-in"
+      id="card-4" data-emp-id="4" data-linked="0">
+      <div class="emp-name">محمود</div>
+      <div>
+        
+        
+        <span class="status-badge badge-in">🟢 حاضر</span>
+        
+        
+      </div>
+      <div class="time-row" id="times-4">
+        
+        <span class="time-chip" style="background:rgba(34,197,94,0.2);color:#4ade80">↗ 02:17</span>
+        
+        
+      </div>
+      <button
+        class="punch-btn btn-checkout"
+        onclick="openPunchPinModal('4')" id="btn-4">
+        
+        🚪 تسجيل انصراف
+        
+      </button>
+    </div>
+    
+    
+    <div
+      class="emp-card already-linked checked-out"
+      id="card-9" data-emp-id="9" data-linked="1">
+      <div class="emp-name">مروان </div>
+      <div>
+        
+        
+        <span class="status-badge badge-out">✅ انصرف</span>
+        
+        
+      </div>
+      <div class="time-row" id="times-9">
+        
+        <span class="time-chip" style="background:rgba(34,197,94,0.2);color:#4ade80">↗ 08:47</span>
+        
+        
+        <span class="time-chip" style="background:rgba(245,158,11,0.2);color:#fbbf24">↘ 08:48</span>
+        
+      </div>
+      <button
+        class="punch-btn btn-checkin"
+        onclick="openPunchPinModal('9')" id="btn-9">
+        
+        🔄 تسجيل حضور جديد
+        
+      </button>
+    </div>
+    
+    
+    <div
+      class="emp-card  "
+      id="card-5" data-emp-id="5" data-linked="0">
+      <div class="emp-name">نورهان</div>
+      <div>
+        
+        <span class="status-badge badge-none">لم يسجل بعد</span>
+        
+      </div>
+      <div class="time-row" id="times-5">
+        
+        
+      </div>
+      <button
+        class="punch-btn btn-checkin"
+        onclick="openPunchPinModal('5')" id="btn-5">
+        
+        ✅ تسجيل حضور
+        
+      </button>
+    </div>
+    
+    
   </div>
 
   <!-- Desktop QR View Container -->
@@ -586,11 +758,7 @@
     <div class="qr-box" id="qrcode"></div>
   </div>
 
-  {% if sync_status.unsynced_count > 0 %}
-  <!-- Keeping this around but changing position statically if needed, or moved to left to avoid clash with unlink -->
-  <div class="unsynced-badge" style="display:block; right: auto; left: 120px;">📤 {{ sync_status.unsynced_count }} سجل
-    غير مزامن</div>
-  {% endif %}
+  
 
   <div class="toast" id="toast"></div>
 
@@ -738,7 +906,7 @@
     }
 
     // Check connectivity and date consistency
-    let lastCheckedDate = "{{ today }}";
+    let lastCheckedDate = "2026-02-28";
     async function checkConnectivity() {
       // Date Check: Refresh if day changed (using local timezone)
       const date = new Date();
@@ -971,7 +1139,7 @@
       if (!qrContainer) return;
 
       // Get the network URL provided by the server
-      const currentUrl = "{{ network_url }}";
+      const currentUrl = "http://172.20.10.2:8085";
 
       // Generate the QR code
       new QRCode(qrContainer, {
@@ -990,19 +1158,6 @@
     // Initial check of device status (important for linked devices on load)
     checkDeviceStatus();
 
-    // Admin Secret Trigger (5 clicks on logo)
-    let adminClicks = 0;
-    document.getElementById('secretAdminTrigger').addEventListener('click', () => {
-      adminClicks++;
-      if (adminClicks >= 5) {
-        const pass = prompt("الرجاء إدخال كلمة مرور الإدارة:");
-        if (pass) {
-          window.location.href = '/admin?pin=' + encodeURIComponent(pass);
-        }
-        adminClicks = 0;
-      }
-      setTimeout(() => { adminClicks = 0; }, 3000);
-    });
   </script>
 </body>
 

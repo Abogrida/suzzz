@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول - {{ company }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Cairo', sans-serif;
+            background: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .login-card {
+            background: #fff;
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            margin: 0 0 30px 0;
+            color: #1e293b;
+            font-size: 24px;
+            font-weight: 900;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: right;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #475569;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: 'Cairo';
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #6366f1;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+            border-radius: 14px;
+            font-size: 18px;
+            font-weight: 900;
+            font-family: 'Cairo';
+            cursor: pointer;
+            margin-top: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .error-msg {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        /* Desktop QR View Styles */
+        @media (min-width: 1024px) {
+            #loginCard {
+                display: none;
+            }
+
+            #qrView {
+                display: flex;
+            }
+        }
+
+        @media (max-width: 1023px) {
+            #qrView {
+                display: none !important;
+            }
+        }
+
+        .desktop-qr-container {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .desktop-qr-container h2 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 20px;
+            color: #38bdf8;
+        }
+
+        .desktop-qr-container p {
+            font-size: 1.2rem;
+            color: #94a3b8;
+            margin-bottom: 40px;
+        }
+
+        .qr-box {
+            background: #fff;
+            padding: 40px;
+            border-radius: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+            border: 4px dashed #cbd5e1;
+            position: relative;
+            overflow: hidden;
+            width: 250px;
+            height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qr-icon {
+            font-size: 100px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .hidden-qr-input {
+            position: absolute;
+            opacity: 0;
+            top: -1000px;
+        }
+    </style>
+    <script src="{{ url_for('static', filename='qrcode.min.js') }}"></script>
+</head>
+
+<body style="display: none;">
+
+    <!-- Desktop QR View -->
+    <div class="desktop-qr-container" id="qrView">
+        <div id="qrAdminTrigger" style="cursor: pointer; user-select: none; margin-bottom: 20px;">
+            <img src="/static/logo.jpg" alt="Suzz Logo" style="width: 150px; height: auto; border-radius: 15px;"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+            <span style="display: none; font-size: 60px;">🏢</span>
+        </div>
+        <div class="qr-box" id="qrcode"></div>
+        <h2>مسح جهاز الـ QR لتسجيل الدخول</h2>
+        <p>يرجى مسح الكود الخاص بك للدخول من هاتفك</p>
+        <input type="text" id="hiddenQrInput" class="hidden-qr-input" autocomplete="off">
+    </div>
+
+    <!-- Login Form -->
+    <div class="login-card" id="loginCard">
+        <div class="logo" id="adminTrigger" style="cursor: pointer; user-select: none;">
+            <img src="/static/logo.jpg" alt="Suzz Logo"
+                style="width: 120px; height: auto; border-radius: 12px; margin-bottom: 10px;"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+            <span style="display: none; font-size: 40px;">🏢</span>
+        </div>
+        <h1>تسجيل الدخول</h1>
+
+        {% if error %}
+        <div class="error-msg">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="/login">
+            <div class="form-group">
+                <label>رقم الموبايل أو الاسم</label>
+                <input type="text" id="identifier" name="identifier" required placeholder="أدخل اسمك أو رقم موبايلك"
+                    autocomplete="off" autofocus>
+            </div>
+
+            <div class="form-group">
+                <label>الرمز السري (PIN)</label>
+                <input type="password" id="pin" name="pin" required placeholder="••••" inputmode="numeric" maxlength="4"
+                    style="letter-spacing: 8px; font-weight: 900;">
+            </div>
+
+            <button type="submit" class="btn-login" id="submitBtn">دخول للوحة التحكم</button>
+        </form>
+        <div id="errorBox" class="error-msg" style="display: none; margin-top: 15px;"></div>
+    </div>
+
+    <script>
+        const qrView = document.getElementById('qrView');
+        const hiddenQrInput = document.getElementById('hiddenQrInput');
+        const loginCard = document.getElementById('loginCard');
+        const identifierInput = document.getElementById('identifier');
+        const pinInput = document.getElementById('pin');
+        const form = document.querySelector('form');
+        const errorBox = document.getElementById('errorBox');
+
+        // Check if device is linked before showing anything
+        function checkDeviceLink() {
+            const devId = localStorage.getItem('kiosk_device_id');
+            const empId = localStorage.getItem('kiosk_emp_id');
+
+            if (devId && empId) {
+                // Auto login silently
+                fetch('/api/auto_login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ device_id: devId, employee_id: empId })
+                }).then(r => r.json()).then(d => {
+                    if (d.success) {
+                        window.location.href = '/';
+                    } else {
+                        // Link broken or unlinked by admin
+                        localStorage.removeItem('kiosk_device_id');
+                        localStorage.removeItem('kiosk_emp_id');
+                        document.body.style.display = 'flex';
+                        setupLoginUI();
+                    }
+                }).catch(() => {
+                    document.body.style.display = 'flex';
+                    setupLoginUI();
+                });
+            } else {
+                document.body.style.display = 'flex';
+                setupLoginUI();
+            }
+        }
+
+        function setupLoginUI() {
+            const errorMessage = "{{ error if error else '' }}";
+            const hasError = errorMessage.trim() !== "" && errorMessage !== "None";
+
+            if (hasError) {
+                if (qrView) qrView.style.display = 'none';
+                if (loginCard) loginCard.style.display = 'block';
+                errorBox.textContent = errorMessage;
+                errorBox.style.display = 'block';
+            } else if (window.innerWidth >= 1024 && qrView) {
+
+                function initQRCode() {
+                    const qrContainer = document.getElementById('qrcode');
+                    if (!qrContainer) return;
+                    qrContainer.innerHTML = '';
+                    const currentUrl = "{{ network_url }}";
+                    new QRCode(qrContainer, {
+                        text: currentUrl,
+                        width: 250,
+                        height: 250,
+                        colorDark: "#0f172a",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                }
+                setTimeout(initQRCode, 100);
+
+                document.addEventListener('click', () => {
+                    if (qrView.style.display !== 'none') {
+                        hiddenQrInput.focus();
+                    }
+                });
+                hiddenQrInput.focus();
+
+                hiddenQrInput.addEventListener('keypress', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (this.value.trim() !== '') {
+                            identifierInput.value = this.value.trim();
+                            qrView.style.display = 'none';
+                            loginCard.style.display = 'block';
+                            pinInput.focus();
+                        }
+                    }
+                });
+            }
+        }
+
+        // Intercept form submission to handle device linking
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ جاري التحقق...';
+            errorBox.style.display = 'none';
+
+            let devId = localStorage.getItem('kiosk_device_id');
+            if (!devId) {
+                devId = 'kiosk_' + Math.random().toString(36).substr(2, 9);
+            }
+
+            try {
+                const res = await fetch('/login_and_link', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        identifier: identifierInput.value,
+                        pin: pinInput.value,
+                        device_id: devId
+                    })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    localStorage.setItem('kiosk_device_id', devId);
+                    localStorage.setItem('kiosk_emp_id', data.emp_id);
+                    window.location.href = '/';
+                } else {
+                    throw new Error(data.error || 'خطأ في تسجيل الدخول');
+                }
+            } catch (err) {
+                btn.disabled = false;
+                btn.textContent = 'دخول للوحة التحكم';
+                errorBox.textContent = err.message;
+                errorBox.style.display = 'block';
+            }
+        });
+
+        // Start initialization
+        checkDeviceLink();
+
+        // Admin Secret Trigger (5 clicks on logo)
+        let adminClicks = 0;
+        const triggerHandler = () => {
+            adminClicks++;
+            if (adminClicks >= 5) {
+                const pass = prompt("الرجاء إدخال كلمة مرور الإدارة:");
+                if (pass) {
+                    window.location.href = '/admin?pin=' + encodeURIComponent(pass);
+                }
+                adminClicks = 0;
+            }
+            setTimeout(() => { adminClicks = 0; }, 3000);
+        };
+
+        if (document.getElementById('adminTrigger')) {
+            document.getElementById('adminTrigger').addEventListener('click', triggerHandler);
+        }
+        if (document.getElementById('qrAdminTrigger')) {
+            document.getElementById('qrAdminTrigger').addEventListener('click', triggerHandler);
+        }
+    </script>
+</body>
+
+</html>

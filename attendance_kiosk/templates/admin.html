@@ -4,12 +4,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة الإدارة — {{ company }}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <title>لوحة الإدارة الاحترافية — {{ company }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        *,
-        *::before,
-        *::after {
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #0ea5e9;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
@@ -17,476 +29,906 @@
 
         body {
             font-family: 'Cairo', sans-serif;
-            background: #f1f5f9;
+            background-color: var(--bg);
+            color: var(--text-main);
             min-height: 100vh;
-            direction: rtl;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #0f172a, #1e3a5f);
-            color: #fff;
-            padding: 20px 28px;
             display: flex;
-            align-items: center;
-            justify-content: space-between;
+            flex-direction: column;
         }
 
-        .header h1 {
-            font-size: 1.4rem;
+        /* Header & Nav */
+        header {
+            background: linear-gradient(135deg, #0f172a, #1e3a5f);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            font-size: 1.5rem;
             font-weight: 900;
         }
 
-        .header a {
+        .back-link {
             color: #7dd3fc;
             text-decoration: none;
             font-weight: 700;
-            font-size: 14px;
+            font-size: 0.9rem;
+        }
+
+        .nav-tabs {
+            background: white;
+            display: flex;
+            padding: 0 2rem;
+            border-bottom: 1px solid var(--border);
+            gap: 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .tab-btn {
+            padding: 1rem 0.5rem;
+            border: none;
+            background: none;
+            font-family: 'Cairo';
+            font-weight: 700;
+            cursor: pointer;
+            color: var(--text-muted);
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
         }
 
         .container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 24px 20px;
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            width: 100%;
+            flex: 1;
         }
 
-        .card {
-            background: #fff;
-            border-radius: 18px;
-            padding: 22px 24px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-            margin-bottom: 22px;
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
         }
 
-        .card h2 {
-            font-size: 1.1rem;
-            font-weight: 900;
-            color: #1e293b;
-            margin-bottom: 16px;
+        .tab-content.active {
+            display: block;
         }
 
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Grid & Cards */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 14px;
-            margin-bottom: 22px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
         }
 
-        .stat {
-            background: #fff;
-            border-radius: 14px;
-            padding: 18px;
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             text-align: center;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         }
 
         .stat-num {
-            font-size: 2rem;
+            font-size: 2.5rem;
             font-weight: 900;
+            color: var(--primary);
         }
 
         .stat-label {
-            font-size: 12px;
-            color: #64748b;
+            font-size: 0.9rem;
+            color: var(--text-muted);
             font-weight: 700;
-            margin-top: 4px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 800;
+        }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 14px;
+            margin-top: 1rem;
         }
 
         th {
-            padding: 12px 14px;
             text-align: right;
+            padding: 1rem;
+            background: var(--bg);
+            color: var(--text-muted);
             font-weight: 800;
-            color: #374151;
-            border-bottom: 2px solid #e2e8f0;
-            background: #f8fafc;
+            font-size: 0.85rem;
         }
 
         td {
-            padding: 11px 14px;
-            border-bottom: 1px solid #f1f5f9;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
         }
 
         .badge {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 8px;
-            font-size: 12px;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
             font-weight: 800;
         }
 
-        .present {
+        .bg-success {
             background: #dcfce7;
-            color: #16a34a;
+            color: #15803d;
         }
 
-        .late {
+        .bg-warning {
             background: #fef3c7;
-            color: #d97706;
+            color: #b45309;
         }
 
-        .absent {
+        .bg-danger {
             background: #fee2e2;
-            color: #dc2626;
+            color: #b91c1c;
         }
 
-        .excused {
-            background: #e0f2fe;
-            color: #0284c7;
+        .bg-primary {
+            background: #e0e7ff;
+            color: #4338ca;
         }
 
-        .kiosk-badge {
-            background: #ede9fe;
-            color: #6366f1;
-        }
-
-        .manual-badge {
-            background: #f1f5f9;
-            color: #64748b;
-        }
-
+        /* Buttons */
         .btn {
-            display: inline-block;
-            padding: 10px 20px;
-            border-radius: 12px;
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.75rem;
             border: none;
             font-family: 'Cairo';
-            font-weight: 800;
-            font-size: 14px;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
         }
 
-        .btn-blue {
-            background: #0ea5e9;
-            color: #fff;
+        .btn-primary {
+            background: var(--primary);
+            color: white;
         }
 
-        .btn-green {
-            background: #16a34a;
-            color: #fff;
+        .btn-danger {
+            background: var(--danger);
+            color: white;
         }
 
-        .btn-orange {
-            background: #f59e0b;
-            color: #fff;
+        .btn-outline {
+            background: white;
+            border: 1.5px solid var(--border);
+            color: var(--text-main);
         }
 
         .btn:hover {
             opacity: 0.9;
-            transform: scale(1.02);
+            transform: translateY(-1px);
         }
 
-        .actions {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-bottom: 22px;
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
-        #syncResult {
-            margin-top: 10px;
-            padding: 10px 16px;
-            border-radius: 10px;
-            font-weight: 700;
+        /* Modals */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
             display: none;
-        }
-
-        .log-row {
-            display: flex;
-            gap: 12px;
+            justify-content: center;
             align-items: center;
-            padding: 8px 14px;
-            border-radius: 10px;
-            margin-bottom: 6px;
-            font-size: 13px;
+            z-index: 1000;
         }
 
-        .log-ok {
-            background: #dcfce7;
-            color: #16a34a;
+        .modal-content {
+            background: white;
+            width: 95%;
+            max-width: 800px;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
         }
 
-        .log-fail {
-            background: #fee2e2;
-            color: #dc2626;
+        .modal-close {
+            position: absolute;
+            left: 1.5rem;
+            top: 1.5rem;
+            cursor: pointer;
+            font-size: 1.5rem;
         }
 
-        /* Search Bar Styles */
-        .search-bar {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
-            background: #f8fafc;
-            padding: 16px;
-            border-radius: 14px;
-            border: 1px solid #e2e8f0;
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.2rem;
         }
 
-        .search-input {
-            flex: 1;
-            padding: 12px 16px;
-            border: 1.5px solid #cbd5e1;
-            border-radius: 10px;
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1.5px solid var(--border);
+            border-radius: 0.75rem;
             font-family: 'Cairo';
-            font-size: 14px;
             outline: none;
-            transition: border-color 0.2s;
         }
 
-        .search-input:focus {
-            border-color: #0ea5e9;
+        input:focus {
+            border-color: var(--primary);
+        }
+
+        .filter-bar {
+            background: #f1f5f9;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .filter-bar .form-group {
+            margin: 0;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .summary-box {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .summary-item {
+            padding: 1rem;
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            text-align: center;
+        }
+
+        .summary-val {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .summary-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
         }
     </style>
 </head>
 
 <body>
-    <div class="header">
-        <h1>⚙️ لوحة الإدارة — {{ company }}</h1>
-        <a href="/">← العودة لتطبيق البصمة</a>
-    </div>
-    <!-- Store PIN to use in API calls -->
-    <script>const adminPin = "{{ pin }}";</script>
+
+    <header>
+        <h1>💎 Suzz Admin Pro</h1>
+        <a href="/" class="back-link">← العودة للتطبيق</a>
+    </header>
+
+    <nav class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('dashboard')">📊 الملخص</button>
+        <button class="tab-btn" onclick="switchTab('attendance')">📅 الحضور</button>
+        <button class="tab-btn" onclick="switchTab('inventory')">📦 الجرد</button>
+        <button class="tab-btn" onclick="switchTab('employees')">👥 الموظفين</button>
+    </nav>
+
     <div class="container">
 
-        <!-- Stats -->
-        <div class="stats-grid">
-            {% set todays_att = all_attendance | selectattr('attendance_date','eq',today) | list %}
-            {% set present_count = todays_att | selectattr('status','eq','present') | list | length %}
-            {% set late_count = todays_att | selectattr('status','eq','late') | list | length %}
-            {% set out_count = todays_att | selectattr('check_out_time','ne',None) | list | length %}
-            <div class="stat">
-                <div class="stat-num" style="color:#16a34a">{{ present_count + late_count }}</div>
-                <div class="stat-label">حاضر اليوم</div>
-            </div>
-            <div class="stat">
-                <div class="stat-num" style="color:#f59e0b">{{ late_count }}</div>
-                <div class="stat-label">متأخر</div>
-            </div>
-            <div class="stat">
-                <div class="stat-num" style="color:#ea580c">{{ out_count }}</div>
-                <div class="stat-label">انصرفوا</div>
-            </div>
-            <div class="stat">
-                <div class="stat-num" style="color:#6366f1">{{ unsynced_count }}</div>
-                <div class="stat-label">غير مزامن</div>
-            </div>
-        </div>
-
-        <!-- Sync Actions -->
-        <div class="card">
-            <h2>🔄 المزامنة مع السحابة</h2>
-            <div class="actions">
-                <button class="btn btn-blue" onclick="doSync()">📤 مزامنة الآن ({{ unsynced_count }} سجل)</button>
-                <button class="btn btn-green" onclick="refreshEmployees()">👥 تحديث بيانات الموظفين</button>
-            </div>
-            <div id="syncResult"></div>
-
-            {% if sync_logs %}
-            <div style="margin-top:16px">
-                <div style="font-size:13px;font-weight:800;color:#64748b;margin-bottom:8px">آخر عمليات المزامنة:</div>
-                {% for log in sync_logs[:5] %}
-                <div class="log-row {{ 'log-ok' if log.success else 'log-fail' }}">
-                    <span>{{ '✅' if log.success else '❌' }}</span>
-                    <span>{{ log.synced_at[:16] }}</span>
-                    <span>{{ log.message }}</span>
+        <!-- Tab: Dashboard -->
+        <div id="dashboard" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-num" id="stat-present">-</div>
+                    <div class="stat-label">حضور اليوم</div>
                 </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-        </div>
-
-        <!-- Attendance Schedule -->
-        <div class="card">
-            <h2>📅 جدول الحضور والانصراف</h2>
-
-            <div class="search-bar">
-                <input type="date" id="searchDate" class="search-input" value="{{ today }}" onchange="filterTable()">
-                <input type="text" id="searchName" class="search-input" placeholder="ابحث باسم الموظف..."
-                    oninput="filterTable()">
-                <select id="searchStatus" class="search-input" onchange="filterTable()" style="flex: 0.5;">
-                    <option value="">كل الحالات</option>
-                    <option value="present">حاضر</option>
-                    <option value="late">متأخر</option>
-                    <option value="absent">غائب</option>
-                    <option value="excused">إجازة</option>
-                </select>
-                <button class="btn btn-blue"
-                    onclick="document.getElementById('searchDate').value='';document.getElementById('searchName').value='';document.getElementById('searchStatus').value='';filterTable();"
-                    style="padding: 12px 20px;">إلغاء الفلاتر</button>
+                <div class="stat-card">
+                    <div class="stat-num" id="stat-late" style="color: var(--warning)">-</div>
+                    <div class="stat-label">تأخيرات</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-num" id="stat-inventory" style="color: var(--secondary)">-</div>
+                    <div class="stat-label">عمليات جرد اليوم</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-num" id="stat-unsynced" style="color: var(--danger)">-</div>
+                    <div class="stat-label">سجلات غير مزامنة</div>
+                </div>
             </div>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>الموظف</th>
-                        <th>التاريخ</th>
-                        <th>الحضور</th>
-                        <th>الانصراف</th>
-                        <th>الحالة</th>
-                        <th>المصدر</th>
-                    </tr>
-                </thead>
-                <tbody id="attendanceTableBody">
-                    {% for row in all_attendance %}
-                    <tr class="att-row" data-date="{{ row.attendance_date }}" data-name="{{ row.name | lower }}"
-                        data-status="{{ row.status }}">
-                        <td style="font-weight:800">{{ row.name }}<div style="font-size:12px;color:#94a3b8">{{
-                                row.job_title }}</div>
-                        </td>
-                        <td style="font-weight:700;color:#64748b">{{ row.attendance_date }}</td>
-                        <td style="color:#16a34a;font-weight:800">{{ row.check_in_time[:5] if row.check_in_time else '—'
-                            }}</td>
-                        <td style="color:#ea580c;font-weight:800">{{ row.check_out_time[:5] if row.check_out_time else
-                            '—' }}</td>
-                        <td>
-                            <span class="badge {{ row.status }}">
-                                {% if row.status == 'present' %}✅ حاضر
-                                {% elif row.status == 'late' %}⏰ متأخر
-                                {% elif row.status == 'absent' %}❌ غائب
-                                {% elif row.status == 'excused' %}📋 إجازة
-                                {% else %}{{ row.status }}{% endif %}
-                            </span>
-                        </td>
-                        <td><span class="badge {{ 'kiosk-badge' if row.source == 'kiosk' else 'manual-badge' }}">{{ '📱
-                                تطبيق البصمة' if row.source == 'kiosk' else '✏️ يدوي' }}</span></td>
-                    </tr>
-                    {% endfor %}
-                    <tr id="noResultsRow" style="display: none;">
-                        <td colspan="6" style="text-align:center;padding:40px;color:#94a3b8">لا توجد سجلات مطابقة للبحث
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">🚀 عمليات سريعة</h2>
+                </div>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="doSync()">📤 مزامنة الكل مع السحابة</button>
+                    <button class="btn btn-outline" onclick="refreshEmployees()">👥 تحديث قائمة الموظفين</button>
+                </div>
+                <div id="syncStatusMsg"
+                    style="margin-top: 1rem; padding: 0.5rem; display: none; border-radius: 0.5rem;"></div>
+            </div>
         </div>
 
-        <!-- Manage Linked Devices -->
-        <div class="card" style="margin-top: 24px;">
-            <h2>📱 إدارة الأجهزة المرتبطة</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>الموظف</th>
-                        <th>حالة الجهاز</th>
-                        <th>إجراء</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for emp in employees %}
-                    <tr>
-                        <td style="font-weight:800">{{ emp.name }}</td>
-                        <td>
-                            {% if emp.device_id %}
-                            <span style="color:#16a34a; font-weight:bold;">✅ مرتبط</span>
-                            {% else %}
-                            <span style="color:#94a3b8;">غير مرتبط</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if emp.device_id %}
-                            <button class="btn"
-                                style="background:#fee2e2; color:#dc2626; padding:4px 12px; font-size:12px; height:auto;"
-                                onclick="unlinkDevice('{{ emp.id }}', this)">فك الارتباط</button>
-                            {% else %}
-                            —
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <!-- Tab: Attendance -->
+        <div id="attendance" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">سجل الحضور اليومي</h2>
+                    <input type="date" id="att-filter-date" value="{{ today }}" onchange="renderAttendanceTable()">
+                </div>
+                <div class="table-container">
+                    <table id="attendanceTable">
+                        <thead>
+                            <tr>
+                                <th>الموظف</th>
+                                <th>التوقيت</th>
+                                <th>الحالة</th>
+                                <th>تفاصيل</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTbody"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
+        <!-- Tab: Inventory -->
+        <div id="inventory" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">سجلات الجرد</h2>
+                </div>
+                <div class="table-container">
+                    <table id="inventoryTable">
+                        <thead>
+                            <tr>
+                                <th>الموظف</th>
+                                <th>الفرع</th>
+                                <th>الوردية</th>
+                                <th>الوقت</th>
+                                <th>عرض الأصناف</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryTbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Employees -->
+        <div id="employees" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">قائمة الموظفين</h2>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>الاسم</th>
+                                <th>الموبايل</th>
+                                <th>الوظيفة</th>
+                                <th>PIN</th>
+                                <th>الجهاز</th>
+                                <th>الإجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for emp in employees %}
+                            <tr>
+                                <td><b>{{ emp.name }}</b></td>
+                                <td>{{ emp.phone or '---' }}</td>
+                                <td>{{ emp.job_title }}</td>
+                                <td><code>{{ emp.pin_code }}</code></td>
+                                <td>
+                                    {% if emp.device_id %}
+                                    <span class="badge bg-success" title="{{ emp.device_id }}">📱 مرتبط</span>
+                                    <br>
+                                    <button class="btn btn-outline btn-unlink"
+                                        style="padding: 2px 8px; font-size: 0.7rem; margin-top: 4px;"
+                                        data-id="{{ emp.id }}" data-name="{{ emp.name }}">فك الارتباط</button>
+                                    {% else %}
+                                    <span class="badge bg-warning">حر</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div style="display: flex; gap: 5px;">
+                                        <button class="btn btn-outline btn-edit" style="padding: 0.3rem 0.6rem;"
+                                            data-emp='{{ emp|tojson }}' title="تعديل">✏️</button>
+                                        <button class="btn btn-primary btn-history" style="padding: 0.3rem 0.6rem;"
+                                            data-id="{{ emp.id }}" data-name="{{ emp.name }}"
+                                            title="إحصائيات">📊</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal: Edit Employee -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal('editModal')">&times;</span>
+            <h2 style="margin-bottom: 1.5rem;">تعديل بيانات موظف</h2>
+            <form id="editForm">
+                <input type="hidden" id="edit-id">
+                <div class="form-group">
+                    <label>الاسم الكامل</label>
+                    <input type="text" id="edit-name">
+                </div>
+                <div class="form-group">
+                    <label>رقم الموبايل (للدخول)</label>
+                    <input type="text" id="edit-phone" placeholder="اختياري">
+                </div>
+                <div class="form-group">
+                    <label>المسمى الوظيفي</label>
+                    <input type="text" id="edit-title">
+                </div>
+                <div class="form-group">
+                    <label>كلمة المرور (PIN) - 4 أرقام</label>
+                    <input type="text" id="edit-pin" maxlength="4">
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                    <button type="button" class="btn btn-primary" onclick="saveEmployee()">حفظ التعديلات</button>
+                    <button type="button" class="btn btn-outline" onclick="closeModal('editModal')">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Employee History -->
+    <div class="modal" id="historyModal">
+        <div class="modal-content" style="max-width: 900px;">
+            <span class="modal-close" onclick="closeModal('historyModal')">&times;</span>
+            <h2 id="history-emp-name" style="margin-bottom: 0.5rem;">سجل الموظف</h2>
+
+            <div class="filter-bar">
+                <div class="form-group">
+                    <label>من تاريخ</label>
+                    <input type="date" id="hist-start-date">
+                </div>
+                <div class="form-group">
+                    <label>إلى تاريخ</label>
+                    <input type="date" id="hist-end-date">
+                </div>
+                <button class="btn btn-primary" id="btn-hist-filter" style="height: 48px;">بحث وتصفية</button>
+            </div>
+
+            <div class="summary-box" id="history-summary">
+                <div class="summary-item">
+                    <div class="summary-val" id="sum-present">0</div>
+                    <div class="summary-label">أيام الحضور</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-val" id="sum-absent" style="color: var(--danger)">0</div>
+                    <div class="summary-label">أيام الغياب</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-val" id="sum-late" style="color: var(--warning)">0</div>
+                    <div class="summary-label">تأخيرات</div>
+                </div>
+            </div>
+
+            <div class="nav-tabs" style="padding: 0; margin-bottom: 1rem;">
+                <button class="tab-btn active" id="btn-hist-att" onclick="switchSubTab('att')">🕒 سجل الحضور</button>
+                <button class="tab-btn" id="btn-hist-inv" onclick="switchSubTab('inv')">📦 سجل الجرد</button>
+            </div>
+
+            <div id="subtab-att" class="subtab-content">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>التاريخ / اليوم</th>
+                                <th>الحضور</th>
+                                <th>الانصراف</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hist-att-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="subtab-inv" class="subtab-content" style="display: none;">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>الفرع</th>
+                                <th>الوردية</th>
+                                <th>تفاصيل</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hist-inv-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Inventory Details -->
+    <div class="modal" id="inventoryDetailsModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="modal-close" onclick="closeModal('inventoryDetailsModal')">&times;</span>
+            <h2 style="margin-bottom: 1rem;">تفاصيل الجرد</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>الصنف</th>
+                            <th>الكمية</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inv-details-tbody"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <script>
+        const adminPin = "{{ pin }}";
+        const todayStr = "{{ today }}";
+        // Use a hidden element to store JSON to avoid IDE linter errors in <script>
+    </script>
+    <div id="attendance-data-store" style="display:none">{{ all_attendance|tojson|safe }}</div>
+
+    <script>
+        const allAttendanceData = JSON.parse(document.getElementById('attendance-data-store').textContent);
+        let currentEmpId = null;
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+
+            // Find the btn that was clicked
+            const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.textContent.includes(event.target.textContent));
+            if (btn) btn.classList.add('active');
+        }
+
+        function switchSubTab(type) {
+            document.querySelectorAll('.subtab-content').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('#historyModal .tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('subtab-' + type).style.display = 'block';
+            document.getElementById('btn-hist-' + type).classList.add('active');
+        }
+
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        // --- DASHBOARD ---
+        function updateDashboard() {
+            const todaysAtt = allAttendanceData.filter(a => a.attendance_date === todayStr);
+            document.getElementById('stat-present').textContent = todaysAtt.length;
+            document.getElementById('stat-late').textContent = todaysAtt.filter(a => a.status === 'late').length;
+            document.getElementById('stat-unsynced').textContent = "{{ unsynced_count }}";
+        }
+
+        // --- ATTENDANCE ---
+        function renderAttendanceTable() {
+            const filterDate = document.getElementById('att-filter-date').value;
+            const tbody = document.getElementById('attendanceTbody');
+            tbody.innerHTML = '';
+
+            const filtered = allAttendanceData.filter(a => a.attendance_date === filterDate);
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">لا يوجد سجلات لهذا اليوم</td></tr>';
+                return;
+            }
+
+            filtered.forEach(a => {
+                const statusCls = a.status === 'present' ? 'bg-success' : (a.status === 'late' ? 'bg-warning' : 'bg-danger');
+                const statusTxt = a.status === 'present' ? 'حاضر' : (a.status === 'late' ? 'متأخر' : 'غائب');
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td><b>${a.name}</b></td>
+                        <td>
+                            <div style="font-size: 0.8rem; color: var(--text-muted)">↗ ${a.check_in_time ? a.check_in_time.slice(0, 5) : '--:--'}</div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted)">↘ ${a.check_out_time ? a.check_out_time.slice(0, 5) : '--:--'}</div>
+                        </td>
+                        <td><span class="badge ${statusCls}">${statusTxt}</span></td>
+                        <td><button class="btn btn-outline" style="padding: 0.3rem;" onclick='showEmployeeHistory(${a.employee_id}, "${a.name}")'>🔍</button></td>
+                    </tr>
+                `;
+            });
+        }
+
+        // --- EMPLOYEES ---
+        function openEditModal(emp) {
+            document.getElementById('edit-id').value = emp.id;
+            document.getElementById('edit-name').value = emp.name;
+            document.getElementById('edit-phone').value = emp.phone || '';
+            document.getElementById('edit-title').value = emp.job_title;
+            document.getElementById('edit-pin').value = emp.pin_code;
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        async function saveEmployee() {
+            const data = {
+                admin_pin: adminPin,
+                id: document.getElementById('edit-id').value,
+                name: document.getElementById('edit-name').value,
+                phone: document.getElementById('edit-phone').value,
+                job_title: document.getElementById('edit-title').value,
+                pin_code: document.getElementById('edit-pin').value
+            };
+
+            const res = await fetch('/api/admin/employee/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+            if (result.success) {
+                location.reload();
+            } else {
+                alert("خطأ: " + result.error);
+            }
+        }
+
+        async function unlinkDevice(empId, name) {
+            if (!confirm(`هل أنت متأكد من فك ارتباط جهاز الموظف: ${name}؟`)) return;
+
+            const res = await fetch('/api/admin/employee/unlink', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ admin_pin: adminPin, id: empId })
+            });
+            const result = await res.json();
+            if (result.success) {
+                location.reload();
+            } else {
+                alert("خطأ: " + result.error);
+            }
+        }
+
+        // --- HISTORY ---
+        async function showEmployeeHistory(empId, name) {
+            currentEmpId = empId;
+            document.getElementById('history-emp-name').textContent = "إحصائيات الموظف: " + name;
+
+            // Set default dates: first of month to today
+            const now = new Date();
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+            document.getElementById('hist-start-date').value = firstDay;
+            document.getElementById('hist-end-date').value = todayStr;
+
+            document.getElementById('historyModal').style.display = 'flex';
+            fetchHistory();
+        }
+
+        document.getElementById('btn-hist-filter').onclick = fetchHistory;
+
+        async function fetchHistory() {
+            const start = document.getElementById('hist-start-date').value;
+            const end = document.getElementById('hist-end-date').value;
+            const btn = document.getElementById('btn-hist-filter');
+            btn.disabled = true;
+
+            const res = await fetch(`/api/admin/employee/history/${currentEmpId}?admin_pin=${adminPin}&start_date=${start}&end_date=${end}`);
+            const data = await res.json();
+
+            renderHistoryUI(data, start, end);
+            btn.disabled = false;
+        }
+
+        function renderHistoryUI(data, start, end) {
+            const attTbody = document.getElementById('hist-att-tbody');
+            attTbody.innerHTML = '';
+
+            // Generate all dates in range to detect absence
+            const dateList = [];
+            let curr = new Date(start);
+            const last = new Date(end);
+            while (curr <= last) {
+                dateList.push(new Date(curr).toISOString().split('T')[0]);
+                curr.setDate(curr.getDate() + 1);
+            }
+            dateList.reverse(); // Show newest first
+
+            let presentCount = 0;
+            let lateCount = 0;
+            let absentCount = 0;
+
+            dateList.forEach(d => {
+                const dayName = new Date(d).toLocaleDateString('ar-EG', { weekday: 'long' });
+                const record = data.attendance.find(a => a.attendance_date === d);
+
+                if (record) {
+                    presentCount++;
+                    if (record.status === 'late') lateCount++;
+                    const statusCls = record.status === 'present' ? 'bg-success' : 'bg-warning';
+                    attTbody.innerHTML += `
+                        <tr>
+                            <td>${d} <br><small>${dayName}</small></td>
+                            <td>${record.check_in_time ? record.check_in_time.slice(0, 5) : '--:--'}</td>
+                            <td>${record.check_out_time ? record.check_out_time.slice(0, 5) : '--:--'}</td>
+                            <td><span class="badge ${statusCls}">${record.status}</span></td>
+                        </tr>
+                    `;
+                } else {
+                    absentCount++;
+                    attTbody.innerHTML += `
+                        <tr style="background-color: #fef2f2">
+                            <td>${d} <br><small>${dayName}</small></td>
+                            <td>--:--</td>
+                            <td>--:--</td>
+                            <td><span class="badge bg-danger">غائب</span></td>
+                        </tr>
+                    `;
+                }
+            });
+
+            document.getElementById('sum-present').textContent = presentCount;
+            document.getElementById('sum-absent').textContent = absentCount;
+            document.getElementById('sum-late').textContent = lateCount;
+
+            const invTbody = document.getElementById('hist-inv-tbody');
+            invTbody.innerHTML = '';
+            data.inventory_counts.forEach(i => {
+                invTbody.innerHTML += `
+                    <tr>
+                        <td>${i.count_date}</td>
+                        <td>${i.branch}</td>
+                        <td>${i.shift}</td>
+                        <td><button class="btn btn-outline" style="padding: 0.2rem;" onclick="viewInventoryDetails(${i.id})">👁️</button></td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function viewInventoryDetails(id) {
+            const res = await fetch(`/api/admin/inventory/details/${id}?admin_pin=${adminPin}`);
+            const data = await res.json();
+            const tbody = document.getElementById('inv-details-tbody');
+            tbody.innerHTML = '';
+            data.items.forEach(item => {
+                tbody.innerHTML += `<tr><td>${item.name}</td><td><b>${item.count}</b></td></tr>`;
+            });
+            document.getElementById('inventoryDetailsModal').style.display = 'flex';
+            document.getElementById('inventoryDetailsModal').style.zIndex = 1100;
+        }
+
+        // --- UTILS ---
         async function doSync() {
             const btn = event.target; btn.disabled = true; btn.textContent = '⏳ جاري المزامنة...';
             const res = await fetch('/sync_now', { method: 'POST' });
             const data = await res.json();
-            const el = document.getElementById('syncResult');
+            const el = document.getElementById('syncStatusMsg');
             el.style.display = 'block';
-            el.style.background = data.success ? '#dcfce7' : '#fee2e2';
+            el.style.backgroundColor = data.success ? '#dcfce7' : '#fee2e2';
             el.style.color = data.success ? '#16a34a' : '#dc2626';
             el.textContent = data.message;
-            btn.disabled = false; btn.textContent = '📤 مزامنة الآن';
+            btn.disabled = false; btn.textContent = '📤 مزامنة الكل';
             setTimeout(() => location.reload(), 2000);
         }
+
         async function refreshEmployees() {
             const btn = event.target; btn.disabled = true; btn.textContent = '⏳ جاري التحديث...';
             const res = await fetch('/refresh_employees', { method: 'POST' });
             const data = await res.json();
-            const el = document.getElementById('syncResult');
+            const el = document.getElementById('syncStatusMsg');
             el.style.display = 'block';
-            el.style.background = data.success ? '#dcfce7' : '#fee2e2';
+            el.style.backgroundColor = data.success ? '#dcfce7' : '#fee2e2';
             el.style.color = data.success ? '#16a34a' : '#dc2626';
             el.textContent = data.message;
-            btn.disabled = false; btn.textContent = '👥 تحديث بيانات الموظفين';
+            btn.disabled = false; btn.textContent = '👥 تحديث الموظفين';
             if (data.success) setTimeout(() => location.reload(), 1500);
         }
 
-        async function unlinkDevice(empId, btn) {
-            if (!confirm('هل أنت متأكد من فك ارتباط هاتف هذا الموظف؟ سيُطلب منه إعادة إدخال الرقم السري (PIN) في المرة القادمة.')) return;
-            btn.disabled = true;
-            btn.textContent = '⏳...';
-            try {
-                const res = await fetch('/unlink_employee_device', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ employee_id: empId, pin: adminPin })
+        window.onload = () => {
+            updateDashboard();
+            renderAttendanceTable();
+            // Fetch all inventory today
+            fetch(`/api/local/my_counts?admin_pin=${adminPin}&count_date=${todayStr}`).then(r => r.json()).then(data => {
+                const tbody = document.getElementById('inventoryTbody');
+                tbody.innerHTML = '';
+                data.forEach(i => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><b>${i.employee_name}</b></td>
+                            <td>${i.branch}</td>
+                            <td>${i.shift}</td>
+                            <td>${i.created_at.slice(11, 16)}</td>
+                            <td><button class="btn btn-outline btn-inv-details" data-id="${i.id}">👁️ عرض</button></td>
+                        </tr>
+                    `;
                 });
-                const data = await res.json();
-                if (data.success) {
-                    alert('تم فك الارتباط بنجاح!');
-                    location.reload();
-                } else {
-                    alert('حدث خطأ: ' + (data.error || 'غير معروف'));
-                    btn.disabled = false;
-                    btn.textContent = 'فك الارتباط';
-                }
-            } catch (e) {
-                console.error(e);
-                alert('خطأ في الاتصال بالخادم: تأكد أن تطبيق البصمة يعمل.');
-                btn.disabled = false;
-                btn.textContent = 'فك الارتباط';
-            }
-        }
-
-        // Search and Filter Logic
-        function filterTable() {
-            const searchDate = document.getElementById('searchDate').value;
-            const searchName = document.getElementById('searchName').value.toLowerCase();
-            const searchStatus = document.getElementById('searchStatus').value;
-
-            const rows = document.querySelectorAll('.att-row');
-            let visibleCount = 0;
-
-            rows.forEach(row => {
-                const rowDate = row.getAttribute('data-date');
-                const rowName = row.getAttribute('data-name');
-                const rowStatus = row.getAttribute('data-status');
-
-                let dateMatch = !searchDate || rowDate === searchDate;
-                let nameMatch = !searchName || rowName.includes(searchName);
-                let statusMatch = !searchStatus || rowStatus === searchStatus;
-
-                if (dateMatch && nameMatch && statusMatch) {
-                    row.style.display = 'table-row';
-                    visibleCount++;
-                } else {
-                    row.style.display = 'none';
-                }
             });
+        };
 
-            document.getElementById('noResultsRow').style.display = visibleCount === 0 ? 'table-row' : 'none';
-        }
+        // --- Event Listeners for buttons (to avoid inline JS) ---
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('button');
+            if (!btn) return;
 
-        // Initialize table
-        window.onload = filterTable;
+            if (btn.classList.contains('btn-unlink')) {
+                unlinkDevice(btn.dataset.id, btn.dataset.name);
+            } else if (btn.classList.contains('btn-edit')) {
+                openEditModal(JSON.parse(btn.dataset.emp));
+            } else if (btn.classList.contains('btn-history')) {
+                showEmployeeHistory(btn.dataset.id, btn.dataset.name);
+            } else if (btn.classList.contains('btn-inv-details')) {
+                viewInventoryDetails(btn.dataset.id);
+            }
+        });
     </script>
 </body>
 

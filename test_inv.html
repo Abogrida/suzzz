@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تسجيل جرد - {{ company }}</title>
+    <title>تسجيل جرد - شركتي</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         body {
@@ -337,17 +337,12 @@
         <div class="top-bar">
             <div class="user-info">
                 <div class="user-icon" onclick="window.location.href='/'" style="cursor: pointer;">🔙</div>
-                <div style="margin-right: 15px;">
-                    <button onclick="window.location.href='/'"
-                        style="background:rgba(0,0,0,0.05); border:none; color:#1e293b; padding:10px 18px; border-radius:12px; font-weight:900; font-family:'Cairo'; cursor:pointer; display:flex; align-items:center; gap:8px;">
-                        ⬅ عودة
-                    </button>
-                </div>
                 <div>
-                    <div class="user-name">{{ employee.name }}</div>
+                    <div class="user-name">صلاح </div>
                     <div class="user-sub">صفحة الجرد (أوفلاين)</div>
                 </div>
             </div>
+            <a href="/logout" class="btn-logout">🚪 خروج</a>
         </div>
 
         <div class="container">
@@ -396,11 +391,13 @@
 
             <!-- Hot Items -->
             <div class="section-card">
+                <h3 class="section-title">🔥 قسم الساخن</h3>
                 <div id="hotItemsList"></div>
             </div>
 
             <!-- Cold Items -->
             <div class="section-card">
+                <h3 class="section-title">🧊 قسم البارد</h3>
                 <div id="coldItemsList"></div>
             </div>
 
@@ -411,30 +408,23 @@
         </div>
     </div>
 
-    <div id="successView" class="success-screen">
-        <div class="success-card">
-            <div class="success-icon">✅</div>
-            <h2 style="margin: 0 0 10px 0; font-size: 28px;">تم حفظ الجرد!</h2>
-            <p id="successSub" style="margin: 0 0 30px 0; color: #64748b; font-weight: 700;"></p>
-
-            <button onclick="shareToWhatsApp()"
-                style="background: #25D366; color: white; border: none; padding: 15px 30px; border-radius: 16px; font-size: 18px; font-weight: 800; font-family: 'Cairo'; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; margin-bottom: 15px; box-shadow: 0 10px 20px rgba(37, 211, 102, 0.3);">
-                📤 مشاركة عبر واتساب
-            </button>
-            <button onclick="location.reload()"
-                style="background: #f1f5f9; color: #475569; border: none; padding: 15px; border-radius: 16px; font-size: 16px; font-weight: 800; font-family: 'Cairo'; cursor: pointer; width: 100%;">
-                🔄 جرد جديد
-            </button>
-            <br>
+    <div class="success-screen" id="successView">
+        <div class="success-icon">✅</div>
+        <div class="success-title">تم حفظ الجرد بنجاح!</div>
+        <div class="success-sub" id="successSub"></div>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+            <button onclick="window.location.reload()"
+                style="background: #16a34a; color: #fff; border: none; border-radius: 14px; padding: 14px 32px; font-weight: 800; font-size: 18px; cursor: pointer; font-family: 'Cairo'">📝
+                جرد جديد</button>
             <button onclick="window.location.href='/'"
-                style="background: #64748b; color: #fff; border: none; border-radius: 14px; padding: 14px 32px; font-weight: 800; font-size: 18px; cursor: pointer; font-family: 'Cairo'; width: 100%; margin-top: 15px;">🏠
+                style="background: #64748b; color: #fff; border: none; border-radius: 14px; padding: 14px 32px; font-weight: 800; font-size: 18px; cursor: pointer; font-family: 'Cairo'">🏠
                 العودة للرئيسية</button>
         </div>
     </div>
 
     <script>
-        const HOT_ITEMS = ['فاتح ساده', 'فاتح محوج', 'وسط ساده', 'وسط محوج', 'غامق ساده', 'غامق محوج', 'بندق', 'اسبريسو', 'نسكافيه', 'سكر', 'شاي اسطف', 'شاي إفطار ليبتون', 'شاي احمد تى', 'ينسون', 'نعناع', 'قرفه', 'جنزبيل', 'شاي نكهات', 'شاي كرك', 'شاي عدنى'];
-        const COLD_ITEMS = ['بيبسي دايت', 'سفن', 'ريد بول', 'ستينج', 'دبل دير', 'فيروز', 'تويست', 'باور هورس', 'بيبسي', 'مياه', 'حليب', 'ايس كريم', 'بلح', 'افوكادو', 'موز', 'ليمون', 'كركديه', 'مانجو', 'فراوله', 'جوافه', 'ماتشا', 'بودر كوفي', 'بودر شوكليت', 'بودر فانيليا', 'نوتيلا', 'صوص بستاشيو', 'صوص لوتس', 'صوص دارك', 'صوص وايت', 'حليب مكثف', 'كريمة خفق', 'سيرب فانيليا', 'سيرب كراميل', 'سيرب نعناع', 'سيرب بلو كورواسو', 'سيرب بندق', 'سيرب توفي', 'سيرب جوز هند', 'سيرب ايرش', 'سيرب موخيتو', 'سيرب كراميل مملح', 'سيرب شيري كولا', 'سيرب بيناكولادا', 'سيرب فراوله', 'سيرب كريز', 'سيرب راسبيري', 'سيرب روز', 'توبينج خوخ', 'توبينج باشون', 'توبينج بلوبيري', 'توبينج راسبيري', 'توبينج كيوي', 'توبينج مانجو', 'توبينج فراوله', 'مونين وايت', 'مونين دارك', 'مونين كراميل', 'مولتن كيك', 'شوكليت كيك', 'شيز كيك', 'سويسرول', 'براونيزك', 'كوكيز'];
+        const HOT_ITEMS = ['فاتح ساده', 'فاتح محوج', 'وسط ساده', 'وسط محوج', 'غامق ساده', 'اسبريسو', 'سكر', 'بندق', 'فرنساوي', 'شاي اسطف', 'شاي ليبتون', 'شاي ليبتون اخضر', 'شاي احمد تي', 'شاي احمد تي اخضر', 'نعناع', 'قرفه زنجبيل', 'قرفه', 'ينسون', 'كركديه', 'شاي عدني', 'كوفي ميكس', 'هوت كاكاو كادبري'];
+        const COLD_ITEMS = ['ريدبول', 'باور هورس', 'في كولا', 'فيروز', 'بيريل', 'بيبسي', 'تويست', 'دبل دير', 'استينج', 'فيري جو', 'مياه'];
         const SHIFT_LABELS = { morning: 'صباحي ☀️', evening: 'مسائي 🌙', night: 'ليلي ✨' };
 
         let currentBranch = null;
@@ -509,23 +499,13 @@
                 data.forEach((c, i) => {
                     const timeStr = new Date(c.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
                     const bg = i % 2 === 0 ? '#fff' : '#f8fafc';
-
-                    let itemsHtml = '<div style="margin-top: 14px; font-size: 14px; color: #475569; display: none; padding-top: 10px; border-top: 1px solid #e2e8f0;" id="items-' + i + '">';
-                    c.items.forEach(it => {
-                        itemsHtml += `<div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #e2e8f0;"><span style="font-weight:700;">${it.item_name}</span><span style="font-weight: 900; color:#0f172a">${it.quantity}</span></div>`;
-                    });
-                    itemsHtml += '</div>';
-
                     html += `
-                    <div class="count-item" style="background: ${bg}; flex-direction: column; align-items: stretch; cursor: pointer; border: 1px solid #e2e8f0; margin-bottom: 8px;" onclick="const e = document.getElementById('items-${i}'); e.style.display = e.style.display === 'none' ? 'block' : 'none'">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <div style="font-size: 14px; color: #1e293b; font-weight: 800;">${c.employee_name} (${SHIFT_LABELS[c.shift] || c.shift})</div>
-                                <div style="font-size: 13px; color: #64748b; margin-top: 2px;">الساعة 🕐 ${timeStr} • ${c.items_counted} صنف</div>
-                            </div>
-                            <div style="background: #e0e7ff; color: #4338ca; padding: 6px 12px; border-radius: 8px; font-weight: 800; font-size: 13px; display:flex; align-items:center; gap: 4px;">✔ محفوظ ▾</div>
+                    <div class="count-item" style="background: ${bg}">
+                        <div>
+                            <div style="font-size: 14px; color: #1e293b; font-weight: 800;">جرد أوفلاين</div>
+                            <div style="font-size: 13px; color: #64748b; margin-top: 2px;">الساعة 🕐 ${timeStr} • ${c.items_counted} صنف</div>
                         </div>
-                        ${itemsHtml}
+                        <div style="margin-right: auto; background: #e0e7ff; color: #4338ca; padding: 4px 10px; border-radius: 8px; font-weight: 800; font-size: 12px; display:flex; align-items:center; gap: 4px;">✔ محفوظ</div>
                     </div>
                 `;
                 });
@@ -582,7 +562,7 @@
                 const data = await res.json();
                 if (data.success) {
                     document.getElementById('appView').style.display = 'none';
-                    document.getElementById('successSub').innerText = `شكراً {{ employee.name.split(' ')[0] }} 🙏 (فرع ${currentBranch})`;
+                    document.getElementById('successSub').innerText = `شكراً صلاح 🙏 (فرع ${currentBranch})`;
                     document.getElementById('successView').style.display = 'flex';
                     // Trigger background sync
                     fetch('/sync_now', { method: 'POST' }).catch(x => x);
@@ -597,68 +577,6 @@
                 btn.innerText = '✅ محاولة الإرسال مجدداً';
             }
         }
-
-        function shareToWhatsApp() {
-            if (!currentBranch) return;
-
-            const dateInput = document.getElementById('countDate').value;
-            const dateFormatted = dateInput.split('-').reverse().join('/');
-            const shiftLabel = SHIFT_LABELS[currentShift] || currentShift;
-
-            const separator = '━━━━━━━━━━━━━━━━━━━━━━';
-
-            const hotSection = HOT_ITEMS.map(item => {
-                const qty = countData[item] || 0;
-                return `  • ${item}: *${qty}*`;
-            }).join('\n');
-
-            const coldSection = COLD_ITEMS.map(item => {
-                const qty = countData[item] || 0;
-                return `  • ${item}: *${qty}*`;
-            }).join('\n');
-
-            const message = [
-                `☕ *تقرير جرد يومي - Suzz*`,
-                separator,
-                `👤 *الموظف:* {{ employee.name }}`,
-                `🏪 *الفرع:* ${currentBranch}`,
-                `📅 *التاريخ:* ${dateFormatted}`,
-                `🕐 *الشيفت:* ${shiftLabel}`,
-                separator,
-                `🔥 *المشروبات الساخنة:*`,
-                hotSection,
-                separator,
-                `🧊 *المشروبات الباردة:*`,
-                coldSection,
-                separator,
-                `✅ _تم رفع الجرد بنجاح عبر نظام المخزون_`
-            ].filter(Boolean).join('\n');
-
-            const encoded = encodeURIComponent(message);
-            window.open(`https://wa.me/?text=${encoded}`, '_blank');
-        }
-
-        // --- Security: Periodic Device Link Check ---
-        setInterval(async () => {
-            const empId = localStorage.getItem('kiosk_emp_id');
-            const devId = localStorage.getItem('kiosk_device_id');
-            if (!empId || !devId) {
-                window.location.href = '/logout';
-                return;
-            }
-
-            try {
-                const res = await fetch('/api/auto_login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ employee_id: empId, device_id: devId })
-                });
-                const data = await res.json();
-                if (!data.success) {
-                    window.location.href = '/logout';
-                }
-            } catch (e) { }
-        }, 15000);
     </script>
 
 </body>

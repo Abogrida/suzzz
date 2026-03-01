@@ -7,9 +7,9 @@ Attendance is stored in SQLite and synced to the cloud when internet is availabl
 """
 
 import json, os, sqlite3, threading, time, webbrowser, socket
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from contextlib import contextmanager
-from flask import Flask, request, jsonify, render_template, redirect, url_for
+from flask import Flask, request, jsonify, render_template, redirect, url_for, session
 
 try:
     import requests
@@ -29,6 +29,8 @@ def load_config():
 cfg = load_config()
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
+app.secret_key = 'suzz-inventory-kiosk-secret'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=12)
 
 def get_local_ip():
     try:
@@ -59,10 +61,16 @@ def init_db():
             off_days TEXT DEFAULT '[]',
             is_active INTEGER DEFAULT 1,
             pin_code TEXT DEFAULT '0000',
+            phone TEXT DEFAULT '',
             device_id TEXT,
             last_synced_at TEXT
         );
     """)
+    # Ensure phone column exists for existing DBs
+    try:
+        db.execute("ALTER TABLE employees ADD COLUMN phone TEXT DEFAULT ''")
+    except:
+        pass
     db.execute('''
         CREATE TABLE IF NOT EXISTS attendance (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -71,8 +79,7 @@ def init_db():
             check_in_time TEXT,
             check_out_time TEXT,
             status TEXT NOT NULL,
-            synced INTEGER DEFAULT 0,
-            UNIQUE(employee_id, attendance_date)
+            synced INTEGER DEFAULT 0
         )
     ''')
     db.execute('''
@@ -103,15 +110,18 @@ def init_db():
         )
     ''')
     db.execute('''
-        CREATE TABLE IF NOT EXISTS inventory_counts (
+        CREATE TABLE IF NOT EXISTS offline_counts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            product_id INTEGER NOT NULL,
-            counted_quantity INTEGER NOT NULL,
-            timestamp TEXT NOT NULL,
             employee_id INTEGER,
-            synced INTEGER DEFAULT 0
+            count_date TEXT,
+            shift TEXT,
+            branch TEXT,
+            items_json TEXT,
+            synced INTEGER DEFAULT 0,
+            created_at TEXT
         )
     ''')
+    
     db.commit()
     db.close()
 
@@ -132,52 +142,196 @@ def calculate_status(check_in: str, work_start: str, threshold: int) -> str:
 # ── Routes ──────────────────────────────────
 @app.route('/')
 def index():
+    emp_id = session.get('employee_id')
+    dev_id = session.get('device_id')
+    if not emp_id or not dev_id:
+        return redirect(url_for('login'))
+        
     db = get_db()
-    employees = db.execute(
-        "SELECT * FROM employees WHERE is_active=1 ORDER BY name"
-    ).fetchall()
+    # Security: Verify device_id is still linked to this employee
+    emp = db.execute("SELECT * FROM employees WHERE id=? AND device_id=? AND is_active=1", (emp_id, dev_id)).fetchone()
+    
+    if not emp:
+        db.close()
+        session.clear()
+        return redirect(url_for('login'))
+
     today = date.today().isoformat()
-    attendance = db.execute(
-        "SELECT * FROM attendance WHERE attendance_date=?", (today,)
-    ).fetchall()
-    db.close()
-    att_map = {a['employee_id']: dict(a) for a in attendance}
+    # Get latest attendance session for today that isn't fully closed
+    attendance = db.execute("""
+        SELECT * FROM attendance 
+        WHERE employee_id = ? AND attendance_date = ? 
+        ORDER BY id DESC LIMIT 1
+    """, (emp['id'], today)).fetchone()
+    
+    if attendance and attendance['check_out_time']:
+        active_attendance = None
+    else:
+        active_attendance = attendance
+
     sync_status = get_sync_status()
+    port = cfg.get('kiosk_port', 8085)
+    network_url = f"http://{get_local_ip()}:{port}"
+    db.close()
+    
+    return render_template('dashboard.html', 
+                           employee=dict(emp), 
+                           attendance=active_attendance, 
+                           company=cfg.get('company_name', 'Suzz Inventory'),
+                           sync_status=sync_status,
+                           network_url=network_url)
+
+@app.route('/login', methods=['GET'])
+def login():
     port = cfg.get('kiosk_port', 8080)
     network_url = f"http://{get_local_ip()}:{port}"
-    return render_template('index.html',
-        employees=[dict(e) for e in employees],
-        att_map=att_map,
-        today=today,
-        company=cfg.get('company_name', 'شركتي'),
-        sync_status=sync_status,
-        network_url=network_url
-    )
+    db = get_db()
+    employees = db.execute("SELECT id, name FROM employees WHERE is_active=1 ORDER BY name").fetchall()
+    db.close()
+    return render_template('login.html', employees=[dict(e) for e in employees], company=cfg.get('company_name', 'Suzz'), network_url=network_url)
+
+@app.route('/login_and_link', methods=['POST'])
+def login_and_link():
+    data = request.json
+    identifier = str(data.get('identifier', '')).strip()
+    pin = str(data.get('pin', '')).strip()
+    device_id = str(data.get('device_id', ''))
+    
+    db = get_db()
+    if identifier.isdigit():
+        emp = db.execute("SELECT * FROM employees WHERE (name=? OR phone=? OR id=?) AND is_active=1", (identifier, identifier, int(identifier))).fetchone()
+    else:
+        emp = db.execute("SELECT * FROM employees WHERE (name=? OR phone=?) AND is_active=1", (identifier, identifier)).fetchone()
+        
+    if emp and str(emp['pin_code']) == pin:
+        # Check if already linked to another device
+        if emp['device_id'] and emp['device_id'] != device_id:
+            db.close()
+            return jsonify({
+                'success': False, 
+                'error': 'هذا الحساب مربوط بجهاز آخر بالفعل. يرجى مراجعة الأدمن لفك الارتباط.'
+            }), 403
+
+        # Link device locally
+        db.execute("UPDATE employees SET device_id=? WHERE id=?", (device_id, emp['id']))
+        db.commit()
+        db.close()
+        try_sync_device_id_to_cloud(emp['id'], device_id)
+        
+        session.permanent = True
+        session['employee_id'] = emp['id']
+        session['employee_name'] = emp['name']
+        session['device_id'] = device_id
+        return jsonify({'success': True, 'emp_id': emp['id']})
+        
+    db.close()
+    return jsonify({'success': False, 'error': 'الاسم/الرقم أو الرمز السري غير صحيح'})
+
+@app.route('/api/auto_login', methods=['POST'])
+def auto_login():
+    data = request.json
+    emp_id = data.get('employee_id')
+    device_id = data.get('device_id')
+    
+    if not emp_id or not device_id:
+        return jsonify({'success': False})
+        
+    db = get_db()
+    emp = db.execute("SELECT * FROM employees WHERE id=? AND device_id=? AND is_active=1", (emp_id, device_id)).fetchone()
+    db.close()
+    
+    if emp:
+        session.permanent = True
+        session['employee_id'] = emp['id']
+        session['employee_name'] = emp['name']
+        return jsonify({'success': True})
+    return jsonify({'success': False})
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
 
 @app.route('/inventory')
 def inventory():
+    emp_id = session.get('employee_id')
+    dev_id = session.get('device_id')
+    if not emp_id or not dev_id:
+        return redirect(url_for('login'))
+        
     db = get_db()
+    emp = db.execute("SELECT * FROM employees WHERE id=? AND device_id=? AND is_active=1", (emp_id, dev_id)).fetchone()
+    if not emp:
+        db.close()
+        session.clear()
+        return redirect(url_for('login'))
+        
     products = db.execute("SELECT * FROM products WHERE active=1 ORDER BY category, name").fetchall()
-    employees = db.execute("SELECT * FROM employees WHERE is_active=1 ORDER BY name").fetchall()
     db.close()
     return render_template('inventory.html',
         products=[dict(p) for p in products],
-        employees=[dict(e) for e in employees],
-        company=cfg.get('company_name', 'شركتي')
+        employee=dict(emp),
+        company=cfg.get('company_name', 'Suzz Inventory')
     )
 
 @app.route('/api/local/inventory', methods=['POST'])
 def save_local_inventory():
+    if not session.get('employee_id'):
+        return jsonify({'error': 'Unauthorized'}), 401
+        
     data = request.json
     db = get_db()
-    for item in data.get('items', []):
-        db.execute('''
-            INSERT INTO inventory_counts (product_id, counted_quantity, timestamp, employee_id, synced)
-            VALUES (?, ?, ?, ?, 0)
-        ''', (item['product_id'], item['counted_quantity'], item['timestamp'], data.get('employee_id')))
+    count_timestamp = datetime.now().isoformat()
+    branch = data.get('branch', 'Suzz 1')
+    shift = data.get('shift', 'morning')
+    count_date = data.get('count_date', date.today().isoformat())
+    items_json = json.dumps(data.get('items', []))
+    
+    db.execute('''
+        INSERT INTO offline_counts (employee_id, count_date, shift, branch, items_json, created_at, synced)
+        VALUES (?, ?, ?, ?, ?, ?, 0)
+    ''', (session['employee_id'], count_date, shift, branch, items_json, count_timestamp))
+    
     db.commit()
     db.close()
     return jsonify({'success': True})
+
+@app.route('/api/local/my_counts', methods=['GET'])
+def get_my_counts():
+    if not session.get('employee_id'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    count_date = request.args.get('count_date', date.today().isoformat())
+    db = get_db()
+    
+    counts = db.execute('''
+        SELECT oc.created_at, oc.items_json, oc.shift, oc.branch, e.name as employee_name
+        FROM offline_counts oc
+        JOIN employees e ON oc.employee_id = e.id
+        WHERE oc.count_date = ?
+        ORDER BY oc.id DESC
+    ''', (count_date,)).fetchall()
+    db.close()
+    
+    result = []
+    for c in counts:
+        try:
+            items = json.loads(c['items_json'])
+            item_count = len(items)
+        except:
+            items = []
+            item_count = 0
+            
+        result.append({
+            'created_at': c['created_at'],
+            'employee_name': c['employee_name'],
+            'items_counted': item_count,
+            'items': items,
+            'branch': c['branch'],
+            'shift': c['shift']
+        })
+        
+    return jsonify(result)
 
 @app.route('/link_device', methods=['POST'])
 def link_device():
@@ -268,7 +422,15 @@ def try_unlink_device_on_cloud(emp_id):
 def checkin():
     try:
         data = request.get_json()
-        emp_id = int(data.get('employee_id', 0))
+        
+        # Pull from session primarily now (Dashboard auth)
+        if session.get('employee_id'):
+            emp_id = session['employee_id']
+            is_authorized = True
+        else:
+            emp_id = int(data.get('employee_id', 0))
+            is_authorized = False
+            
         device_id = str(data.get('device_id', ''))
         pin_code = str(data.get('pin_code', ''))
         today = date.today().isoformat()
@@ -281,17 +443,20 @@ def checkin():
             return jsonify({'error': 'موظف غير موجود'}), 404
             
         # Check if the punch is authorized by PIN or by a linked device ID
-        is_pin_correct = (str(emp['pin_code']) == pin_code)
-        is_device_linked = (str(emp['device_id']) == device_id and device_id != 'local_kiosk' and device_id != '')
+        if not is_authorized:
+            is_pin_correct = (str(emp['pin_code']) == pin_code)
+            is_device_linked = (str(emp['device_id']) == device_id and device_id != 'local_kiosk' and device_id != '')
 
-        if not is_pin_correct and not is_device_linked:
-            db.close()
-            return jsonify({'error': 'الرمز السري (PIN) غير صحيح'}), 403
+            if not is_pin_correct and not is_device_linked:
+                db.close()
+                return jsonify({'error': 'الرمز السري (PIN) غير صحيح'}), 403
 
-        existing = db.execute(
-            "SELECT * FROM attendance WHERE employee_id=? AND attendance_date=?",
-            (emp_id, today)
-        ).fetchone()
+        # Find latest session for this employee today
+        existing = db.execute("""
+            SELECT * FROM attendance 
+            WHERE employee_id = ? AND attendance_date = ? 
+            ORDER BY id DESC LIMIT 1
+        """, (emp_id, today)).fetchone()
 
         off_days = json.loads(emp['off_days'] or '[]')
         weekday = date.today().weekday()  # 0=Mon...6=Sun; python
@@ -299,23 +464,42 @@ def checkin():
         js_weekday = (weekday + 1) % 7
         is_off_day = js_weekday in off_days
 
-        if not existing:
-            # First punch = check-in
+        if not existing or existing['check_out_time']:
+            # First punch OR new cycle after checkout
             status = calculate_status(now_time, emp['work_start_time'], emp['late_threshold_minutes'])
             if is_off_day:
-                status = 'present'  # working on off-day is fine
-            db.execute(
-                """INSERT INTO attendance (employee_id, attendance_date, check_in_time, status, synced)
-                   VALUES (?,?,?,?,0) ON CONFLICT(employee_id,attendance_date)
-                   DO UPDATE SET check_in_time=excluded.check_in_time, status=excluded.status, synced=0""",
-                (emp_id, today, now_time, status)
-            )
+                status = 'present'
+            
+            # Since attendance_date + employee_id is UNIQUE, we might need to handle 
+            # multiple sessions differently if we want to store them in the SAME table.
+            # HOWEVER, the table schema has UNIQUE(employee_id, attendance_date).
+            # This means we CANNOT have multiple records for the same day in this table.
+            # I will check if I should remove the UNIQUE constraint or just stick to 
+            # the single-record "resume" logic but without the "re-check in" text.
+            
+            if not existing:
+                db.execute(
+                    """INSERT INTO attendance (employee_id, attendance_date, check_in_time, status, synced)
+                       VALUES (?,?,?,?,0)""",
+                    (emp_id, today, now_time, status)
+                )
+            else:
+                # If we're starting a "new cycle" but constraint exists, 
+                # we technically just update the check_out_time to NULL and 
+                # keep the original check_in_time? 
+                # User asked to: "ظهرلك تسجيل حضور طبيعي وبعدها يتسجل فالسيستم انك سجلت حضور تاني وانصراف"
+                # This implies separate records. I will remove the UNIQUE constraint.
+                db.execute(
+                    """INSERT INTO attendance (employee_id, attendance_date, check_in_time, status, synced)
+                       VALUES (?,?,?,?,0)""",
+                    (emp_id, today, now_time, status)
+                )
             action = 'check_in'
         else:
             # Second punch = check-out
             db.execute(
-                "UPDATE attendance SET check_out_time=?, synced=0 WHERE employee_id=? AND attendance_date=?",
-                (now_time, emp_id, today)
+                "UPDATE attendance SET check_out_time=?, synced=0 WHERE id=?",
+                (now_time, existing['id'])
             )
             action = 'check_out'
 
@@ -388,9 +572,128 @@ def admin():
         unsynced_count=unsynced['cnt'],
         sync_logs=[dict(r) for r in sync_logs],
         today=today,
-        company=cfg.get('company_name', 'شركتي'),
+        company=cfg.get('company_name', 'Suzz'),
         pin=pin
     )
+
+@app.route('/api/admin/employee/update', methods=['POST'])
+def admin_update_employee():
+    try:
+        data = request.json or {}
+        admin_pin = data.get('admin_pin')
+        emp_id = data.get('id')
+        name = data.get('name')
+        job_title = data.get('job_title')
+        phone = data.get('phone', '')
+        pin_code = data.get('pin_code')
+        
+        db = get_db()
+        # Verify Admin PIN
+        admin_pin_row = db.execute("SELECT value FROM settings WHERE key='admin_pin'").fetchone()
+        expected_pin = admin_pin_row['value'] if admin_pin_row else '1234'
+        if admin_pin != expected_pin:
+            db.close()
+            return jsonify({'success': False, 'error': 'PIN الأدمن غير صحيح'}), 401
+            
+        db.execute("""
+            UPDATE employees 
+            SET name=?, job_title=?, phone=?, pin_code=? 
+            WHERE id=?
+        """, (name, job_title, phone, pin_code, emp_id))
+        db.commit()
+        db.close()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/admin/employee/unlink', methods=['POST'])
+def admin_unlink_employee():
+    try:
+        data = request.json or {}
+        admin_pin = data.get('admin_pin')
+        emp_id = data.get('id')
+        
+        db = get_db()
+        admin_pin_row = db.execute("SELECT value FROM settings WHERE key='admin_pin'").fetchone()
+        expected_pin = admin_pin_row['value'] if admin_pin_row else '1234'
+        if admin_pin != expected_pin:
+            db.close()
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+            
+        db.execute("UPDATE employees SET device_id = NULL WHERE id = ?", (emp_id,))
+        db.commit()
+        db.close()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/admin/employee/history/<int:emp_id>')
+def admin_employee_history(emp_id):
+    try:
+        admin_pin = request.args.get('admin_pin')
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        
+        db = get_db()
+        admin_pin_row = db.execute("SELECT value FROM settings WHERE key='admin_pin'").fetchone()
+        expected_pin = admin_pin_row['value'] if admin_pin_row else '1234'
+        if admin_pin != expected_pin:
+            db.close()
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+            
+        query = "SELECT * FROM attendance WHERE employee_id=?"
+        params = [emp_id]
+        
+        if start_date:
+            query += " AND attendance_date >= ?"
+            params.append(start_date)
+        if end_date:
+            query += " AND attendance_date <= ?"
+            params.append(end_date)
+            
+        query += " ORDER BY attendance_date DESC, id DESC"
+        
+        history = db.execute(query, params).fetchall()
+        
+        counts_query = "SELECT id, count_date, shift, branch, created_at FROM offline_counts WHERE employee_id=?"
+        counts_params = [emp_id]
+        if start_date:
+            counts_query += " AND count_date >= ?"
+            counts_params.append(start_date)
+        if end_date:
+            counts_query += " AND count_date <= ?"
+            counts_params.append(end_date)
+        
+        counts_query += " ORDER BY created_at DESC"
+        counts = db.execute(counts_query, counts_params).fetchall()
+        
+        db.close()
+        return jsonify({
+            'success': True, 
+            'attendance': [dict(r) for r in history],
+            'inventory_counts': [dict(r) for r in counts]
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/admin/inventory/details/<int:count_id>')
+def admin_inventory_details(count_id):
+    try:
+        admin_pin = request.args.get('admin_pin')
+        db = get_db()
+        admin_pin_row = db.execute("SELECT value FROM settings WHERE key='admin_pin'").fetchone()
+        expected_pin = admin_pin_row['value'] if admin_pin_row else '1234'
+        if admin_pin != expected_pin:
+            db.close()
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+            
+        record = db.execute("SELECT items_json FROM offline_counts WHERE id=?", (count_id,)).fetchone()
+        db.close()
+        if record:
+            return jsonify({'success': True, 'items': json.loads(record['items_json'])})
+        return jsonify({'success': False, 'error': 'Record not found'}), 404
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/unlink_employee_device', methods=['POST'])
@@ -529,29 +832,33 @@ def do_inventory_sync():
     db = get_db()
     
     # 1. PUSH unsynced inventory counts
-    unsynced_inv = db.execute("SELECT * FROM inventory_counts WHERE synced=0").fetchall()
+    unsynced_inv = db.execute("SELECT * FROM offline_counts WHERE synced=0").fetchall()
     if unsynced_inv:
-        payload = []
         for row in unsynced_inv:
-            payload.append({
-                'product_id': row['product_id'],
-                'counted_quantity': row['counted_quantity'],
-                'timestamp': row['timestamp'],
-                'employee_id': row['employee_id']
-            })
-        try:
-            resp = requests.post(
-                f"{cloud_url}/api/inventory/sync",
-                json=payload,
-                headers={'Authorization': f"Bearer {cfg.get('sync_api_key', '')}"},
-                timeout=15
-            )
-            if resp.status_code == 200:
-                ids = [r['id'] for r in unsynced_inv]
-                db.execute(f"UPDATE inventory_counts SET synced=1 WHERE id IN ({','.join('?'*len(ids))})", ids)
-                db.commit()
-        except:
-            pass
+            try:
+                items = json.loads(row['items_json'] or '[]')
+            except:
+                items = []
+                
+            payload = {
+                'employee_id': row['employee_id'],
+                'count_date': row['count_date'],
+                'shift': row['shift'],
+                'branch': row['branch'],
+                'items': items,
+                'notes': 'Offline Kiosk Sync'
+            }
+            try:
+                resp = requests.post(
+                    f"{cloud_url}/api/inventory-counts",
+                    json=payload,
+                    timeout=15
+                )
+                if resp.status_code == 200:
+                    db.execute("UPDATE offline_counts SET synced=1 WHERE id=?", (row['id'],))
+                    db.commit()
+            except:
+                pass
 
     # 2. PULL fresh products catalog
     try:

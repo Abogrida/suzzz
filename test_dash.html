@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم صلاح  - شركتي</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Cairo', sans-serif;
+            background: #f1f5f9;
+            color: #1e293b;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .header-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 46px;
+            height: 46px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .user-info .name {
+            font-weight: 900;
+            font-size: 18px;
+        }
+
+        .user-info .title {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .btn-logout {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-family: 'Cairo';
+            cursor: pointer;
+            font-size: 15px;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .container {
+            padding: 30px 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .greeting {
+            margin-bottom: 30px;
+        }
+
+        .greeting h2 {
+            margin: 0 0 8px 0;
+            font-size: 28px;
+            font-weight: 900;
+            color: #0f172a;
+        }
+
+        .greeting p {
+            margin: 0;
+            color: #64748b;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .action-card {
+            background: #fff;
+            border-radius: 24px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.25s, box-shadow 0.25s;
+            position: relative;
+        }
+
+        .action-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-topbar {
+            height: 8px;
+        }
+
+        .card-content {
+            padding: 30px;
+        }
+
+        .card-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 22px;
+            font-weight: 900;
+            margin-bottom: 6px;
+        }
+
+        .card-desc {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .attendance-status {
+            margin-top: 10px;
+            padding: 12px;
+            border-radius: 12px;
+            background: #f8fafc;
+            font-size: 14px;
+            font-weight: 800;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Colors for Attendance Card */
+        .card-attendance {
+            box-shadow: 0 15px 40px rgba(16, 185, 129, 0.15);
+            border: 2px solid rgba(16, 185, 129, 0.15);
+        }
+
+        .card-attendance:hover {
+            box-shadow: 0 20px 50px rgba(16, 185, 129, 0.25);
+        }
+
+        .card-attendance .card-topbar {
+            background: linear-gradient(90deg, #10b981, #34d399);
+        }
+
+        .card-attendance .card-icon {
+            background: linear-gradient(135deg, #10b981, #34d399);
+            color: white;
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+        }
+
+        .card-attendance .card-title {
+            color: #065f46;
+        }
+
+        .card-attendance .card-desc {
+            color: #10b981;
+        }
+
+        /* Colors for Inventory Card */
+        .card-inventory {
+            box-shadow: 0 15px 40px rgba(56, 189, 248, 0.15);
+            border: 2px solid rgba(56, 189, 248, 0.15);
+        }
+
+        .card-inventory:hover {
+            box-shadow: 0 20px 50px rgba(56, 189, 248, 0.25);
+        }
+
+        .card-inventory .card-topbar {
+            background: linear-gradient(90deg, #0ea5e9, #38bdf8);
+        }
+
+        .card-inventory .card-icon {
+            background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+            color: white;
+            box-shadow: 0 8px 24px rgba(14, 165, 233, 0.3);
+        }
+
+        .card-inventory .card-title {
+            color: #0c4a6e;
+        }
+
+        .card-inventory .card-desc {
+            color: #0ea5e9;
+        }
+
+        /* Sync Bar */
+        .sync-bar {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: #1e293b;
+            color: #fff;
+            padding: 8px 20px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-sizing: border-box;
+            z-index: 100;
+        }
+
+        .sync-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #94a3b8;
+        }
+
+        .sync-dot.green {
+            background: #22c55e;
+            box-shadow: 0 0 8px #22c55e;
+        }
+
+
+        .toast {
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 14px 32px;
+            border-radius: 16px;
+            font-size: 18px;
+            font-weight: 900;
+            z-index: 9999;
+            animation: slideIn 0.3s ease;
+            display: none;
+        }
+
+        .toast.success {
+            background: linear-gradient(135deg, #16a34a, #22c55e);
+            color: white;
+        }
+
+        .toast.error {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            color: white;
+        }
+
+        @keyframes slideIn {
+            from {
+                top: 70px;
+                opacity: 0
+            }
+
+            to {
+                top: 100px;
+                opacity: 1
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <div class="header-user">
+            <div class="user-avatar">👤</div>
+            <div class="user-info">
+                <div class="name">صلاح </div>
+                <div class="title">شركتي</div>
+            </div>
+        </div>
+        <a href="/logout" class="btn-logout">🚪 تسجيل خروج</a>
+    </div>
+
+    <div class="container">
+        <div class="greeting">
+            <h2>👋 مرحباً بك يا صلاح!</h2>
+            <p>الرجاء اختيار الخدمة المطلوبة للمتابعة</p>
+        </div>
+
+        <div class="cards-grid">
+
+            <!-- Attendance Card -->
+            <div class="action-card card-attendance" onclick="punch()">
+                <div class="card-topbar"></div>
+                <div class="card-content">
+                    <div class="card-icon" id="punch-icon">
+                         🔄
+                        
+                    </div>
+                    <div class="card-title" id="punch-title">
+                         إعادة تسجيل الحضور
+                        
+                    </div>
+                    <div class="card-desc">Attendance & Timesheets</div>
+
+                    <div class="attendance-status">
+                        
+                        <span style="color: #10b981;">↗ 02:29</span>
+                        
+
+                        
+                        <span style="color: #f59e0b;">↘ 03:39</span>
+                        
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventory Card -->
+            <div class="action-card card-inventory" onclick="window.location.href='/inventory'">
+                <div class="card-topbar"></div>
+                <div class="card-content">
+                    <div class="card-icon">📦</div>
+                    <div class="card-title">تسجيل الجرد</div>
+                    <div class="card-desc">Inventory Log</div>
+
+                    <div class="attendance-status"
+                        style="justify-content: center; background: #f0f9ff; color: #0ea5e9;">
+                        اضغط للدخول ➜
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="sync-bar">
+        <div class="sync-dot green" id="syncDot"></div>
+        <span id="syncText">الكشك المحلي مفعل</span>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        function showToast(msg, type = 'success') {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.className = 'toast ' + type;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 3500);
+        }
+
+        async function punch() {
+            // Using session matching! We don't need PIN!
+            const titleEl = document.getElementById('punch-title');
+            const originalText = titleEl.textContent;
+            titleEl.textContent = '⏳ جاري...';
+
+            try {
+                const res = await fetch('/checkin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({}) // Backend pulls employee_id from cookie session automatically
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    showToast('تم التسجيل بنجاح!', 'success');
+                    setTimeout(() => location.reload(), 1500); // Reload immediately to show new times
+                } else {
+                    showToast(data.error || 'حدث خطأ', 'error');
+                    titleEl.textContent = originalText;
+                }
+            } catch (err) {
+                showToast('فشل الاتصال', 'error');
+                titleEl.textContent = originalText;
+            }
+        }
+    </script>
+
+</body>
+
+</html>
