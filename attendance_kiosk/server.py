@@ -198,12 +198,14 @@ def login_and_link():
     device_id = str(data.get('device_id', ''))
     
     db = get_db()
+    
+    # We strip both sides in Python, but DB might have trailing spaces like "صلاح "
     if identifier.isdigit():
-        emp = db.execute("SELECT * FROM employees WHERE (name=? OR phone=? OR id=?) AND is_active=1", (identifier, identifier, int(identifier))).fetchone()
+        emp = db.execute("SELECT * FROM employees WHERE (TRIM(name)=? OR TRIM(phone)=? OR id=?) AND is_active=1", (identifier, identifier, int(identifier))).fetchone()
     else:
-        emp = db.execute("SELECT * FROM employees WHERE (name=? OR phone=?) AND is_active=1", (identifier, identifier)).fetchone()
+        emp = db.execute("SELECT * FROM employees WHERE (TRIM(name)=? OR TRIM(phone)=?) AND is_active=1", (identifier, identifier)).fetchone()
         
-    if emp and str(emp['pin_code']) == pin:
+    if emp and str(emp['pin_code']).strip() == pin:
         # Check if already linked to another device
         if emp['device_id'] and emp['device_id'] != device_id:
             db.close()
