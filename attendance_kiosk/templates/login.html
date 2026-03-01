@@ -191,6 +191,9 @@
             <span style="display: none; font-size: 60px;">🏢</span>
         </div>
         <div class="qr-box" id="qrcode"></div>
+        <div id="networkUrlDisplay"
+            style="margin-top: 15px; color: #38bdf8; font-weight: 800; font-size: 1.1rem; background: rgba(56, 189, 248, 0.1); padding: 8px 15px; border-radius: 10px; border: 1px solid rgba(56, 189, 248, 0.2);">
+        </div>
         <h2>مسح جهاز الـ QR لتسجيل الدخول</h2>
         <p>يرجى مسح الكود الخاص بك للدخول من هاتفك</p>
         <input type="text" id="hiddenQrInput" class="hidden-qr-input" autocomplete="off">
@@ -279,21 +282,44 @@
                 errorBox.style.display = 'block';
             } else if (window.innerWidth >= 1024 && qrView) {
 
-                function initQRCode() {
+                let lastNetworkUrl = "";
+                let qrEncoder = null;
+
+                function initQRCode(url) {
                     const qrContainer = document.getElementById('qrcode');
                     if (!qrContainer) return;
                     qrContainer.innerHTML = '';
-                    const currentUrl = "{{ network_url }}";
-                    new QRCode(qrContainer, {
-                        text: currentUrl,
+                    qrEncoder = new QRCode(qrContainer, {
+                        text: url,
                         width: 250,
                         height: 250,
                         colorDark: "#0f172a",
                         colorLight: "#ffffff",
                         correctLevel: QRCode.CorrectLevel.H
                     });
+                    document.getElementById('networkUrlDisplay').textContent = url;
+                    lastNetworkUrl = url;
                 }
-                setTimeout(initQRCode, 100);
+
+                async function refreshQRCode() {
+                    try {
+                        const res = await fetch('/api/network-info');
+                        const data = await res.json();
+                        if (data.url && data.url !== lastNetworkUrl) {
+                            console.log("Network changed, updating QR Code:", data.url);
+                            initQRCode(data.url);
+                        }
+                    } catch (e) {
+                        console.error("Failed to fetch network info:", e);
+                    }
+                }
+
+                // Initial load
+                const initialUrl = "{{ network_url }}";
+                setTimeout(() => initQRCode(initialUrl), 100);
+
+                // Poll for changes every 10 seconds
+                setInterval(refreshQRCode, 10000);
 
                 document.addEventListener('click', () => {
                     if (qrView.style.display !== 'none') {

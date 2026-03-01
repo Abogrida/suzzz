@@ -314,15 +314,37 @@ def get_my_counts():
         db.close()
         return jsonify({'error': 'Unauthorized'}), 401
     
-    count_date = request.args.get('count_date', date.today().isoformat())
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    count_date = request.args.get('count_date')
+    employee_id = request.args.get('employee_id')
     
-    counts = db.execute('''
+    query = '''
         SELECT oc.id, oc.created_at, oc.items_json, oc.shift, oc.branch, e.name as employee_name
         FROM offline_counts oc
         JOIN employees e ON oc.employee_id = e.id
-        WHERE oc.count_date = ?
-        ORDER BY oc.id DESC
-    ''', (count_date,)).fetchall()
+        WHERE 1=1
+    '''
+    params = []
+    
+    if count_date:
+        query += " AND oc.count_date = ?"
+        params.append(count_date)
+    elif start_date and end_date:
+        query += " AND oc.count_date >= ? AND oc.count_date <= ?"
+        params.extend([start_date, end_date])
+    elif not admin_pin:
+        # For non-admin (employee view), default to today if no date specified
+        query += " AND oc.count_date = ?"
+        params.append(date.today().isoformat())
+        
+    if employee_id:
+        query += " AND oc.employee_id = ?"
+        params.append(employee_id)
+        
+    query += " ORDER BY oc.id DESC"
+    
+    counts = db.execute(query, params).fetchall()
     db.close()
     
     result = []
@@ -553,6 +575,15 @@ def api_today():
     db.close()
     return jsonify([dict(r) for r in attendance])
 
+@app.route('/api/network-info')
+def network_info():
+    port = cfg.get('kiosk_port', 8085)
+    return jsonify({
+        'ip': get_local_ip(),
+        'port': port,
+        'url': f"http://{get_local_ip()}:{port}"
+    })
+
 @app.route('/admin')
 def admin():
     pin = request.args.get('pin')
@@ -577,6 +608,7 @@ def admin():
     ).fetchall()
     unsynced = db.execute("SELECT COUNT(*) as cnt FROM attendance WHERE synced=0").fetchone()
     sync_logs = db.execute("SELECT * FROM sync_log ORDER BY id DESC LIMIT 10").fetchall()
+    products = db.execute("SELECT id, name FROM products WHERE active=1 ORDER BY category, name").fetchall()
     db.close()
     
     return render_template('admin.html',
@@ -586,7 +618,8 @@ def admin():
         sync_logs=[dict(r) for r in sync_logs],
         today=today,
         company=cfg.get('company_name', 'Suzz'),
-        pin=pin
+        pin=pin,
+        products=[dict(p) for p in products]
     )
 
 @app.route('/api/admin/employee/update', methods=['POST'])
@@ -1038,9 +1071,9 @@ if __name__ == '__main__':
     sync_thread.start()
     port = cfg.get('kiosk_port', 8080)
     print(f"\n{'='*50}")
-    print(f"  نظام تسجيل الحضور")
-    print(f"  رابط التطبيق: http://localhost:{port}")
-    print(f"  لوحة الإدارة: http://localhost:{port}/admin")
+    print(f"  Attendance System Running")
+    print(f"  App URL: http://localhost:{port}")
+    print(f"  Admin Panel: http://localhost:{port}/admin")
     print(f"{'='*50}\n")
     # Open browser automatically
     threading.Timer(1.5, lambda: webbrowser.open(f'http://localhost:{port}')).start()

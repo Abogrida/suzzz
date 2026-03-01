@@ -584,6 +584,9 @@
   <div class="desktop-qr-container">
     <h2>📱 امسح الرمز لتسجيل الحضور</h2>
     <div class="qr-box" id="qrcode"></div>
+    <div id="networkUrlDisplay"
+      style="margin-top: 20px; color: #38bdf8; font-weight: 800; font-size: 1.5rem; background: rgba(56, 189, 248, 0.1); padding: 10px 20px; border-radius: 12px; border: 1px solid rgba(56, 189, 248, 0.2);">
+    </div>
   </div>
 
   {% if sync_status.unsynced_count > 0 %}
@@ -965,27 +968,45 @@
     // Initialize UI based on device link status
     checkDeviceStatus();
 
+    let lastNetworkUrl = "";
+
     // Generate QR Code for Desktop View
-    function initQRCode() {
+    function initQRCode(url) {
       const qrContainer = document.getElementById('qrcode');
       if (!qrContainer) return;
+      qrContainer.innerHTML = '';
 
-      // Get the network URL provided by the server
-      const currentUrl = "{{ network_url }}";
-
-      // Generate the QR code
       new QRCode(qrContainer, {
-        text: currentUrl,
+        text: url,
         width: 300,
         height: 300,
         colorDark: "#0f172a",
         colorLight: "#ffffff",
         correctLevel: QRCode.CorrectLevel.H
       });
+      document.getElementById('networkUrlDisplay').textContent = url;
+      lastNetworkUrl = url;
     }
 
-    // Initialize QR code after a slight delay to ensure library is loaded
-    setTimeout(initQRCode, 500);
+    async function refreshQRCode() {
+      try {
+        const res = await fetch('/api/network-info');
+        const data = await res.json();
+        if (data.url && data.url !== lastNetworkUrl) {
+          console.log("Network changed, updating QR Code:", data.url);
+          initQRCode(data.url);
+        }
+      } catch (e) {
+        console.error("Failed to fetch network info:", e);
+      }
+    }
+
+    // Initialize with template URL first
+    const initialUrl = "{{ network_url }}";
+    setTimeout(() => initQRCode(initialUrl), 500);
+
+    // Poll for changes
+    setInterval(refreshQRCode, 10000);
 
     // Initial check of device status (important for linked devices on load)
     checkDeviceStatus();

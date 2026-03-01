@@ -445,8 +445,21 @@
         <!-- Tab: Inventory -->
         <div id="inventory" class="tab-content">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header" style="flex-wrap: wrap; gap: 10px;">
                     <h2 class="card-title">سجلات الجرد</h2>
+                    <div class="filter-bar" style="border:none; padding:0; margin:0; gap:10px;">
+                        <select id="inv-filter-emp" onchange="renderInventoryTable()" class="form-input"
+                            style="width: 150px;">
+                            <option value="">كل الموظفين</option>
+                            {% for emp in employees %}
+                            <option value="{{ emp.id }}">{{ emp.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="date" id="inv-start-date" value="{{ today }}" onchange="renderInventoryTable()"
+                            class="form-input" style="width: 140px;">
+                        <input type="date" id="inv-end-date" value="{{ today }}" onchange="renderInventoryTable()"
+                            class="form-input" style="width: 140px;">
+                    </div>
                 </div>
                 <div class="table-container">
                     <table id="inventoryTable">
@@ -874,14 +887,53 @@
             });
         }
 
+        const HOT_ITEMS = ['فاتح ساده', 'فاتح محوج', 'وسط ساده', 'وسط محوج', 'غامق ساده', 'غامق محوج', 'بندق', 'اسبريسو', 'نسكافيه', 'سكر', 'شاي اسطف', 'شاي إفطار ليبتون', 'شاي احمد تى', 'ينسون', 'نعناع', 'قرفه', 'جنزبيل', 'شاي نكهات', 'شاي كرك', 'شاي عدنى'];
+        const COLD_ITEMS = ['بيبسي دايت', 'سفن', 'ريد بول', 'ستينج', 'دبل دير', 'فيروز', 'تويست', 'باور هورس', 'بيبسي', 'مياه', 'حليب', 'ايس كريم', 'بلح', 'افوكادو', 'موز', 'ليمون', 'كركديه', 'مانجو', 'فراوله', 'جوافه', 'ماتشا', 'بودر كوفي', 'بودر شوكليت', 'بودر فانيليا', 'نوتيلا', 'صوص بستاشيو', 'صوص لوتس', 'صوص دارك', 'صوص وايت', 'حليب مكثف', 'كريمة خفق', 'سيرب فانيليا', 'سيرب كراميل', 'سيرب نعناع', 'سيرب بلو كورواسو', 'سيرب بندق', 'سيرب توفي', 'سيرب جوز هند', 'سيرب ايرش', 'سيرب موخيتو', 'سيرب كراميل مملح', 'سيرب شيري كولا', 'سيرب بيناكولادا', 'سيرب فراوله', 'سيرب كريز', 'سيرب راسبيري', 'سيرب روز', 'توبينج خوخ', 'توبينج باشون', 'توبينج بلوبيري', 'توبينج راسبيري', 'توبينج كيوي', 'توبينج مانجو', 'توبينج فراوله', 'مونين وايت', 'مونين دارك', 'مونين كراميل', 'مولتن كيك', 'شوكليت كيك', 'شيز كيك', 'سويسرول', 'براونيزك', 'كوكيز'];
+
         async function viewInventoryDetails(id) {
             const res = await fetch(`/api/admin/inventory/details/${id}?admin_pin=${adminPin}`);
             const data = await res.json();
             const tbody = document.getElementById('inv-details-tbody');
             tbody.innerHTML = '';
-            data.items.forEach(item => {
-                tbody.innerHTML += `<tr><td>${item.item_name}</td><td><b>${item.quantity}</b></td></tr>`;
+
+            // Map counted items for easy lookup
+            const countMap = {};
+            if (data.items) {
+                data.items.forEach(item => {
+                    countMap[item.item_name] = item.quantity;
+                });
+            }
+
+            // Function to add a section header
+            const addHeader = (title) => {
+                tbody.innerHTML += `<tr class="table-dark"><td colspan="2" style="text-align: center; font-weight: 900;">🔥 ${title}</td></tr>`;
+            };
+
+            // Hot Items
+            addHeader('المشروبات الساخنة');
+            HOT_ITEMS.forEach(name => {
+                const qty = countMap[name] !== undefined ? countMap[name] : 0;
+                const rowCls = qty === 0 ? 'text-muted' : 'fw-bold text-primary';
+                tbody.innerHTML += `<tr><td>${name}</td><td><b class="${rowCls}">${qty}</b></td></tr>`;
             });
+
+            // Cold Items
+            addHeader('المشروبات الباردة');
+            COLD_ITEMS.forEach(name => {
+                const qty = countMap[name] !== undefined ? countMap[name] : 0;
+                const rowCls = qty === 0 ? 'text-muted' : 'fw-bold text-primary';
+                tbody.innerHTML += `<tr><td>${name}</td><td><b class="${rowCls}">${qty}</b></td></tr>`;
+            });
+
+            // Handle any items that might be in countMap but not in our hardcoded lists (safety)
+            let extraItems = Object.keys(countMap).filter(k => !HOT_ITEMS.includes(k) && !COLD_ITEMS.includes(k));
+            if (extraItems.length > 0) {
+                addHeader('أصناف أخرى');
+                extraItems.forEach(name => {
+                    tbody.innerHTML += `<tr><td>${name}</td><td><b class="fw-bold text-danger">${countMap[name]}</b></td></tr>`;
+                });
+            }
+
             document.getElementById('inventoryDetailsModal').style.display = 'flex';
             document.getElementById('inventoryDetailsModal').style.zIndex = 1100;
         }
@@ -913,25 +965,38 @@
             if (data.success) setTimeout(() => location.reload(), 1500);
         }
 
+        async function renderInventoryTable() {
+            const empId = document.getElementById('inv-filter-emp').value;
+            const start = document.getElementById('inv-start-date').value;
+            const end = document.getElementById('inv-end-date').value;
+
+            const res = await fetch(`/api/local/my_counts?admin_pin=${adminPin}&start_date=${start}&end_date=${end}${empId ? '&employee_id=' + empId : ''}`);
+            const data = await res.json();
+
+            const tbody = document.getElementById('inventoryTbody');
+            tbody.innerHTML = '';
+
+            const SHIFT_MAP = { 'morning': 'صباحي', 'evening': 'مسائي', 'night': 'ليلي' };
+
+            data.forEach(i => {
+                const shiftArabic = SHIFT_MAP[i.shift] || i.shift;
+                tbody.innerHTML += `
+                    <tr>
+                        <td><b>${i.employee_name}</b></td>
+                        <td>${i.branch}</td>
+                        <td>${shiftArabic}</td>
+                        <td>${i.created_at.slice(11, 16)}</td>
+                        <td><button class="btn btn-outline btn-inv-details" data-id="${i.id}">👁️ عرض</button></td>
+                    </tr>
+                `;
+            });
+            document.getElementById('stat-inventory').textContent = data.length;
+        }
+
         window.onload = () => {
             updateDashboard();
             renderAttendanceTable();
-            // Fetch all inventory today
-            fetch(`/api/local/my_counts?admin_pin=${adminPin}&count_date=${todayStr}`).then(r => r.json()).then(data => {
-                const tbody = document.getElementById('inventoryTbody');
-                tbody.innerHTML = '';
-                data.forEach(i => {
-                    tbody.innerHTML += `
-                        <tr>
-                            <td><b>${i.employee_name}</b></td>
-                            <td>${i.branch}</td>
-                            <td>${i.shift}</td>
-                            <td>${i.created_at.slice(11, 16)}</td>
-                            <td><button class="btn btn-outline btn-inv-details" data-id="${i.id}">👁️ عرض</button></td>
-                        </tr>
-                    `;
-                });
-            });
+            renderInventoryTable();
         };
 
         // --- Event Listeners for buttons (to avoid inline JS) ---
