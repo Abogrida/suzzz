@@ -604,6 +604,20 @@ def admin_update_employee():
         """, (name, job_title, phone, pin_code, emp_id))
         db.commit()
         db.close()
+        
+        # Sync update to cloud so it's not overwritten by background sync
+        cloud_url = cfg.get('cloud_base_url', '').rstrip('/')
+        if cloud_url and has_internet():
+            try:
+                requests.put(
+                    f"{cloud_url}/api/hr/employees/{emp_id}",
+                    json={'name': name, 'job_title': job_title, 'phone': phone, 'pin_code': pin_code},
+                    headers={'Authorization': f"Bearer {cfg.get('sync_api_key', '')}"},
+                    timeout=5
+                )
+            except:
+                pass
+                
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -625,6 +639,10 @@ def admin_unlink_employee():
         db.execute("UPDATE employees SET device_id = NULL WHERE id = ?", (emp_id,))
         db.commit()
         db.close()
+        
+        # Unlink on cloud too
+        try_unlink_device_on_cloud(emp_id)
+        
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
