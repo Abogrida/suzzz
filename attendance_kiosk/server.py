@@ -300,14 +300,24 @@ def save_local_inventory():
 
 @app.route('/api/local/my_counts', methods=['GET'])
 def get_my_counts():
-    if not session.get('employee_id'):
+    admin_pin = request.args.get('admin_pin')
+    db = get_db()
+    
+    is_admin = False
+    if admin_pin:
+        admin_pin_row = db.execute("SELECT value FROM settings WHERE key='admin_pin'").fetchone()
+        expected_pin = admin_pin_row['value'] if admin_pin_row else '1234'
+        if admin_pin == expected_pin:
+            is_admin = True
+            
+    if not is_admin and not session.get('employee_id'):
+        db.close()
         return jsonify({'error': 'Unauthorized'}), 401
     
     count_date = request.args.get('count_date', date.today().isoformat())
-    db = get_db()
     
     counts = db.execute('''
-        SELECT oc.created_at, oc.items_json, oc.shift, oc.branch, e.name as employee_name
+        SELECT oc.id, oc.created_at, oc.items_json, oc.shift, oc.branch, e.name as employee_name
         FROM offline_counts oc
         JOIN employees e ON oc.employee_id = e.id
         WHERE oc.count_date = ?
@@ -325,6 +335,7 @@ def get_my_counts():
             item_count = 0
             
         result.append({
+            'id': c['id'],
             'created_at': c['created_at'],
             'employee_name': c['employee_name'],
             'items_counted': item_count,
@@ -661,6 +672,9 @@ def admin_employee_history(emp_id):
             db.close()
             return jsonify({'success': False, 'error': 'Unauthorized'}), 401
             
+        emp = db.execute("SELECT pin_code FROM employees WHERE id=?", (emp_id,)).fetchone()
+        emp_pin = str(emp['pin_code']).strip() if emp else '0000'
+            
         query = "SELECT * FROM attendance WHERE employee_id=?"
         params = [emp_id]
         
@@ -688,10 +702,28 @@ def admin_employee_history(emp_id):
         counts = db.execute(counts_query, counts_params).fetchall()
         
         db.close()
+        
+        cloud_data = {'payments': [], 'purchases': []}
+        cloud_url = cfg.get('cloud_base_url', '').rstrip('/')
+        if cloud_url and has_internet() and start_date:
+            month = start_date[:7]
+            try:
+                resp = requests.get(
+                    f"{cloud_url}/api/employee/profile?pin={emp_pin}&month={month}",
+                    timeout=5
+                )
+                if resp.status_code == 200:
+                    c_data = resp.json()
+                    cloud_data['payments'] = c_data.get('payments', [])
+                    cloud_data['purchases'] = c_data.get('purchases', [])
+            except:
+                pass
+                
         return jsonify({
             'success': True, 
             'attendance': [dict(r) for r in history],
-            'inventory_counts': [dict(r) for r in counts]
+            'inventory_counts': [dict(r) for r in counts],
+            'cloud_data': cloud_data
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
