@@ -518,7 +518,7 @@ def checkin():
 
         db.commit()
         record = db.execute(
-            "SELECT * FROM attendance WHERE employee_id=? AND attendance_date=?",
+            "SELECT * FROM attendance WHERE employee_id=? AND attendance_date=? ORDER BY id DESC LIMIT 1",
             (emp_id, today)
         ).fetchone()
         db.close()

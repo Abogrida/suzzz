@@ -597,8 +597,6 @@
                                 <th>التاريخ / اليوم</th>
                                 <th>الحضور</th>
                                 <th>الانصراف</th>
-                                <th>سلفه</th>
-                                <th>مشروبات</th>
                                 <th>الحالة</th>
                             </tr>
                         </thead>
@@ -811,38 +809,38 @@
 
             dateList.forEach(d => {
                 const dayName = new Date(d).toLocaleDateString('ar-EG', { weekday: 'long' });
-                const record = data.attendance.find(a => a.attendance_date === d);
+                const records = data.attendance.filter(a => a.attendance_date === d);
 
-                // Find payments/purchases for this date
-                let advances = 0;
-                let purchases = 0;
-                if (data.cloud_data) {
-                    advances = data.cloud_data.payments
-                        .filter(p => p.payment_date === d && p.payment_type === 'advance')
-                        .reduce((sum, p) => sum + p.amount, 0);
-
-                    purchases = data.cloud_data.purchases
-                        .filter(p => p.purchase_date && p.purchase_date.startsWith(d))
-                        .reduce((sum, p) => sum + Number(p.amount), 0);
-                }
-
-                const advancesStr = advances > 0 ? `<b style="color:#f59e0b">${advances} ج.م</b>` : '-';
-                const purchasesStr = purchases > 0 ? `<b style="color:#ef4444">${purchases} ج.م</b>` : '-';
-
-                if (record) {
+                if (records.length > 0) {
                     presentCount++;
-                    if (record.status === 'late') lateCount++;
-                    const statusCls = record.status === 'present' ? 'bg-success' : 'bg-warning';
-                    const statusLbl = record.status === 'late' ? 'متأخر' : 'حضور';
+                    let checkInHtml = '';
+                    let checkOutHtml = '';
+                    let statusHtml = '';
+                    let isLate = false;
+
+                    records.forEach((record, idx) => {
+                        if (record.status === 'late') {
+                            if (!isLate) {
+                                lateCount++;
+                                isLate = true;
+                            }
+                        }
+
+                        const statusCls = record.status === 'present' ? 'bg-success' : 'bg-warning';
+                        const statusLbl = record.status === 'late' ? 'متأخر' : 'حضور';
+                        const borderTop = idx > 0 ? 'border-top: 1px dashed #cbd5e1; margin-top: 4px; padding-top: 4px;' : '';
+
+                        checkInHtml += `<div style="font-weight:700; color:#16a34a; ${borderTop}">${record.check_in_time ? record.check_in_time.slice(0, 5) : '--:--'}</div>`;
+                        checkOutHtml += `<div style="font-weight:700; color:#ea580c; ${borderTop}">${record.check_out_time ? record.check_out_time.slice(0, 5) : '--:--'}</div>`;
+                        statusHtml += `<div style="${borderTop}"><span class="badge ${statusCls}">${statusLbl}</span></div>`;
+                    });
 
                     attTbody.innerHTML += `
-                        <tr style="${record.status === 'late' ? 'background-color: #fefce8' : ''}">
-                            <td><b>${d}</b> <br><small>${dayName}</small></td>
-                            <td style="font-weight:700; color:#16a34a">${record.check_in_time ? record.check_in_time.slice(0, 5) : '--:--'}</td>
-                            <td style="font-weight:700; color:#ea580c">${record.check_out_time ? record.check_out_time.slice(0, 5) : '--:--'}</td>
-                            <td>${advancesStr}</td>
-                            <td>${purchasesStr}</td>
-                            <td><span class="badge ${statusCls}">${statusLbl}</span></td>
+                        <tr style="${isLate ? 'background-color: #fefce8' : ''}">
+                            <td style="vertical-align: top;"><b>${d}</b> <br><small>${dayName}</small></td>
+                            <td style="vertical-align: top;">${checkInHtml}</td>
+                            <td style="vertical-align: top;">${checkOutHtml}</td>
+                            <td style="vertical-align: top;">${statusHtml}</td>
                         </tr>
                     `;
                 } else {
@@ -852,8 +850,6 @@
                             <td><b>${d}</b> <br><small>${dayName}</small></td>
                             <td style="color:#94a3b8">--:--</td>
                             <td style="color:#94a3b8">--:--</td>
-                            <td>${advancesStr}</td>
-                            <td>${purchasesStr}</td>
                             <td><span class="badge bg-danger">غائب</span></td>
                         </tr>
                     `;

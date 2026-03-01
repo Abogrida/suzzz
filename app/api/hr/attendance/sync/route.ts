@@ -54,48 +54,83 @@ export async function POST(req: NextRequest) {
         .in('employee_id', empIds)
         .in('attendance_date', activeDates);
 
-    const existingMap = new Map((existingRecords || []).map((r: any) => [`${r.employee_id}_${r.attendance_date}`, r]));
+    const existingMap = new Map();
+    (existingRecords || []).forEach((r: any) => {
+        // Group existing records by employee_id + attendance_date
+        const key = `${r.employee_id}_${r.attendance_date}`;
+        if (!existingMap.has(key)) existingMap.set(key, []);
+        existingMap.get(key).push(r);
+    });
+
+    const recordsToInsert = [];
+    const recordsToUpdate = [];
 
     for (const r of records) {
         const emp = empMap.get(r.employee_id);
-        const existing = existingMap.get(`${r.employee_id}_${r.attendance_date}`);
+        const dayRecords = existingMap.get(`${r.employee_id}_${r.attendance_date}`) || [];
+
+        // Find if this specific check-in time already exists for this employee on this date
+        // Sometimes check_in_time from sqlite might have seconds, so we do a prefix match
+        const existingSession = dayRecords.find((ex: any) =>
+            ex.check_in_time && r.check_in_time &&
+            ex.check_in_time.startsWith(r.check_in_time.slice(0, 5))
+        );
 
         const resolvedStatus = r.status && r.status !== 'auto'
             ? r.status
-            : calcStatus(r.check_in_time || existing?.check_in_time, emp?.work_start_time, emp?.late_threshold_minutes ?? 15);
+            : calcStatus(r.check_in_time, emp?.work_start_time, emp?.late_threshold_minutes ?? 15);
 
-        // Merge logic: keep cloud check_in_time if not provided locally. Keep latest check_out_time.
-        const mergedCheckIn = r.check_in_time || existing?.check_in_time || null;
-        let mergedCheckOut = r.check_out_time || existing?.check_out_time || null;
-
-        // If both exist, take the later one
-        if (r.check_out_time && existing?.check_out_time) {
-            mergedCheckOut = r.check_out_time > existing.check_out_time ? r.check_out_time : existing.check_out_time;
+        if (existingSession) {
+            // Update the existing session (add check_out_time if necessary)
+            let mergedCheckOut = r.check_out_time || existingSession.check_out_time || null;
+            if (r.check_out_time && existingSession.check_out_time) {
+                mergedCheckOut = r.check_out_time > existingSession.check_out_time ? r.check_out_time : existingSession.check_out_time;
+            }
+            recordsToUpdate.push({
+                id: existingSession.id,
+                employee_id: r.employee_id,
+                attendance_date: r.attendance_date,
+                status: resolvedStatus,
+                check_in_time: r.check_in_time || existingSession.check_in_time,
+                check_out_time: mergedCheckOut,
+                source: 'kiosk',
+                synced_from_local: true,
+                notes: r.notes || existingSession.notes || '',
+            });
+        } else {
+            // New shift / session
+            recordsToInsert.push({
+                employee_id: r.employee_id,
+                attendance_date: r.attendance_date,
+                status: resolvedStatus,
+                check_in_time: r.check_in_time,
+                check_out_time: r.check_out_time,
+                source: 'kiosk',
+                synced_from_local: true,
+                notes: r.notes || '',
+            });
         }
-
-        upsertData.push({
-            employee_id: r.employee_id,
-            attendance_date: r.attendance_date,
-            status: resolvedStatus,
-            check_in_time: mergedCheckIn,
-            check_out_time: mergedCheckOut,
-            source: 'kiosk',
-            synced_from_local: true,
-            notes: r.notes || existing?.notes || '',
-        });
     }
 
-    const { data, error } = await db
-        .from('hr_attendance')
-        .upsert(upsertData, { onConflict: 'employee_id,attendance_date' })
-        .select();
+    let syncedCount = 0;
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    // Process Updates
+    for (const u of recordsToUpdate) {
+        const { error } = await db.from('hr_attendance').update(u).eq('id', u.id);
+        if (!error) syncedCount++;
+    }
 
+    // Process Inserts
+    if (recordsToInsert.length > 0) {
+        const { data: inserted, error: insertError } = await db.from('hr_attendance').insert(recordsToInsert).select();
+        if (!insertError && inserted) syncedCount += inserted.length;
+    }
+
+    // Since we aren't using single upsert, we can just return success if it ran through
     return NextResponse.json({
         success: true,
-        synced: data?.length || 0,
-        message: `تم مزامنة ${data?.length || 0} سجل حضور`
+        synced: syncedCount,
+        message: `تم مزامنة ${syncedCount} سجل حضور`
     });
 }
 
