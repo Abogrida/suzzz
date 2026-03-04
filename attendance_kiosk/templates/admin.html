@@ -442,7 +442,6 @@
             </div>
         </div>
 
-        <!-- Tab: Inventory -->
         <div id="inventory" class="tab-content">
             <div class="card">
                 <div class="card-header" style="flex-wrap: wrap; gap: 10px;">
@@ -455,10 +454,17 @@
                             <option value="{{ emp.id }}">{{ emp.name }}</option>
                             {% endfor %}
                         </select>
-                        <input type="date" id="inv-start-date" value="{{ today }}" onchange="renderInventoryTable()"
-                            class="form-input" style="width: 140px;">
-                        <input type="date" id="inv-end-date" value="{{ today }}" onchange="renderInventoryTable()"
-                            class="form-input" style="width: 140px;">
+                        <select id="inv-filter-shift" onchange="renderInventoryTable()" class="form-input"
+                            style="width: 120px;">
+                            <option value="">كل الورديات</option>
+                            <option value="morning">☀️ صباحي</option>
+                            <option value="evening">🌙 مسائي</option>
+                            <option value="night">✨ ليلي</option>
+                        </select>
+                        <input type="date" id="inv-start-date" onchange="renderInventoryTable()" class="form-input"
+                            style="width: 140px;">
+                        <input type="date" id="inv-end-date" onchange="renderInventoryTable()" class="form-input"
+                            style="width: 140px;">
                     </div>
                 </div>
                 <div class="table-container">
@@ -466,9 +472,10 @@
                         <thead>
                             <tr>
                                 <th>الموظف</th>
+                                <th>التاريخ / اليوم</th>
                                 <th>الفرع</th>
                                 <th>الوردية</th>
-                                <th>الوقت</th>
+                                <th>وقت التسجيل</th>
                                 <th>عرض الأصناف</th>
                             </tr>
                         </thead>
@@ -555,6 +562,12 @@
                 <div class="form-group">
                     <label>كلمة المرور (PIN) - 4 أرقام</label>
                     <input type="text" id="edit-pin" maxlength="4">
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 15px;">
+                    <input type="checkbox" id="edit-inventory-access"
+                        style="width: 20px; height: 20px; cursor: pointer;">
+                    <label for="edit-inventory-access" style="margin-bottom: 0; cursor: pointer;">السماح بدخول صفحة
+                        الجرد</label>
                 </div>
                 <div style="display: flex; gap: 1rem; margin-top: 1rem;">
                     <button type="button" class="btn btn-primary" onclick="saveEmployee()">حفظ التعديلات</button>
@@ -730,6 +743,7 @@
             document.getElementById('edit-phone').value = emp.phone || '';
             document.getElementById('edit-title').value = emp.job_title;
             document.getElementById('edit-pin').value = emp.pin_code;
+            document.getElementById('edit-inventory-access').checked = !!emp.can_view_inventory;
             document.getElementById('editModal').style.display = 'flex';
         }
 
@@ -740,7 +754,8 @@
                 name: document.getElementById('edit-name').value,
                 phone: document.getElementById('edit-phone').value,
                 job_title: document.getElementById('edit-title').value,
-                pin_code: document.getElementById('edit-pin').value
+                pin_code: document.getElementById('edit-pin').value,
+                can_view_inventory: document.getElementById('edit-inventory-access').checked
             };
 
             const res = await fetch('/api/admin/employee/update', {
@@ -843,9 +858,14 @@
                         const statusLbl = record.status === 'late' ? 'متأخر' : 'حضور';
                         const borderTop = idx > 0 ? 'border-top: 1px dashed #cbd5e1; margin-top: 4px; padding-top: 4px;' : '';
 
-                        checkInHtml += `<div style="font-weight:700; color:#16a34a; ${borderTop}">${record.check_in_time ? record.check_in_time.slice(0, 5) : '--:--'}</div>`;
-                        checkOutHtml += `<div style="font-weight:700; color:#ea580c; ${borderTop}">${record.check_out_time ? record.check_out_time.slice(0, 5) : '--:--'}</div>`;
-                        statusHtml += `<div style="${borderTop}"><span class="badge ${statusCls}">${statusLbl}</span></div>`;
+                        checkInHtml += `<div style="font-weight:700; color:#16a34a; ${borderTop}"><small style="color:#64748b; font-weight: 400;">حضور:</small> ${record.check_in_time ? record.check_in_time.slice(0, 5) : '--:--'}</div>`;
+                        checkOutHtml += `<div style="font-weight:700; color:#ea580c; ${borderTop}"><small style="color:#64748b; font-weight: 400;">انصراف:</small> ${record.check_out_time ? record.check_out_time.slice(0, 5) : '--:--'}</div>`;
+
+                        let badges = `<span class="badge ${statusCls}">${statusLbl}</span>`;
+                        if (record.check_out_time) {
+                            badges += ` <span class="badge" style="background-color: #f97316">انصراف</span>`;
+                        }
+                        statusHtml += `<div style="${borderTop}">${badges}</div>`;
                     });
 
                     attTbody.innerHTML += `
@@ -876,11 +896,21 @@
             const invTbody = document.getElementById('hist-inv-tbody');
             invTbody.innerHTML = '';
             data.inventory_counts.forEach(i => {
+                let dateStr = i.count_date || '';
+                let dayName = '';
+                let timeStr = '--:--';
+                if (dateStr) {
+                    try { dayName = new Date(dateStr + 'T12:00:00').toLocaleDateString('ar-EG', { weekday: 'long' }); } catch (e) { }
+                }
+                if (i.created_at && i.created_at.length >= 16) {
+                    timeStr = i.created_at.includes('T') ? i.created_at.slice(11, 16) : i.created_at.slice(11, 16);
+                }
                 invTbody.innerHTML += `
                     <tr>
-                        <td>${i.count_date}</td>
+                        <td><b>${dateStr}</b><br><small style="color:var(--text-muted)">${dayName}</small></td>
                         <td>${i.branch}</td>
-                        <td>${i.shift === 'morning' ? 'صباحي' : (i.shift === 'evening' ? 'مسائي' : 'ليلي')}</td>
+                        <td>${i.shift === 'morning' ? '☀️ صباحي' : (i.shift === 'evening' ? '🌙 مسائي' : '✨ ليلي')}</td>
+                        <td>🕐 ${timeStr}</td>
                         <td><button class="btn btn-outline" style="padding: 0.2rem;" onclick="viewInventoryDetails(${i.id})">👁️</button></td>
                     </tr>
                 `;
@@ -891,9 +921,13 @@
         const COLD_ITEMS = ['بيبسي دايت', 'سفن', 'ريد بول', 'ستينج', 'دبل دير', 'فيروز', 'تويست', 'باور هورس', 'بيبسي', 'مياه', 'حليب', 'ايس كريم', 'بلح', 'افوكادو', 'موز', 'ليمون', 'كركديه', 'مانجو', 'فراوله', 'جوافه', 'ماتشا', 'بودر كوفي', 'بودر شوكليت', 'بودر فانيليا', 'نوتيلا', 'صوص بستاشيو', 'صوص لوتس', 'صوص دارك', 'صوص وايت', 'حليب مكثف', 'كريمة خفق', 'سيرب فانيليا', 'سيرب كراميل', 'سيرب نعناع', 'سيرب بلو كورواسو', 'سيرب بندق', 'سيرب توفي', 'سيرب جوز هند', 'سيرب ايرش', 'سيرب موخيتو', 'سيرب كراميل مملح', 'سيرب شيري كولا', 'سيرب بيناكولادا', 'سيرب فراوله', 'سيرب كريز', 'سيرب راسبيري', 'سيرب روز', 'توبينج خوخ', 'توبينج باشون', 'توبينج بلوبيري', 'توبينج راسبيري', 'توبينج كيوي', 'توبينج مانجو', 'توبينج فراوله', 'مونين وايت', 'مونين دارك', 'مونين كراميل', 'مولتن كيك', 'شوكليت كيك', 'شيز كيك', 'سويسرول', 'براونيزك', 'كوكيز'];
 
         async function viewInventoryDetails(id) {
+            const tbody = document.getElementById('inv-details-tbody');
+            tbody.innerHTML = '<tr><td colspan="2" style="text-align:center">⏳ جاري التحميل...</td></tr>';
+            document.getElementById('inventoryDetailsModal').style.display = 'flex';
+            document.getElementById('inventoryDetailsModal').style.zIndex = 1100;
+
             const res = await fetch(`/api/admin/inventory/details/${id}?admin_pin=${adminPin}`);
             const data = await res.json();
-            const tbody = document.getElementById('inv-details-tbody');
             tbody.innerHTML = '';
 
             // Map counted items for easy lookup
@@ -967,6 +1001,7 @@
 
         async function renderInventoryTable() {
             const empId = document.getElementById('inv-filter-emp').value;
+            const shift = document.getElementById('inv-filter-shift').value;
             const start = document.getElementById('inv-start-date').value;
             const end = document.getElementById('inv-end-date').value;
 
@@ -976,21 +1011,49 @@
             const tbody = document.getElementById('inventoryTbody');
             tbody.innerHTML = '';
 
-            const SHIFT_MAP = { 'morning': 'صباحي', 'evening': 'مسائي', 'night': 'ليلي' };
+            const SHIFT_MAP = { 'morning': '☀️ صباحي', 'evening': '🌙 مسائي', 'night': '✨ ليلي' };
+            const DAY_AR = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
-            data.forEach(i => {
+            // Client-side shift filter
+            const filtered = shift ? data.filter(i => i.shift === shift) : data;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem; color: var(--text-muted);">📭 لا توجد سجلات جرد لهذا النطاق الزمني</td></tr>';
+                document.getElementById('stat-inventory').textContent = "0";
+                return;
+            }
+
+            filtered.forEach(i => {
                 const shiftArabic = SHIFT_MAP[i.shift] || i.shift;
+
+                // Show full date + day name
+                let dateInfo = i.count_date || '--';
+                let dayName = '';
+                try {
+                    const d = new Date((i.count_date || '') + 'T12:00:00');
+                    dayName = DAY_AR[d.getDay()];
+                } catch (e) { }
+
+                // Show time from created_at
+                let timeStr = '--:--';
+                if (i.created_at && i.created_at.length >= 16) {
+                    timeStr = i.created_at.slice(11, 16);
+                } else if (i.count_date && i.count_date.includes(' ')) {
+                    timeStr = i.count_date.slice(11, 16);
+                }
+
                 tbody.innerHTML += `
                     <tr>
                         <td><b>${i.employee_name}</b></td>
+                        <td><b>${dateInfo}</b><br><small style="color: var(--text-muted)">${dayName}</small></td>
                         <td>${i.branch}</td>
                         <td>${shiftArabic}</td>
-                        <td>${i.created_at.slice(11, 16)}</td>
+                        <td>🕐 <b>${timeStr}</b></td>
                         <td><button class="btn btn-outline btn-inv-details" data-id="${i.id}">👁️ عرض</button></td>
                     </tr>
                 `;
             });
-            document.getElementById('stat-inventory').textContent = data.length;
+            document.getElementById('stat-inventory').textContent = filtered.length;
         }
 
         window.onload = () => {

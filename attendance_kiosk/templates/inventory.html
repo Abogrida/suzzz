@@ -395,7 +395,14 @@
 
             <div class="selector">
                 <div class="selector-label">📅 تاريخ الجرد</div>
-                <input type="date" id="countDate" class="input-date">
+                <input type="date" id="countDate" class="input-date" onchange="fetchMyCounts()">
+            </div>
+
+            <!-- Quick Actions -->
+            <div id="quickActions" style="margin-bottom: 20px; display: none;">
+                <button onclick="copyLastRecord()" class="btn-submit" style="background: #8b5cf6; margin-bottom: 0;">
+                    📋 نسخ أخر جرد قمت به
+                </button>
             </div>
 
             <!-- Hot Items -->
@@ -453,6 +460,7 @@
             <div class="item-row">
                 <div class="item-name">☕ ${name}</div>
                 <input type="number" class="item-input" min="0" step="any" placeholder="0" 
+                       data-item="${name}"
                        onchange="updateCount('${name}', this.value)" 
                        oninput="this.value = this.value.replace(/[^0-9.]/g, '')">
             </div>
@@ -513,6 +521,7 @@
                 data.forEach((c, i) => {
                     const timeStr = new Date(c.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
                     const bg = i % 2 === 0 ? '#fff' : '#f8fafc';
+                    const itemsJsonEscaped = JSON.stringify(c.items).replace(/"/g, '&quot;');
 
                     let itemsHtml = '<div style="margin-top: 14px; font-size: 14px; color: #475569; display: none; padding-top: 10px; border-top: 1px solid #e2e8f0;" id="items-' + i + '">';
                     c.items.forEach(it => {
@@ -524,10 +533,13 @@
                     <div class="count-item" style="background: ${bg}; flex-direction: column; align-items: stretch; cursor: pointer; border: 1px solid #e2e8f0; margin-bottom: 8px;" onclick="const e = document.getElementById('items-${i}'); e.style.display = e.style.display === 'none' ? 'block' : 'none'">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
-                                <div style="font-size: 14px; color: #1e293b; font-weight: 800;">${c.employee_name} (${SHIFT_LABELS[c.shift] || c.shift})</div>
+                                <div style="font-size: 14px; color: #1e293b; font-weight: 800;">${c.shift === 'morning' ? '☀️' : '🌙'} ${SHIFT_LABELS[c.shift] || c.shift}</div>
                                 <div style="font-size: 13px; color: #64748b; margin-top: 2px;">الساعة 🕐 ${timeStr} • ${c.items_counted} صنف</div>
                             </div>
-                            <div style="background: #e0e7ff; color: #4338ca; padding: 6px 12px; border-radius: 8px; font-weight: 800; font-size: 13px; display:flex; align-items:center; gap: 4px;">✔ محفوظ ▾</div>
+                            <div style="display: flex; gap: 8px;">
+                                <button onclick="event.stopPropagation(); copyInventoryData('${itemsJsonEscaped}')" style="background: #6366f1; color: white; border: none; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 800; cursor: pointer;">📋 نسخ</button>
+                                <div style="background: #e0e7ff; color: #4338ca; padding: 6px 12px; border-radius: 8px; font-weight: 800; font-size: 13px; display:flex; align-items:center; gap: 4px;">✔ محفوظ</div>
+                            </div>
                         </div>
                         ${itemsHtml}
                     </div>
@@ -538,7 +550,55 @@
                 console.error('Failed fetching counts:', e);
             }
         }
+
+        let lastRecordData = null;
+        async function fetchAbsoluteLast() {
+            try {
+                const res = await fetch('/api/local/my_counts?no_date=1&limit=1');
+                const data = await res.json();
+                if (data && data.length > 0) {
+                    lastRecordData = data[0].items;
+                    document.getElementById('quickActions').style.display = 'block';
+                }
+            } catch (e) { }
+        }
+
+        function copyLastRecord() {
+            if (lastRecordData) {
+                copyInventoryData(lastRecordData);
+            }
+        }
+
+        function copyInventoryData(itemsData) {
+            try {
+                const items = typeof itemsData === 'string' ? JSON.parse(itemsData) : itemsData;
+
+                // Reset current data
+                countData = {};
+                document.querySelectorAll('.item-input').forEach(input => input.value = '');
+
+                items.forEach(it => {
+                    countData[it.item_name] = it.quantity;
+                    const input = document.querySelector(`input[data-item="${it.item_name}"]`);
+                    if (input) input.value = it.quantity;
+                });
+
+                // Scroll to top to show first items
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                // Show toast if dashboard.html shared toast function exists or use alert
+                if (typeof showToast === 'function') {
+                    showToast('✅ تم نسخ البيانات بنجاح', 'success');
+                } else {
+                    alert('✅ تم نسخ البيانات بنجاح! يمكنك الآن مراجعتها وتعديلها.');
+                }
+            } catch (e) {
+                console.error('Copy failed:', e);
+            }
+        }
+
         fetchMyCounts();
+        fetchAbsoluteLast();
 
         async function submitInventory() {
             if (!currentBranch) {

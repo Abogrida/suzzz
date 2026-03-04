@@ -24,6 +24,7 @@ export default function InventoryReportsPage() {
     });
     const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
     const [branch, setBranch] = useState<'all' | 'Suzz 1' | 'Suzz 2'>('all');
+    const [shift, setShift] = useState<string>('all');
     const [employeeId, setEmployeeId] = useState<string>('all');
     const [expandedCount, setExpandedCount] = useState<number | null>(null);
     const [loading, setLoading] = useState(false);
@@ -40,13 +41,17 @@ export default function InventoryReportsPage() {
         if (employeeId !== 'all') url += `&employee_id=${employeeId}`;
 
         const data = await fetch(url).then(r => r.json());
-        setCounts(Array.isArray(data) ? data : []);
+        // Client-side shift filter
+        const filtered = Array.isArray(data)
+            ? (shift !== 'all' ? data.filter((c: InventoryCount) => c.shift === shift) : data)
+            : [];
+        setCounts(filtered);
         setLoading(false);
     };
 
     useEffect(() => {
         loadCounts();
-    }, [startDate, endDate, branch, employeeId]);
+    }, [startDate, endDate, branch, shift, employeeId]);
 
     return (
         <div className="page-content" style={{ direction: 'rtl', minHeight: '100vh' }}>
@@ -92,6 +97,18 @@ export default function InventoryReportsPage() {
                         ))}
                     </div>
                 </div>
+
+                <div style={{ flex: 1, minWidth: 150 }}>
+                    <label style={{ display: 'block', fontWeight: 800, marginBottom: 10, fontSize: 15, color: '#475569' }}>🌓 الوردية</label>
+                    <select value={shift} onChange={e => setShift(e.target.value)}
+                        style={{ width: '100%', padding: '12px 14px', border: '2px solid #e2e8f0', borderRadius: 12, fontSize: 15, fontFamily: 'Cairo', outline: 'none', background: '#f8fafc', cursor: 'pointer' }}>
+                        <option value="all">كل الورديات</option>
+                        <option value="morning">☀️ صباحي</option>
+                        <option value="evening">🌙 مسائي</option>
+                        <option value="night">✨ ليلي</option>
+                    </select>
+                </div>
+
                 <button onClick={loadCounts} style={{ background: '#1e293b', color: '#fff', border: 'none', borderRadius: 12, padding: '13px 24px', fontWeight: 800, fontSize: 16, cursor: 'pointer', fontFamily: 'Cairo' }}>🔄</button>
             </div>
 
@@ -123,7 +140,11 @@ export default function InventoryReportsPage() {
                                             <span style={{ background: '#6366f1', color: '#fff', fontSize: 12, fontWeight: 800, padding: '3px 10px', borderRadius: 7 }}>{c.branch}</span>
                                         </div>
                                         <div style={{ fontSize: 14, fontWeight: 700, color: '#64748b' }}>
-                                            {c.count_date} • {c.shift === 'morning' ? 'صباحي' : (c.shift === 'evening' ? 'مسائي' : 'ليلي')} • 🕐 {new Date(c.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+                                            📅 {new Date(c.count_date + 'T12:00:00').toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                            {' • '}
+                                            {c.shift === 'morning' ? '☀️ صباحي' : (c.shift === 'evening' ? '🌙 مسائي' : '✨ ليلي')}
+                                            {' • '}
+                                            🕐 <strong>{new Date(c.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</strong>
                                         </div>
                                     </div>
                                 </div>

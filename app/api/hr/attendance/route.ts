@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
         }
     }
 
-    const { data, error } = await db.from('hr_attendance').upsert({
+    const { data, error } = await db.from('hr_attendance').insert({
         employee_id: body.employee_id,
         attendance_date: body.attendance_date || new Date().toISOString().split('T')[0],
         status: resolvedStatus,
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
         source: body.source || 'manual',
         synced_from_local: body.synced_from_local || false,
         notes: body.notes || '',
-    }, { onConflict: 'employee_id,attendance_date' }).select().single();
+    }).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json({ success: true, data });
 }

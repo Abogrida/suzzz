@@ -452,8 +452,11 @@ export default function HRPage() {
                                     {empProfileLoading ? (
                                         <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontWeight: 800 }}>⏳ جاري التحميل...</div>
                                     ) : (() => {
-                                        // Calculate late days directly from all records
-                                        const lateDays = empAttendance.filter(a => a.status === 'late').length;
+                                        // Calculate late days — count unique DATES that have at least one 'late' record
+                                        const lateDates = new Set(
+                                            empAttendance.filter(a => a.status === 'late').map(a => a.attendance_date)
+                                        );
+                                        const lateDays = lateDates.size;
 
                                         const y = parseInt(empProfileMonth.split('-')[0]);
                                         const m = parseInt(empProfileMonth.split('-')[1]) - 1;
@@ -485,16 +488,17 @@ export default function HRPage() {
                                                 return curr >= ls && curr <= le && !['unpaid'].includes(lv.leave_type);
                                             });
 
-                                            // Find attendance record if any
-                                            const record = empAttendance.find(a => a.attendance_date === dateStr);
-                                            const didAttend = record && ['present', 'late'].includes(record.status);
-                                            const isExcused = record && record.status === 'excused';
+                                            // Find ALL attendance records for this date (multiple sessions possible)
+                                            const dayRecords = empAttendance.filter(a => a.attendance_date === dateStr);
+                                            const firstRecord = dayRecords[0] || null;
+                                            const didAttend = dayRecords.some(r => ['present', 'late'].includes(r.status));
+                                            const isExcused = dayRecords.some(r => r.status === 'excused');
 
                                             let displayStatus = '—';
-                                            let displayObj = null;
+                                            let displayObj: any = null;
 
-                                            if (record) {
-                                                displayObj = attendanceLabels[record.status] || attendanceLabels.present;
+                                            if (firstRecord) {
+                                                displayObj = attendanceLabels[firstRecord.status] || attendanceLabels.present;
                                                 displayStatus = displayObj.label;
                                             } else if (isFuture) {
                                                 displayStatus = 'مستقبل';
@@ -512,12 +516,13 @@ export default function HRPage() {
                                                 dayNum: d,
                                                 dateStr,
                                                 date,
-                                                record,
+                                                dayRecords,
+                                                record: firstRecord,
                                                 hasLeave,
                                                 isOffDay,
                                                 isFuture,
                                                 displayStatus,
-                                                displayObj
+                                                displayObj,
                                             });
 
                                             // Stop counting stats for days that haven't arrived yet
@@ -565,7 +570,7 @@ export default function HRPage() {
                                                     </div>
                                                 </div>
 
-                                                {/* Daily Logs Table */}
+                                                {/* Daily Logs Table — multiple sessions per day */}
                                                 <div>
                                                     <div style={{ fontSize: 16, fontWeight: 900, color: '#1e293b', marginBottom: 12 }}>تفاصيل السجل اليومي لشهر {new Date(y, m).toLocaleDateString('ar-EG', { month: 'long' })}:</div>
                                                     <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
@@ -573,6 +578,7 @@ export default function HRPage() {
                                                             <thead>
                                                                 <tr style={{ background: '#f1f5f9', color: '#475569', fontWeight: 800 }}>
                                                                     <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>التاريخ</th>
+                                                                    <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>الجلسة</th>
                                                                     <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>الحالة</th>
                                                                     <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>حضور</th>
                                                                     <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>انصراف</th>
@@ -580,58 +586,86 @@ export default function HRPage() {
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
-                                                                {dailyLogs.reverse().map((log) => (
-                                                                    <tr key={log.dayNum} style={{ borderBottom: '1px solid #f1f5f9', background: log.isOffDay ? '#f8fafc' : log.isFuture && isCurrentMonth ? '#F9FAFB' : '#fff', opacity: log.isFuture && isCurrentMonth ? 0.6 : 1 }}>
-                                                                        <td style={{ padding: '10px', fontWeight: 800, color: '#374151' }}>
+                                                                {dailyLogs.slice().reverse().flatMap((log) => {
+                                                                    const rowBg = log.isOffDay ? '#f8fafc' : (log.isFuture && isCurrentMonth) ? '#F9FAFB' : '#fff';
+                                                                    const opacity = (log.isFuture && isCurrentMonth) ? 0.6 : 1;
+                                                                    const dateCell = (
+                                                                        <td style={{ padding: '10px', fontWeight: 800, color: '#374151', verticalAlign: 'top' }}>
                                                                             {log.dayNum} {log.date.toLocaleDateString('ar-EG', { weekday: 'short' })}
                                                                         </td>
-                                                                        <td style={{ padding: '10px' }}>
-                                                                            {log.displayObj ? (
-                                                                                <span style={{ background: log.displayObj.bg, color: log.displayObj.color, borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 800 }}>
-                                                                                    {log.displayObj.icon} {log.displayObj.label}
-                                                                                </span>
-                                                                            ) : (
-                                                                                <span style={{ color: '#94a3b8', fontSize: 12 }}>{log.displayStatus}</span>
-                                                                            )}
-                                                                        </td>
-                                                                        <td style={{ padding: '10px', fontWeight: 900, color: '#16a34a' }}>
-                                                                            {log.record?.check_in_time ? log.record.check_in_time.slice(0, 5) : '—'}
-                                                                        </td>
-                                                                        <td style={{ padding: '10px', fontWeight: 900, color: '#ea580c' }}>
-                                                                            {log.record?.check_out_time ? log.record.check_out_time.slice(0, 5) : '—'}
-                                                                        </td>
-                                                                        <td style={{ padding: '10px' }}>
-                                                                            {!log.isFuture && (
-                                                                                <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-                                                                                    {log.record ? (
-                                                                                        <>
-                                                                                            <button
-                                                                                                onClick={async () => {
-                                                                                                    if (!confirm('حذف بصمة هذا اليوم نهائياً؟')) return;
-                                                                                                    await fetch(`/api/hr/attendance/${log.record?.id}`, { method: 'DELETE' });
-                                                                                                    loadEmpProfileMonth(selectedEmp.id, empProfileMonth); // Refresh
-                                                                                                }}
-                                                                                                style={{ background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 700, fontFamily: 'Cairo' }}>🗑</button>
-                                                                                        </>
-                                                                                    ) : !log.hasLeave && !log.isOffDay ? (
+                                                                    );
+
+                                                                    // Days with no sessions at all → single summary row
+                                                                    if (!log.dayRecords || log.dayRecords.length === 0) {
+                                                                        return [
+                                                                            <tr key={`${log.dayNum}-empty`} style={{ borderBottom: '1px solid #f1f5f9', background: rowBg, opacity }}>
+                                                                                {dateCell}
+                                                                                <td style={{ padding: '10px' }}>—</td>
+                                                                                <td style={{ padding: '10px' }}>
+                                                                                    {log.displayObj ? (
+                                                                                        <span style={{ background: log.displayObj.bg, color: log.displayObj.color, borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 800 }}>
+                                                                                            {log.displayObj.icon} {log.displayObj.label}
+                                                                                        </span>
+                                                                                    ) : (
+                                                                                        <span style={{ color: '#94a3b8', fontSize: 12 }}>{log.displayStatus}</span>
+                                                                                    )}
+                                                                                </td>
+                                                                                <td style={{ padding: '10px', color: '#94a3b8' }}>—</td>
+                                                                                <td style={{ padding: '10px', color: '#94a3b8' }}>—</td>
+                                                                                <td style={{ padding: '10px' }}>
+                                                                                    {!log.isFuture && !log.hasLeave && !log.isOffDay && (
                                                                                         <button
                                                                                             onClick={async () => {
                                                                                                 const time = prompt('أدخل وقت الحضور التقريبي بـ 24-hr (مثال: 09:00):');
                                                                                                 if (!time) return;
-                                                                                                await fetch(`/api/hr/attendance`, {
+                                                                                                await fetch('/api/hr/attendance', {
                                                                                                     method: 'POST',
                                                                                                     headers: { 'Content-Type': 'application/json' },
                                                                                                     body: JSON.stringify({ employee_id: selectedEmp.id, attendance_date: log.dateStr, status: 'present', check_in_time: time, source: 'manual' })
                                                                                                 });
-                                                                                                loadEmpProfileMonth(selectedEmp.id, empProfileMonth); // Refresh
+                                                                                                loadEmpProfileMonth(selectedEmp.id, empProfileMonth);
                                                                                             }}
                                                                                             style={{ background: '#e0f2fe', color: '#0284c7', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 700, fontFamily: 'Cairo' }}>تحضير يدوي</button>
-                                                                                    ) : null}
-                                                                                </div>
-                                                                            )}
-                                                                        </td>
-                                                                    </tr>
-                                                                ))}
+                                                                                    )}
+                                                                                </td>
+                                                                            </tr>
+                                                                        ];
+                                                                    }
+
+                                                                    // Days WITH one or more sessions → one row per session
+                                                                    return log.dayRecords.map((session: any, si: number) => {
+                                                                        const sObj = attendanceLabels[session.status] || attendanceLabels.present;
+                                                                        return (
+                                                                            <tr key={`${log.dayNum}-s${si}`} style={{ borderBottom: '1px solid #f1f5f9', background: si % 2 === 0 ? rowBg : '#fafff8', opacity }}>
+                                                                                {/* Show date only on first session */}
+                                                                                {si === 0 ? dateCell : <td style={{ padding: '10px' }} />}
+                                                                                <td style={{ padding: '6px 10px', fontSize: 11, color: '#64748b', fontWeight: 700 }}>
+                                                                                    {log.dayRecords.length > 1 ? `جلسة ${si + 1}` : '—'}
+                                                                                </td>
+                                                                                <td style={{ padding: '10px' }}>
+                                                                                    <span style={{ background: sObj.bg, color: sObj.color, borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 800 }}>
+                                                                                        {sObj.icon} {sObj.label}
+                                                                                    </span>
+                                                                                </td>
+                                                                                <td style={{ padding: '10px', fontWeight: 900, color: '#16a34a' }}>
+                                                                                    {session.check_in_time ? session.check_in_time.slice(0, 5) : '—'}
+                                                                                </td>
+                                                                                <td style={{ padding: '10px', fontWeight: 900, color: '#ea580c' }}>
+                                                                                    {session.check_out_time ? session.check_out_time.slice(0, 5) : '—'}
+                                                                                </td>
+                                                                                <td style={{ padding: '10px' }}>
+                                                                                    <button
+                                                                                        onClick={async () => {
+                                                                                            if (!confirm('حذف هذه الجلسة نهائياً؟')) return;
+                                                                                            await fetch(`/api/hr/attendance/${session.id}`, { method: 'DELETE' });
+                                                                                            loadEmpProfileMonth(selectedEmp.id, empProfileMonth);
+                                                                                        }}
+                                                                                        style={{ background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 700, fontFamily: 'Cairo' }}>🗑</button>
+                                                                                </td>
+                                                                            </tr>
+                                                                        );
+                                                                    });
+                                                                })}
                                                             </tbody>
                                                         </table>
                                                     </div>

@@ -6,7 +6,12 @@ Employees connect via http://localhost:8080 on any device on the same network.
 Attendance is stored in SQLite and synced to the cloud when internet is available.
 """
 
-import json, os, sqlite3, threading, time, webbrowser, socket
+import json, os, sqlite3, threading, time, webbrowser, socket, subprocess, sys
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
 from datetime import date, datetime, timedelta
 from contextlib import contextmanager
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session
@@ -33,14 +38,36 @@ app.secret_key = 'suzz-inventory-kiosk-secret'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=12)
 
 def get_local_ip():
+    """Returns the primary local IP address of the machine."""
     try:
+        # Method 1: Connect to an external host (doesn't send data)
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(0.1)
+        # 8.8.8.8 is Google DNS, 1.1.1.1 is Cloudflare.
         s.connect(("8.8.8.8", 80))
         ip = s.getsockname()[0]
         s.close()
-        return ip
+        if ip and not ip.startswith("127."):
+            return ip
     except Exception:
-        return "127.0.0.1"
+        pass
+
+    try:
+        # Method 2: Fallback to hostname-based scan
+        hostname = socket.gethostname()
+        ips = socket.gethostbyname_ex(hostname)[2]
+        # Look for typical local ranges: 192.168.x.x, 10.x.x.x, 172.16-31.x.x
+        for ip in ips:
+            if ip.startswith("192.168.") or ip.startswith("10."):
+                return ip
+        # Return first non-loopback if no typical range found
+        for ip in ips:
+            if not ip.startswith("127."):
+                return ip
+    except Exception:
+        pass
+
+    return "127.0.0.1"
 
 # ── Database ────────────────────────────────
 def get_db():
@@ -63,12 +90,17 @@ def init_db():
             pin_code TEXT DEFAULT '0000',
             phone TEXT DEFAULT '',
             device_id TEXT,
+            can_view_inventory INTEGER DEFAULT 1,
             last_synced_at TEXT
         );
     """)
     # Ensure phone column exists for existing DBs
     try:
         db.execute("ALTER TABLE employees ADD COLUMN phone TEXT DEFAULT ''")
+    except:
+        pass
+    try:
+        db.execute("ALTER TABLE employees ADD COLUMN can_view_inventory INTEGER DEFAULT 1")
     except:
         pass
     db.execute('''
@@ -79,9 +111,15 @@ def init_db():
             check_in_time TEXT,
             check_out_time TEXT,
             status TEXT NOT NULL,
+            notes TEXT DEFAULT '',
             synced INTEGER DEFAULT 0
         )
     ''')
+    # Ensure notes column exists for older DBs that were created before this field
+    try:
+        db.execute("ALTER TABLE attendance ADD COLUMN notes TEXT DEFAULT ''")
+    except:
+        pass
     db.execute('''
         CREATE TABLE IF NOT EXISTS sync_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -246,6 +284,7 @@ def auto_login():
         session.permanent = True
         session['employee_id'] = emp['id']
         session['employee_name'] = emp['name']
+        session['device_id'] = device_id # Fix: Set device_id to avoid infinite refresh loop
         return jsonify({'success': True})
     return jsonify({'success': False})
 
@@ -267,6 +306,10 @@ def inventory():
         db.close()
         session.clear()
         return redirect(url_for('login'))
+        
+    if not emp['can_view_inventory']:
+        db.close()
+        return "غير مصرح لك بدخول صفحة الجرد", 403
         
     products = db.execute("SELECT * FROM products WHERE active=1 ORDER BY category, name").fetchall()
     db.close()
@@ -318,9 +361,14 @@ def get_my_counts():
     end_date = request.args.get('end_date')
     count_date = request.args.get('count_date')
     employee_id = request.args.get('employee_id')
+    no_date = request.args.get('no_date') == '1'
+    limit = request.args.get('limit')
+    
+    if not is_admin:
+        employee_id = session.get('employee_id')
     
     query = '''
-        SELECT oc.id, oc.created_at, oc.items_json, oc.shift, oc.branch, e.name as employee_name
+        SELECT oc.id, oc.created_at, oc.count_date, oc.items_json, oc.shift, oc.branch, e.name as employee_name
         FROM offline_counts oc
         JOIN employees e ON oc.employee_id = e.id
         WHERE 1=1
@@ -333,16 +381,26 @@ def get_my_counts():
     elif start_date and end_date:
         query += " AND oc.count_date >= ? AND oc.count_date <= ?"
         params.extend([start_date, end_date])
-    elif not admin_pin:
+    elif not admin_pin and not no_date:
         # For non-admin (employee view), default to today if no date specified
         query += " AND oc.count_date = ?"
         params.append(date.today().isoformat())
         
     if employee_id:
-        query += " AND oc.employee_id = ?"
-        params.append(employee_id)
+        try:
+            query += " AND oc.employee_id = ?"
+            params.append(int(employee_id))
+        except:
+            pass
         
     query += " ORDER BY oc.id DESC"
+    
+    if limit:
+        try:
+            query += " LIMIT ?"
+            params.append(int(limit))
+        except:
+            pass
     
     counts = db.execute(query, params).fetchall()
     db.close()
@@ -350,7 +408,7 @@ def get_my_counts():
     result = []
     for c in counts:
         try:
-            items = json.loads(c['items_json'])
+            items = json.loads(c['items_json'] or '[]')
             item_count = len(items)
         except:
             items = []
@@ -359,6 +417,7 @@ def get_my_counts():
         result.append({
             'id': c['id'],
             'created_at': c['created_at'],
+            'count_date': c['count_date'],
             'employee_name': c['employee_name'],
             'items_counted': item_count,
             'items': items,
@@ -545,6 +604,9 @@ def checkin():
         ).fetchone()
         db.close()
 
+        # Trigger immediate sync to Supabase (non-blocking)
+        threading.Thread(target=_quick_sync, daemon=True).start()
+
         return jsonify({
             'success': True,
             'action': action,
@@ -632,6 +694,7 @@ def admin_update_employee():
         job_title = data.get('job_title')
         phone = data.get('phone', '')
         pin_code = data.get('pin_code')
+        can_view_inventory = 1 if data.get('can_view_inventory', True) else 0
         
         db = get_db()
         # Verify Admin PIN
@@ -643,9 +706,9 @@ def admin_update_employee():
             
         db.execute("""
             UPDATE employees 
-            SET name=?, job_title=?, phone=?, pin_code=? 
+            SET name=?, job_title=?, phone=?, pin_code=?, can_view_inventory=?
             WHERE id=?
-        """, (name, job_title, phone, pin_code, emp_id))
+        """, (name, job_title, phone, pin_code, can_view_inventory, emp_id))
         db.commit()
         db.close()
         
@@ -810,7 +873,7 @@ def unlink_employee_device():
 
 @app.route('/sync_now', methods=['POST'])
 def sync_now():
-    result = do_sync()
+    result = sync_attendance_to_supabase()
     return jsonify(result)
 
 @app.route('/refresh_employees', methods=['POST'])
@@ -818,7 +881,7 @@ def refresh_employees():
     result = sync_employees_from_cloud()
     return jsonify(result)
 
-# ── Sync Logic ──────────────────────────────
+# ── Background Sync Loop ────────────────────
 def has_internet():
     if not REQUESTS_OK:
         return False
@@ -842,129 +905,230 @@ def get_sync_status():
         'last_sync': dict(last_sync) if last_sync else None
     }
 
-def do_sync():
+def sync_attendance_to_supabase():
+    """Sync attendance records DIRECTLY to Supabase REST API — no Next.js intermediary."""
     if not REQUESTS_OK:
         return {'success': False, 'message': 'مكتبة requests غير مثبتة'}
 
-    cloud_url = cfg.get('cloud_base_url', '').rstrip('/')
-    if not cloud_url:
-        return {'success': False, 'message': 'cloud_base_url غير مضبوط في config.json'}
+    supabase_url = cfg.get('supabase_url', '').rstrip('/')
+    supabase_key = cfg.get('supabase_service_key', '')
+
+    if not supabase_url or not supabase_key:
+        return {'success': False, 'message': 'supabase_url أو supabase_service_key غير مضبوطين في config.json'}
 
     if not has_internet():
         return {'success': False, 'message': 'لا يوجد اتصال بالإنترنت'}
 
     db = get_db()
-    unsynced = db.execute(
-        "SELECT * FROM attendance WHERE synced=0"
-    ).fetchall()
+    unsynced = db.execute("SELECT * FROM attendance WHERE synced=0").fetchall()
 
     if not unsynced:
         db.close()
         return {'success': True, 'message': 'لا توجد سجلات جديدة للمزامنة', 'count': 0}
 
-    payload = []
-    for row in unsynced:
-        payload.append({
-            'employee_id': row['employee_id'],
-            'attendance_date': row['attendance_date'],
-            'check_in_time': row['check_in_time'],
-            'check_out_time': row['check_out_time'],
-            'status': row['status'],
-            'source': 'kiosk',
-            'notes': row['notes'] or ''
-        })
+    headers = {
+        'apikey': supabase_key,
+        'Authorization': f'Bearer {supabase_key}',
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation',
+    }
+    base = f"{supabase_url}/rest/v1"
 
+    # ── Batch-fetch existing cloud records for the same employees & dates ──
+    distinct_emp_ids = list(set(r['employee_id'] for r in unsynced))
+    distinct_dates   = list(set(r['attendance_date'] for r in unsynced))
     try:
-        resp = requests.post(
-            f"{cloud_url}/api/hr/attendance/sync",
-            json=payload,
-            headers={'Authorization': f"Bearer {cfg.get('sync_api_key', '')}"},
-            timeout=15
+        existing_resp = requests.get(
+            f"{base}/hr_attendance",
+            params={
+                'employee_id':     f'in.({" ,".join(str(e) for e in distinct_emp_ids)})',
+                'attendance_date': f'in.({",".join(distinct_dates)})',
+                'select': 'id,employee_id,attendance_date,check_in_time',
+            },
+            headers=headers,
+            timeout=10,
         )
-        if resp.status_code == 200:
-            ids = [r['id'] for r in unsynced]
-            db.execute(
-                f"UPDATE attendance SET synced=1 WHERE id IN ({','.join('?'*len(ids))})",
-                ids
-            )
-            db.execute(
-                "INSERT INTO sync_log (synced_at, records_count, success, message) VALUES (?,?,?,?)",
-                (datetime.now().isoformat(), len(payload), 1, f'تم مزامنة {len(payload)} سجل')
-            )
-            db.commit()
-            db.close()
-            return {'success': True, 'message': f'تم مزامنة {len(payload)} سجل بنجاح', 'count': len(payload)}
-        else:
-            msg = f'فشل: {resp.status_code} — {resp.text[:200]}'
-            db.execute("INSERT INTO sync_log VALUES (NULL,?,?,?,?)",
-                      (datetime.now().isoformat(), 0, 0, msg))
-            db.commit()
-            db.close()
-            return {'success': False, 'message': msg}
-    except Exception as e:
-        db.execute("INSERT INTO sync_log VALUES (NULL,?,?,?,?)",
-                  (datetime.now().isoformat(), 0, 0, str(e)))
-        db.commit()
-        db.close()
-        return {'success': False, 'message': str(e)}
+        existing_records = existing_resp.json() if existing_resp.status_code == 200 else []
+    except Exception:
+        existing_records = []
 
-def do_inventory_sync():
-    """Sync offline inventory counts and fetch new products."""
-    if not REQUESTS_OK or not has_internet(): return
-    cloud_url = cfg.get('cloud_base_url', '').rstrip('/')
-    if not cloud_url: return
+    synced_ids = []
+    for row in unsynced:
+        emp_id   = row['employee_id']
+        att_date = row['attendance_date']
+        check_in = (row['check_in_time'] or '')[:5]
+        check_out = row['check_out_time']
+        status   = row['status']
+        try:
+            notes = row['notes'] or ''
+        except Exception:
+            notes = ''
+
+        # Find a matching record already in Supabase
+        existing = next(
+            (ex for ex in existing_records
+             if ex['employee_id'] == emp_id
+             and ex['attendance_date'] == att_date
+             and (ex.get('check_in_time') or '')[:5] == check_in),
+            None
+        )
+
+        try:
+            if existing:
+                # ── PATCH: update checkout / status ──
+                resp = requests.patch(
+                    f"{base}/hr_attendance?id=eq.{existing['id']}",
+                    json={
+                        'check_out_time': check_out,
+                        'status': status,
+                        'synced_from_local': True,
+                        'notes': notes,
+                    },
+                    headers={**headers, 'Prefer': 'return=minimal'},
+                    timeout=10,
+                )
+                ok = resp.status_code in (200, 204)
+            else:
+                # ── POST: insert new session ──
+                resp = requests.post(
+                    f"{base}/hr_attendance",
+                    json={
+                        'employee_id':      emp_id,
+                        'attendance_date':  att_date,
+                        'check_in_time':    row['check_in_time'] or None,
+                        'check_out_time':   check_out or None,
+                        'status':           status,
+                        'source':           'kiosk',
+                        'synced_from_local': True,
+                        'notes':            notes,
+                    },
+                    headers=headers,
+                    timeout=10,
+                )
+                ok = resp.status_code in (200, 201)
+                if ok:
+                    new_records = resp.json()
+                    if isinstance(new_records, list) and new_records:
+                        existing_records.append({
+                            'id': new_records[0]['id'],
+                            'employee_id': emp_id,
+                            'attendance_date': att_date,
+                            'check_in_time': row['check_in_time'],
+                        })
+
+            if ok:
+                synced_ids.append(row['id'])
+
+        except Exception as e:
+            print(f"[Attendance Sync] Error for row id={row['id']}: {e}")
+
+    if synced_ids:
+        db.execute(
+            f"UPDATE attendance SET synced=1 WHERE id IN ({','.join('?'*len(synced_ids))})",
+            synced_ids,
+        )
+        db.execute(
+            "INSERT INTO sync_log (synced_at, records_count, success, message) VALUES (?,?,?,?)",
+            (datetime.now().isoformat(), len(synced_ids), 1,
+             f'مزامنة مباشرة Supabase: {len(synced_ids)} سجل'),
+        )
+        db.commit()
+
+    db.close()
+    return {'success': True, 'message': f'تم مزامنة {len(synced_ids)} سجل', 'count': len(synced_ids)}
+
+def sync_inventory_to_supabase():
+    """Push offline counts & pull products DIRECTLY from Supabase REST API."""
+    if not REQUESTS_OK or not has_internet():
+        return
+
+    supabase_url = cfg.get('supabase_url', '').rstrip('/')
+    supabase_key = cfg.get('supabase_service_key', '')
+    if not supabase_url or not supabase_key:
+        return
+
+    headers = {
+        'apikey': supabase_key,
+        'Authorization': f'Bearer {supabase_key}',
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation',
+    }
+    base = f"{supabase_url}/rest/v1"
 
     db = get_db()
-    
-    # 1. PUSH unsynced inventory counts
-    unsynced_inv = db.execute("SELECT * FROM offline_counts WHERE synced=0").fetchall()
-    if unsynced_inv:
-        for row in unsynced_inv:
-            try:
-                items = json.loads(row['items_json'] or '[]')
-            except:
-                items = []
-                
-            payload = {
-                'employee_id': row['employee_id'],
-                'count_date': row['count_date'],
-                'shift': row['shift'],
-                'branch': row['branch'],
-                'items': items,
-                'notes': 'Offline Kiosk Sync'
-            }
-            try:
-                resp = requests.post(
-                    f"{cloud_url}/api/inventory-counts",
-                    json=payload,
-                    timeout=15
-                )
-                if resp.status_code == 200:
-                    db.execute("UPDATE offline_counts SET synced=1 WHERE id=?", (row['id'],))
-                    db.commit()
-            except:
-                pass
 
-    # 2. PULL fresh products catalog
+    # ── 1. PUSH: unsynced offline inventory counts ──────────────────────────
+    unsynced_inv = db.execute("SELECT * FROM offline_counts WHERE synced=0").fetchall()
+    for row in unsynced_inv:
+        try:
+            items = json.loads(row['items_json'] or '[]')
+        except Exception:
+            items = []
+
+        try:
+            # Insert main count record
+            count_resp = requests.post(
+                f"{base}/inventory_counts",
+                json={
+                    'employee_id': row['employee_id'],
+                    'count_date':  row['count_date'],
+                    'shift':       row['shift'],
+                    'branch':      row['branch'] or 'Suzz 1',
+                    'notes':       'Offline Kiosk Sync',
+                },
+                headers=headers,
+                timeout=10,
+            )
+            if count_resp.status_code in (200, 201):
+                count_data = count_resp.json()
+                count_id = (
+                    count_data[0]['id']
+                    if isinstance(count_data, list) and count_data
+                    else count_data.get('id')
+                )
+                if count_id and items:
+                    items_payload = [
+                        {
+                            'count_id':  count_id,
+                            'item_name': it.get('item_name') or it.get('name', ''),
+                            'quantity':  it.get('quantity', 0),
+                        }
+                        for it in items
+                    ]
+                    requests.post(
+                        f"{base}/inventory_count_items",
+                        json=items_payload,
+                        headers=headers,
+                        timeout=10,
+                    )
+                db.execute("UPDATE offline_counts SET synced=1 WHERE id=?", (row['id'],))
+                db.commit()
+        except Exception as e:
+            print(f"[Inventory Sync] Push error for count id={row['id']}: {e}")
+
+    # ── 2. PULL: fresh products catalog ────────────────────────────────────
     try:
-        resp = requests.get(
-            f"{cloud_url}/api/products",
-            headers={'Authorization': f"Bearer {cfg.get('sync_api_key', '')}"},
-            timeout=10
+        prod_resp = requests.get(
+            f"{base}/products",
+            params={'select': 'id,name,category,barcode,price,unit', 'order': 'category,name'},
+            headers=headers,
+            timeout=10,
         )
-        if resp.status_code == 200:
-            products = resp.json()
-            # Clear old products and insert fresh ones (fastest way to sync static catalog)
+        if prod_resp.status_code == 200:
+            products = prod_resp.json()
             db.execute("DELETE FROM products")
             for p in products:
-                db.execute('''
-                    INSERT INTO products (id, name, category, barcode, sku, price, active, unit)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (p['id'], p['name'], p.get('category'), p.get('barcode'), p.get('sku'), p.get('price', 0), p.get('active', 1) and 1 or 0, p.get('unit')))
+                db.execute(
+                    'INSERT INTO products (id, name, category, barcode, sku, price, active, unit) '
+                    'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                    (
+                        p['id'], p['name'], p.get('category'), p.get('barcode'),
+                        p.get('sku'), p.get('price', 0), 1, p.get('unit'),
+                    ),
+                )
             db.commit()
     except Exception as e:
-        print("Failed pulling products:", e)
-        pass
+        print(f"[Inventory Sync] Products pull error: {e}")
 
     db.close()
 
@@ -1040,41 +1204,119 @@ def try_unlink_device_on_cloud(emp_id):
     except:
         pass
 
+def _quick_sync():
+    """Triggered immediately after a checkin/checkout to push data without waiting."""
+    try:
+        sync_attendance_to_supabase()
+    except Exception as e:
+        print(f"[Quick Sync] Error: {e}")
+
+
 def background_sync_loop():
-    """Background thread: sync every 10 seconds, and refresh employees every 3 loops."""
-    # Run an immediate refresh exactly once on startup:
+    """Background thread: sync every 10 seconds, refresh employees every 30 seconds."""
+    # Immediate refresh on startup
     try:
         sync_employees_from_cloud()
-        do_sync()
-    except:
+        sync_attendance_to_supabase()
+    except Exception:
         pass
 
     loops = 0
     while True:
-        time.sleep(10)  # 10 seconds (faster sync)
+        time.sleep(10)
         loops += 1
         try:
-            do_sync()
-            do_inventory_sync()
-            # Refresh employees every 3 loops (30 seconds)
+            sync_attendance_to_supabase()
+            sync_inventory_to_supabase()
+            # Refresh employees every 3 loops (≈30 seconds)
             if loops >= 3:
                 sync_employees_from_cloud()
                 loops = 0
+        except Exception:
+            pass
+
+def add_firewall_rule(port):
+    """Attempt to add a Windows Firewall rule for the kiosk port."""
+    if os.name != 'nt':
+        return
+    rule_name = f"SuzzInventoryKiosk_{port}"
+    try:
+        # Check if rule exists
+        check_cmd = f'netsh advfirewall firewall show rule name="{rule_name}"'
+        if subprocess.call(check_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0:
+            return # Rule already exists
+            
+        print(f"Adding Firewall rule for port {port}...")
+        add_cmd = f'netsh advfirewall firewall add rule name="{rule_name}" dir=in action=allow protocol=TCP localport={port} profile=any'
+        # This requires admin privileges, so we use 'runas' or just try and failure is okay
+        subprocess.run(["powershell", "-Command", f"Start-Process netsh -ArgumentList 'advfirewall firewall add rule name=\"{rule_name}\" dir=in action=allow protocol=TCP localport={port} profile=any' -Verb RunAs"], 
+                       capture_output=True)
+    except Exception as e:
+        print(f"Firewall rule error: {e}")
+
+def kill_port_processes(port):
+    """Find and kill processes using the specified port."""
+    if not psutil:
+        return
+    curr_pid = os.getpid()
+    for proc in psutil.process_iter(['pid', 'name']):
+        try:
+            # Check for existing AttendanceKiosk.exe processes (except this one)
+            if proc.info['name'] == "AttendanceKiosk.exe" and proc.info['pid'] != curr_pid:
+                proc.terminate()
+            
+            # Check for processes using our port
+            for conns in proc.connections(kind='inet'):
+                if conns.laddr.port == port:
+                    if proc.info['pid'] != curr_pid:
+                        print(f"Closing existing instance on port {port} (PID: {proc.info['pid']})")
+                        proc.terminate()
+                        proc.wait(timeout=2)
         except:
             pass
 
 # ── Main ────────────────────────────────────
 if __name__ == '__main__':
+    port = cfg.get('kiosk_port', 8085)
+    
+    # Resolve conflicts
+    kill_port_processes(port)
+    
     init_db()
+    
+    # Try to add firewall rule
+    add_firewall_rule(port)
+    
     # Start background sync thread
     sync_thread = threading.Thread(target=background_sync_loop, daemon=True)
     sync_thread.start()
-    port = cfg.get('kiosk_port', 8080)
+
     print(f"\n{'='*50}")
-    print(f"  Attendance System Running")
+    print(f"  Suzz Inventory Kiosk")
     print(f"  App URL: http://localhost:{port}")
-    print(f"  Admin Panel: http://localhost:{port}/admin")
+    print(f"  Local IP: {get_local_ip()}")
     print(f"{'='*50}\n")
-    # Open browser automatically
-    threading.Timer(1.5, lambda: webbrowser.open(f'http://localhost:{port}')).start()
-    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
+
+    # Start Flask Server
+    flask_thread = threading.Thread(target=lambda: app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False), daemon=True)
+    flask_thread.start()
+
+    # Launch in Edge App Mode (Dedicated Window)
+    # This provides a standalone app window without address bar
+    time.sleep(1.5)
+    app_url = f"http://localhost:{port}"
+    edge_path = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+    
+    try:
+        if os.path.exists(edge_path):
+            subprocess.Popen([edge_path, f"--app={app_url}"])
+        else:
+            # Fallback to default browser if edge path is different
+            webbrowser.open(app_url)
+    except Exception as e:
+        print(f"Error launching app mode: {e}")
+        webbrowser.open(app_url)
+
+    # Keep main thread alive
+    while True:
+        time.sleep(10)

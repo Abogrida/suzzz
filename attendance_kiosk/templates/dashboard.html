@@ -389,6 +389,7 @@
             </div>
 
             <!-- Inventory Card -->
+            {% if employee.can_view_inventory %}
             <div class="action-card card-inventory" onclick="window.location.href='/inventory'">
                 <div class="card-topbar"></div>
                 <div class="card-content">
@@ -402,6 +403,7 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
 
         </div>
     </div>
