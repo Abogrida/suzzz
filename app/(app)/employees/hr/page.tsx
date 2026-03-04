@@ -113,6 +113,17 @@ export default function HRPage() {
     // Leave form
     const [leaveForm, setLeaveForm] = useState({ leave_start: '', leave_end: '', leave_type: 'annual', notes: '' });
 
+    // Manual attendance modal
+    type ManualAttForm = { employee_id: number; employee_name: string; attendance_date: string; check_in_time: string; check_out_time: string; status: string; notes: string; };
+    const emptyManualAtt: ManualAttForm = { employee_id: 0, employee_name: '', attendance_date: '', check_in_time: '', check_out_time: '', status: 'present', notes: '' };
+    const [manualAttModal, setManualAttModal] = useState(false);
+    const [manualAttForm, setManualAttForm] = useState<ManualAttForm>(emptyManualAtt);
+
+    const openManualAtt = (empId: number, empName: string, dateStr: string) => {
+        setManualAttForm({ ...emptyManualAtt, employee_id: empId, employee_name: empName, attendance_date: dateStr });
+        setManualAttModal(true);
+    };
+
     const loadEmployees = useCallback(async () => {
         const d = await fetch('/api/hr/employees').then(r => r.json());
         setEmployees(Array.isArray(d) ? d : []);
@@ -244,6 +255,35 @@ export default function HRPage() {
         const l = await fetch(`/api/hr/employees/${empId}/leaves`).then(r => r.json());
         setEmpLeaves(Array.isArray(l) ? l : []);
         setToast({ msg: 'تم حذف الإجازة', type: 'success' });
+    };
+
+    const handleManualAtt = async () => {
+        if (!manualAttForm.check_in_time) {
+            setToast({ msg: 'يرجى إدخال وقت الحضور على الأقل', type: 'error' }); return;
+        }
+        setSaving(true);
+        const res = await fetch('/api/hr/attendance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                employee_id: manualAttForm.employee_id,
+                attendance_date: manualAttForm.attendance_date,
+                status: manualAttForm.status,
+                check_in_time: manualAttForm.check_in_time || null,
+                check_out_time: manualAttForm.check_out_time || null,
+                notes: manualAttForm.notes || '',
+                source: 'manual',
+            }),
+        });
+        setSaving(false);
+        if (res.ok) {
+            setToast({ msg: 'تم تسجيل الحضور بنجاح ✅', type: 'success' });
+            setManualAttModal(false);
+            setManualAttForm(emptyManualAtt);
+            if (selectedEmp) loadEmpProfileMonth(selectedEmp.id, empProfileMonth);
+        } else {
+            setToast({ msg: 'حدث خطأ أثناء الحفظ', type: 'error' });
+        }
     };
 
 
@@ -615,17 +655,10 @@ export default function HRPage() {
                                                                                 <td style={{ padding: '10px' }}>
                                                                                     {!log.isFuture && !log.hasLeave && !log.isOffDay && (
                                                                                         <button
-                                                                                            onClick={async () => {
-                                                                                                const time = prompt('أدخل وقت الحضور التقريبي بـ 24-hr (مثال: 09:00):');
-                                                                                                if (!time) return;
-                                                                                                await fetch('/api/hr/attendance', {
-                                                                                                    method: 'POST',
-                                                                                                    headers: { 'Content-Type': 'application/json' },
-                                                                                                    body: JSON.stringify({ employee_id: selectedEmp.id, attendance_date: log.dateStr, status: 'present', check_in_time: time, source: 'manual' })
-                                                                                                });
-                                                                                                loadEmpProfileMonth(selectedEmp.id, empProfileMonth);
-                                                                                            }}
-                                                                                            style={{ background: '#e0f2fe', color: '#0284c7', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 700, fontFamily: 'Cairo' }}>تحضير يدوي</button>
+                                                                                            onClick={() => openManualAtt(selectedEmp.id, selectedEmp.name, log.dateStr)}
+                                                                                            style={{ background: 'linear-gradient(135deg, #0ea5e9, #38bdf8)', color: '#fff', border: 'none', borderRadius: 8, padding: '5px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 800, fontFamily: 'Cairo', display: 'flex', alignItems: 'center', gap: 5 }}>
+                                                                                            ✏️ تحضير يدوي
+                                                                                        </button>
                                                                                     )}
                                                                                 </td>
                                                                             </tr>
@@ -1155,6 +1188,98 @@ export default function HRPage() {
                             </button>
                             <button onClick={() => { setPurchaseModal(false); setPurchaseForm(emptyPurchase); }}
                                 style={{ flex: 1, background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: 14, padding: '14px', fontWeight: 800, fontSize: 16, cursor: 'pointer', fontFamily: 'Cairo' }}>إلغاء</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* ===== MANUAL ATTENDANCE MODAL ===== */}
+            {manualAttModal && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: 20 }}
+                    onClick={() => { setManualAttModal(false); }}>
+                    <div style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: 500, boxShadow: '0 30px 80px rgba(0,0,0,0.3)', overflow: 'hidden' }}
+                        onClick={e => e.stopPropagation()}>
+
+                        {/* Header */}
+                        <div style={{ background: 'linear-gradient(135deg, #0f172a, #1e3a5f)', padding: '24px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <div style={{ color: '#fff', fontWeight: 900, fontSize: 20 }}>✏️ تحضير يدوي</div>
+                                <div style={{ color: '#7dd3fc', fontSize: 14, marginTop: 4 }}>
+                                    {manualAttForm.employee_name} • {manualAttForm.attendance_date}
+                                </div>
+                            </div>
+                            <button onClick={() => setManualAttModal(false)}
+                                style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: 10, width: 38, height: 38, cursor: 'pointer', fontSize: 18 }}>✕</button>
+                        </div>
+
+                        {/* Form */}
+                        <div style={{ padding: '28px 28px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+                            {/* Status */}
+                            <div>
+                                <label style={label}>حالة الحضور</label>
+                                <div style={{ display: 'flex', gap: 10 }}>
+                                    {[
+                                        { key: 'present', label: '✅ حاضر', color: '#16a34a', bg: '#dcfce7' },
+                                        { key: 'late', label: '⏰ متأخر', color: '#f59e0b', bg: '#fef3c7' },
+                                        { key: 'excused', label: '📋 إجازة', color: '#0ea5e9', bg: '#e0f2fe' },
+                                    ].map(s => (
+                                        <button key={s.key}
+                                            onClick={() => setManualAttForm(f => ({ ...f, status: s.key }))}
+                                            style={{
+                                                flex: 1, padding: '10px 0', borderRadius: 12,
+                                                border: `2px solid ${manualAttForm.status === s.key ? s.color : '#e2e8f0'}`,
+                                                background: manualAttForm.status === s.key ? s.bg : '#f8fafc',
+                                                color: manualAttForm.status === s.key ? s.color : '#64748b',
+                                                fontWeight: 800, fontSize: 14, cursor: 'pointer', fontFamily: 'Cairo',
+                                                transition: 'all 0.15s',
+                                            }}>{s.label}</button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Times row */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                <div>
+                                    <label style={label}>🟢 وقت الحضور *</label>
+                                    <input type="time" value={manualAttForm.check_in_time}
+                                        onChange={e => setManualAttForm(f => ({ ...f, check_in_time: e.target.value }))}
+                                        style={{ ...inp, borderColor: manualAttForm.check_in_time ? '#16a34a' : '#e2e8f0', fontWeight: 800, fontSize: 20, textAlign: 'center' }} />
+                                </div>
+                                <div>
+                                    <label style={label}>🔴 وقت الانصراف</label>
+                                    <input type="time" value={manualAttForm.check_out_time}
+                                        onChange={e => setManualAttForm(f => ({ ...f, check_out_time: e.target.value }))}
+                                        style={{ ...inp, borderColor: manualAttForm.check_out_time ? '#ea580c' : '#e2e8f0', fontWeight: 800, fontSize: 20, textAlign: 'center' }} />
+                                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>اختياري — اتركه فارغاً إذا لم ينصرف بعد</div>
+                                </div>
+                            </div>
+
+                            {/* Notes */}
+                            <div>
+                                <label style={label}>📝 ملاحظات (اختياري)</label>
+                                <input style={inp} value={manualAttForm.notes}
+                                    onChange={e => setManualAttForm(f => ({ ...f, notes: e.target.value }))}
+                                    placeholder="مثال: تأخر بسبب..."
+                                />
+                            </div>
+
+                            {/* Buttons */}
+                            <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
+                                <button onClick={handleManualAtt} disabled={saving || !manualAttForm.check_in_time}
+                                    style={{
+                                        flex: 1, background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#fff',
+                                        border: 'none', borderRadius: 14, padding: '14px', fontWeight: 900, fontSize: 16,
+                                        cursor: saving || !manualAttForm.check_in_time ? 'not-allowed' : 'pointer',
+                                        fontFamily: 'Cairo', opacity: !manualAttForm.check_in_time ? 0.5 : 1,
+                                        transition: 'all 0.2s',
+                                    }}>
+                                    {saving ? '⏳ جاري الحفظ...' : '✅ تسجيل الحضور'}
+                                </button>
+                                <button onClick={() => setManualAttModal(false)}
+                                    style={{ flex: 1, background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: 14, padding: '14px', fontWeight: 800, fontSize: 16, cursor: 'pointer', fontFamily: 'Cairo' }}>
+                                    إلغاء
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
