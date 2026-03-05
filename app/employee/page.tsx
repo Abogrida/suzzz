@@ -72,6 +72,29 @@ export default function EmployeeHubPage() {
                     </div>
                 </div>
 
+                {/* Card 3: التقفيلات ورواتب الموظفين */}
+                <div
+                    style={cardStyle('#f59e0b', 'rgba(245,158,11,0.15)')}
+                    onClick={() => router.push('/employee/settlement')}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-8px) scale(1.02)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 30px 80px rgba(245,158,11,0.25)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0) scale(1)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 20px 70px rgba(245,158,11,0.15)'; }}
+                >
+                    <div style={{ height: 8, background: 'linear-gradient(90deg, #f59e0b, #fbbf24)' }} />
+                    <div style={{ padding: '30px 28px 28px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
+                            <div style={{ width: 72, height: 72, borderRadius: 20, background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, flexShrink: 0, boxShadow: '0 8px 24px rgba(245,158,11,0.32)' }}>💰</div>
+                            <div>
+                                <div style={{ fontSize: 22, fontWeight: 900, color: '#1e293b', lineHeight: 1.2 }}>رواتب وتقفيلات</div>
+                                <div style={{ fontSize: 14, color: '#f59e0b', fontWeight: 700, marginTop: 4 }}>Monthly Settlements</div>
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1.5px solid #fef3c7', paddingTop: 18 }}>
+                            <span style={{ fontSize: 14, color: '#f59e0b', fontWeight: 800 }}>إدارة الرواتب</span>
+                            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: '#fff' }}>←</div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     );

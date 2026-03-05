@@ -11,10 +11,16 @@ function calcStatus(
 ): string {
     if (!checkInTime) return 'absent';
     if (!workStartTime) return 'present';
-    const [ih, im] = checkInTime.split(':').map(Number);
+
+    let t = checkInTime;
+    if (t.includes('T')) t = t.split('T')[1];
+    const match = t.match(/(\d{1,2}):(\d{2})/);
+    if (!match) return 'present'; // fallback
+
+    const checkInMins = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
     const [wh, wm] = workStartTime.split(':').map(Number);
-    const checkInMins = ih * 60 + im;
     const workStartMins = wh * 60 + wm;
+
     return checkInMins - workStartMins > lateThreshold ? 'late' : 'present';
 }
 

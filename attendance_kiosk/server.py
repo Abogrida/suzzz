@@ -6,7 +6,7 @@ Employees connect via http://localhost:8080 on any device on the same network.
 Attendance is stored in SQLite and synced to the cloud when internet is available.
 """
 
-import json, os, sqlite3, threading, time, webbrowser, socket, subprocess, sys
+import json, os, sqlite3, threading, time, webbrowser, socket, subprocess, sys, base64
 try:
     import psutil
 except ImportError:
@@ -22,20 +22,58 @@ try:
 except ImportError:
     REQUESTS_OK = False
 
-# ── Config ─────────────────────────────────
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_PATH = os.path.join(BASE_DIR, 'config.json')
-DB_PATH = os.path.join(BASE_DIR, 'attendance.db')
+# ── Path resolution (works both in dev and PyInstaller EXE) ───────────
+# When frozen: sys._MEIPASS = temp folder where bundled files are extracted
+# When dev:    BASE_DIR     = folder containing server.py
+if getattr(sys, 'frozen', False):
+    RESOURCES_DIR = sys._MEIPASS          # bundled templates/static live here
+    APP_DATA_DIR  = os.path.dirname(sys.executable)  # DB lives next to EXE
+else:
+    RESOURCES_DIR = os.path.dirname(os.path.abspath(__file__))
+    APP_DATA_DIR  = RESOURCES_DIR
 
-def load_config():
-    with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
-        return json.load(f)
+BASE_DIR = RESOURCES_DIR  # kept for any legacy references
+DB_PATH  = os.path.join(APP_DATA_DIR, 'attendance.db')
 
-cfg = load_config()
+cfg = {
+    'supabase_url': 'https://vmkfwhnpevbamrfbjkzv.supabase.co',
+    'supabase_service_key': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZta2Z3aG5wZXZiYW1yZmJqa3p2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTk4NTk5OCwiZXhwIjoyMDg3NTYxOTk4fQ.2-vQNcrkLaenO2McoC5qkGdxf-lcGQ3Np__I5a35QI8',
+    'sync_api_key': 'attendance-sync-secret-2026',
+    'sync_endpoint': 'https://vmkfwhnpevbamrfbjkzv.supabase.co',
+    'cloud_base_url': 'https://suzzz.vercel.app',
+    'company_name': 'suzz',
+    'work_start_time': '09:00',
+    'work_end_time': '17:00',
+    'late_threshold_minutes': 15,
+    'kiosk_port': 8085,
+    'off_days': [5, 6]
+}
 
-app = Flask(__name__, template_folder='templates', static_folder='static')
+# ── Embedded Logo ─────────────────────────────────────────────
+_LOGO_BYTES = None
+def _load_logo():
+    global _LOGO_BYTES
+    if _LOGO_BYTES is not None:
+        return _LOGO_BYTES
+    logo_path = os.path.join(RESOURCES_DIR, 'static', 'logo.jpg')
+    if os.path.exists(logo_path):
+        with open(logo_path, 'rb') as f:
+            _LOGO_BYTES = f.read()
+    return _LOGO_BYTES
+
+app = Flask(__name__,
+            template_folder=os.path.join(RESOURCES_DIR, 'templates'),
+            static_folder=os.path.join(RESOURCES_DIR, 'static'))
 app.secret_key = 'suzz-inventory-kiosk-secret'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=12)
+
+@app.route('/static/logo.jpg')
+def serve_logo():
+    from flask import Response
+    data = _load_logo()
+    if data:
+        return Response(data, mimetype='image/jpeg')
+    return '', 404
 
 def get_local_ip():
     """Returns the primary local IP address of the machine."""
