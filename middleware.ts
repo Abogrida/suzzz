@@ -20,8 +20,8 @@ export function middleware(request: NextRequest) {
 
     // API routes
     if (pathname.startsWith('/api/')) {
-        // Allow inventory-counts and movements for employees
-        const allowedForEmployee = ['/api/inventory-counts', '/api/auth/logout', '/api/auth/me'];
+        // Allow inventory-counts, movements, and hr settlement for employees
+        const allowedForEmployee = ['/api/inventory-counts', '/api/auth/logout', '/api/auth/me', '/api/hr/settlement'];
         if (hasEmployeeToken && allowedForEmployee.some(p => pathname.startsWith(p))) {
             return NextResponse.next();
         }

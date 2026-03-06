@@ -14,6 +14,7 @@ const navLinks = [
     { href: '/invoices', label: 'الفواتير', icon: FileText },
     { href: '/reports', label: 'التقارير', icon: TrendingUp },
     { href: '/employees', label: 'الموظفين', icon: UserCheck },
+    { href: '/employee/settlement', label: 'رواتب وتقفيلات', icon: FileText },
     { href: '/inventory-reports', label: 'تقارير الجرد', icon: ClipboardList },
     { href: '/settings', label: 'الإعدادات', icon: Settings },
 ];
