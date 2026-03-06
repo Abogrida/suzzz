@@ -68,40 +68,51 @@ export async function GET(req: NextRequest) {
         let absentCount = 0;
         let lateCount = 0;
         let excusedCount = 0;
-
-        empAttendance.forEach(a => {
-            if (a.status === 'present') presentCount++;
-            else if (a.status === 'absent') absentCount++;
-            else if (a.status === 'late') lateCount++;
-            else if (a.status === 'excused') excusedCount++;
-        });
-
-        // Calculate total days of paid leaves in this month
         let paidLeaveDaysInMonth = 0;
-        empLeaves.forEach(leave => {
-            if (leave.leave_type === 'unpaid') return; // Unpaid leaves don't reduce absent penalty explicitly, absent counts usually cover them. Or absent penalty will apply.
 
-            // Calculate overlap between leave and this month
-            const ls = new Date(leave.leave_start);
-            const le = new Date(leave.leave_end);
-            const ms = new Date(startDate);
-            const me = new Date(endDate);
+        const offDaysKeys = emp.off_days || [];
+        const isCurrentMonth = new Date().getFullYear() === parseInt(y) && (new Date().getMonth() + 1) === parseInt(m);
+        const todayDay = new Date().getDate();
 
-            const start = ls > ms ? ls : ms;
-            const end = le < me ? le : me;
+        for (let d = 1; d <= lastDay; d++) {
+            const dateStr = `${y}-${m}-${String(d).padStart(2, '0')}`;
+            const dateObj = new Date(parseInt(y), parseInt(m) - 1, d);
 
-            if (start <= end) {
-                const diffTime = Math.abs(end.getTime() - start.getTime());
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to inclusive
-                paidLeaveDaysInMonth += diffDays;
+            const isFuture = (isCurrentMonth && d > todayDay) || (new Date() < dateObj);
+            const isOffDay = offDaysKeys.includes(dateObj.getDay());
+
+            const hasLeave = empLeaves.find(lv => {
+                const ls = new Date(lv.leave_start).getTime();
+                const le = new Date(lv.leave_end).getTime();
+                const curr = dateObj.getTime();
+                return curr >= ls && curr <= le && !['unpaid'].includes(lv.leave_type);
+            });
+
+            const dayRecords = empAttendance.filter(a => a.attendance_date === dateStr);
+            const didAttend = dayRecords.some(r => ['present', 'late'].includes(r.status));
+            const isLate = dayRecords.some(r => r.status === 'late');
+            const isExcused = dayRecords.some(r => r.status === 'excused');
+            const isExplicitlyAbsent = dayRecords.some(r => r.status === 'absent');
+
+            // Stop counting absences for future days
+            if (isFuture && isCurrentMonth) continue;
+
+            if (hasLeave || isExcused) {
+                excusedCount++;
+                if (hasLeave) paidLeaveDaysInMonth++;
+            } else if (didAttend) {
+                presentCount++;
+                if (isLate) lateCount++;
+            } else if (isExplicitlyAbsent) {
+                absentCount++;
+            } else if (!isOffDay && !isFuture) {
+                // Not a future day, not an off-day, and NO attendance => Implied Absence
+                absentCount++;
             }
-        });
+        }
 
-        // Since the user might just mark them as absent on the terminal, we should subtract the paid leaves from the absent count for penalty purposes.
+        // Just use absentCount for penalties. Leaves are already excluded from it.
         let penaltyAbsences = absentCount;
-
-        // If they have paid leaves, reduce the penalty absence count, but not below 0
-        penaltyAbsences = Math.max(0, penaltyAbsences - paidLeaveDaysInMonth);
 
         let totalAdvances = 0;
         let totalDeductions = 0;
