@@ -49,9 +49,97 @@ export async function GET(req: NextRequest) {
         }
     }
     if (employeeId) qb = qb.eq('employee_id', employeeId);
-    const { data, error } = await qb;
+    const { data: attendance, error } = await qb;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data);
+
+    let finalData = [...(attendance || [])];
+
+    if (date) {
+        const isMonthQuery = date.length === 7;
+        let y, m, startDay, lastDay;
+
+        if (isMonthQuery) {
+            [y, m] = date.split('-').map(Number);
+            startDay = 1;
+            lastDay = new Date(y, m, 0).getDate();
+        } else {
+            const parts = date.split('-');
+            y = parseInt(parts[0]);
+            m = parseInt(parts[1]);
+            startDay = parseInt(parts[2]);
+            lastDay = startDay;
+        }
+
+        const now = new Date();
+        const todayY = now.getFullYear();
+        const todayM = now.getMonth() + 1;
+        const todayD = now.getDate();
+
+        let empQb = db.from('hr_employees')
+            .select('id, name, job_title, work_start_time, work_end_time, late_threshold_minutes, off_days')
+            .eq('is_active', true);
+        if (employeeId) empQb = empQb.eq('id', employeeId);
+
+        const { data: emps } = await empQb;
+        const activeEmps = emps || [];
+
+        // Preload leaves to avoid marking approved leaves as absent
+        const { data: leaves } = await db.from('hr_employee_leaves').select('*');
+        const allLeaves = leaves || [];
+
+        for (const emp of activeEmps) {
+            const offDays = emp.off_days || [];
+
+            for (let d = startDay; d <= lastDay; d++) {
+                // Skip future dates
+                if (y > todayY) continue;
+                if (y === todayY && m > todayM) continue;
+                if (y === todayY && m === todayM && d > todayD) continue;
+
+                const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const dateObj = new Date(y, m - 1, d);
+
+                // If it's an off day, skip
+                if (offDays.includes(dateObj.getDay())) continue;
+
+                // If on leave, skip
+                const hasLeave = allLeaves.some(lv => {
+                    if (lv.employee_id !== emp.id) return false;
+                    const ls = new Date(lv.leave_start).getTime();
+                    const le = new Date(lv.leave_end).getTime();
+                    const curr = dateObj.getTime();
+                    return curr >= ls && curr <= le && !['unpaid'].includes(lv.leave_type);
+                });
+                if (hasLeave) continue;
+
+                const hasRecord = finalData.some(a => a.employee_id === emp.id && a.attendance_date === dateStr);
+
+                if (!hasRecord) {
+                    finalData.push({
+                        id: `sys-${emp.id}-${dateStr}` as any,
+                        employee_id: emp.id,
+                        attendance_date: dateStr,
+                        status: 'absent',
+                        notes: 'غياب غير مسجل',
+                        source: 'system',
+                        synced_from_local: true,
+                        hr_employees: {
+                            name: emp.name,
+                            job_title: emp.job_title,
+                            work_start_time: emp.work_start_time,
+                            work_end_time: emp.work_end_time,
+                            late_threshold_minutes: emp.late_threshold_minutes
+                        }
+                    } as any);
+                }
+            }
+        }
+
+        // Re-sort descending by date
+        finalData.sort((a, b) => new Date(b.attendance_date).getTime() - new Date(a.attendance_date).getTime());
+    }
+
+    return NextResponse.json(finalData);
 }
 
 // POST /api/hr/attendance

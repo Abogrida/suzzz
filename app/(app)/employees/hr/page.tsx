@@ -785,7 +785,6 @@ export default function HRPage() {
 
                 // Filter attendance based on the filters
                 const filteredAttendance = safeAttendance.filter(a => {
-                    if (a.source !== 'kiosk') return false; // Show only app attendance
                     if (attStatusFilter !== 'all' && a.status !== attStatusFilter) return false;
 
                     const emp = employees.find(e => e.id === a.employee_id);
