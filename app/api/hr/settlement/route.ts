@@ -49,10 +49,20 @@ export async function GET(req: NextRequest) {
         .gte('payment_date', startDate)
         .lte('payment_date', endDate);
 
-    // 4. Calculate Settlements
+    // 4. Fetch Leaves (to not penalize for paid leaves)
+    // We check if leaves overlap with the current month
+    const { data: leaves } = await db
+        .from('hr_employee_leaves')
+        .select('*')
+        .in('employee_id', empIds)
+        .lte('leave_start', endDate)
+        .gte('leave_end', startDate);
+
+    // 5. Calculate Settlements
     const settlements = employees.map(emp => {
         const empAttendance = (attendance || []).filter(a => a.employee_id === emp.id);
         const empPayments = (payments || []).filter(p => p.employee_id === emp.id);
+        const empLeaves = (leaves || []).filter(l => l.employee_id === emp.id);
 
         let presentCount = 0;
         let absentCount = 0;
@@ -65,6 +75,33 @@ export async function GET(req: NextRequest) {
             else if (a.status === 'late') lateCount++;
             else if (a.status === 'excused') excusedCount++;
         });
+
+        // Calculate total days of paid leaves in this month
+        let paidLeaveDaysInMonth = 0;
+        empLeaves.forEach(leave => {
+            if (leave.leave_type === 'unpaid') return; // Unpaid leaves don't reduce absent penalty explicitly, absent counts usually cover them. Or absent penalty will apply.
+
+            // Calculate overlap between leave and this month
+            const ls = new Date(leave.leave_start);
+            const le = new Date(leave.leave_end);
+            const ms = new Date(startDate);
+            const me = new Date(endDate);
+
+            const start = ls > ms ? ls : ms;
+            const end = le < me ? le : me;
+
+            if (start <= end) {
+                const diffTime = Math.abs(end.getTime() - start.getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to inclusive
+                paidLeaveDaysInMonth += diffDays;
+            }
+        });
+
+        // Since the user might just mark them as absent on the terminal, we should subtract the paid leaves from the absent count for penalty purposes.
+        let penaltyAbsences = absentCount;
+
+        // If they have paid leaves, reduce the penalty absence count, but not below 0
+        penaltyAbsences = Math.max(0, penaltyAbsences - paidLeaveDaysInMonth);
 
         let totalAdvances = 0;
         let totalDeductions = 0;
@@ -83,8 +120,11 @@ export async function GET(req: NextRequest) {
 
         const baseSalary = Number(emp.base_salary) || 0;
         const dailyRate = baseSalary / 30;
-        const absentPenalty = absentCount * dailyRate;
-        const latePenalty = lateCount > 0 ? (lateCount * (dailyRate / 2)) : 0; // Example: Half day deduct per late? No, let's keep it simple, OR let HR handle late deductions via manual deductions. User wanted to just have calculations. We will deduct absent days and maybe have 'latePenalty' separately if user wants. But let's just deduct absent days.
+
+        // Only penalize for unexcused/unpaid absences
+        const absentPenalty = penaltyAbsences * dailyRate;
+
+        const latePenalty = lateCount > 0 ? (lateCount * (dailyRate / 2)) : 0; // Keeping the note: we don't automatically deduct late unless HR adds a manual deduction.
 
         // Assuming Net Salary = Base - Absences + Bonuses - Deductions - Advances
         const netSalary = baseSalary - absentPenalty + totalBonuses - totalDeductions - totalAdvances;
@@ -96,7 +136,8 @@ export async function GET(req: NextRequest) {
                 present: presentCount,
                 absent: absentCount,
                 late: lateCount,
-                excused: excusedCount
+                excused: excusedCount,
+                paid_leaves: paidLeaveDaysInMonth
             },
             financials: {
                 base_salary: baseSalary,
