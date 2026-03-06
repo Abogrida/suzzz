@@ -24,7 +24,7 @@ function calcStatus(
     const [wh, wm] = workStartTime.split(':').map(Number);
     const workStartMins = wh * 60 + wm;
 
-    return checkInMins - workStartMins > lateThreshold ? 'late' : 'present';
+    return checkInMins - workStartMins > Number(lateThreshold) ? 'late' : 'present';
 }
 
 // GET /api/hr/attendance?date=YYYY-MM-DD&employee_id=X

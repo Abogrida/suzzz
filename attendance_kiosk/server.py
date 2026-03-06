@@ -201,7 +201,7 @@ def init_db():
     db.commit()
     db.close()
 
-def calculate_status(check_in: str, work_start: str, threshold: int) -> str:
+def calculate_status(check_in: str, work_start: str, threshold) -> str:
     if not check_in:
         return 'absent'
     if not work_start:
@@ -211,8 +211,9 @@ def calculate_status(check_in: str, work_start: str, threshold: int) -> str:
         ws_h, ws_m = map(int, work_start.split(':'))
         ci_mins = ci_h * 60 + ci_m
         ws_mins = ws_h * 60 + ws_m
-        return 'late' if (ci_mins - ws_mins) > threshold else 'present'
-    except:
+        return 'late' if (ci_mins - ws_mins) > int(threshold) else 'present'
+    except Exception as e:
+        print(f"Error logic check late: {e}")
         return 'present'
 
 # ── Routes ──────────────────────────────────
