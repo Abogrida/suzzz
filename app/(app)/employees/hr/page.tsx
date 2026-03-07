@@ -692,13 +692,21 @@ export default function HRPage() {
                                                                                     {session.check_out_time ? session.check_out_time.slice(0, 5) : '—'}
                                                                                 </td>
                                                                                 <td style={{ padding: '10px' }}>
-                                                                                    <button
-                                                                                        onClick={async () => {
-                                                                                            if (!confirm('حذف هذه الجلسة نهائياً؟')) return;
-                                                                                            await fetch(`/api/hr/attendance/${session.id}`, { method: 'DELETE' });
-                                                                                            loadEmpProfileMonth(selectedEmp.id, empProfileMonth);
-                                                                                        }}
-                                                                                        style={{ background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 700, fontFamily: 'Cairo' }}>🗑</button>
+                                                                                    <div style={{ display: 'flex', gap: 5, justifyContent: 'center' }}>
+                                                                                        {si === 0 && !log.isFuture && !log.isOffDay && (
+                                                                                            <button
+                                                                                                onClick={() => openManualAtt(selectedEmp.id, selectedEmp.name, log.dateStr)}
+                                                                                                title="إضافة تحضير يدوي"
+                                                                                                style={{ background: 'linear-gradient(135deg,#0ea5e9,#38bdf8)', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 800, fontFamily: 'Cairo' }}>✏️</button>
+                                                                                        )}
+                                                                                        <button
+                                                                                            onClick={async () => {
+                                                                                                if (!confirm('حذف هذه الجلسة نهائياً؟')) return;
+                                                                                                await fetch(`/api/hr/attendance/${session.id}`, { method: 'DELETE' });
+                                                                                                loadEmpProfileMonth(selectedEmp.id, empProfileMonth);
+                                                                                            }}
+                                                                                            style={{ background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 700, fontFamily: 'Cairo' }}>🗑</button>
+                                                                                    </div>
                                                                                 </td>
                                                                             </tr>
                                                                         );
