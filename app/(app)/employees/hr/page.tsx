@@ -430,7 +430,7 @@ export default function HRPage() {
                                     </div>
                                 </div>
 
-                                <div style={{ padding: '24px 30px' }}>
+                                <div style={{ padding: '24px 20px', overflowX: 'hidden' }}>
                                     {/* Details */}
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
                                         {selectedEmp.phone && <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 16px' }}><div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>الهاتف</div><div style={{ fontWeight: 800, fontSize: 15 }}>📞 {selectedEmp.phone}</div></div>}
@@ -596,7 +596,7 @@ export default function HRPage() {
                                         else if (completionRate < 90) rating = { label: 'متوسط 📊', color: '#f59e0b', bg: '#fef3c7' };
 
                                         return (
-                                            <div style={{ background: '#f8fafc', borderRadius: 16, padding: '20px', border: '1.5px solid #e2e8f0' }}>
+                                            <div style={{ background: '#f8fafc', borderRadius: 16, padding: '16px', border: '1.5px solid #e2e8f0', width: '100%' }}>
                                                 {/* Stats Grid */}
                                                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
                                                     <div style={{ background: '#fff', borderRadius: 12, padding: '12px', textAlign: 'center', border: '1px solid #f1f5f9' }}>
@@ -618,9 +618,9 @@ export default function HRPage() {
                                                 </div>
 
                                                 {/* Daily Logs Table — multiple sessions per day */}
-                                                <div>
+                                                <div style={{ width: '100%', overflowX: 'hidden' }}>
                                                     <div style={{ fontSize: 16, fontWeight: 900, color: '#1e293b', marginBottom: 12 }}>تفاصيل السجل اليومي لشهر {new Date(y, m).toLocaleDateString('ar-EG', { month: 'long' })}:</div>
-                                                    <div className="table-responsive" style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                                                    <div className="table-responsive" style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0' }}>
                                                         <table style={{ width: '100%', minWidth: 600, borderCollapse: 'collapse', fontSize: 13, textAlign: 'center' }}>
                                                             <thead>
                                                                 <tr style={{ background: '#f1f5f9', color: '#475569', fontWeight: 800 }}>
