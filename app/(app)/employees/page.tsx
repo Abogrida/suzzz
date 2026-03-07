@@ -27,7 +27,7 @@ export default function EmployeesHubPage() {
             <h1 className="page-title" style={{ marginBottom: 8 }}>👥 الموظفون</h1>
             <p style={{ color: '#64748b', fontSize: 15, marginBottom: 36, fontWeight: 600 }}>اختر القسم الذي تريد إدارته</p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 28, maxWidth: 900 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 28, maxWidth: 900 }}>
 
                 {/* Card 1: حسابات الجرد */}
                 <div

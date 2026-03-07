@@ -319,16 +319,18 @@ export default function HRPage() {
             <h1 className="page-title" style={{ marginBottom: 20 }}>👔 إدارة الموظفين <span style={{ fontSize: 16, color: '#0ea5e9', fontWeight: 700 }}>HR System</span></h1>
 
             {/* Tabs */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 24, background: '#f1f5f9', borderRadius: 14, padding: 6, flexWrap: 'wrap' }}>
-                {tabs.map(t => (
-                    <button key={t.key} onClick={() => setTab(t.key)}
-                        style={{
-                            flex: 1, minWidth: 120, padding: '10px 16px', borderRadius: 10, border: 'none', cursor: 'pointer', fontFamily: 'Cairo', fontWeight: 800, fontSize: 14, transition: 'all 0.2s',
-                            background: tab === t.key ? '#fff' : 'transparent',
-                            color: tab === t.key ? '#0ea5e9' : '#64748b',
-                            boxShadow: tab === t.key ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
-                        }}>{t.label}</button>
-                ))}
+            <div className="table-responsive" style={{ marginBottom: 24, paddingBottom: 8 }}>
+                <div style={{ display: 'flex', gap: 8, background: '#f1f5f9', borderRadius: 14, padding: 6, width: 'max-content', minWidth: '100%' }}>
+                    {tabs.map(t => (
+                        <button key={t.key} onClick={() => setTab(t.key)}
+                            style={{
+                                flex: 1, minWidth: 120, padding: '10px 16px', borderRadius: 10, border: 'none', cursor: 'pointer', fontFamily: 'Cairo', fontWeight: 800, fontSize: 14, transition: 'all 0.2s',
+                                background: tab === t.key ? '#fff' : 'transparent',
+                                color: tab === t.key ? '#0ea5e9' : '#64748b',
+                                boxShadow: tab === t.key ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
+                            }}>{t.label}</button>
+                    ))}
+                </div>
             </div>
 
             {/* ===== TAB: EMPLOYEES ===== */}
@@ -430,7 +432,7 @@ export default function HRPage() {
 
                                 <div style={{ padding: '24px 30px' }}>
                                     {/* Details */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
                                         {selectedEmp.phone && <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 16px' }}><div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>الهاتف</div><div style={{ fontWeight: 800, fontSize: 15 }}>📞 {selectedEmp.phone}</div></div>}
                                         {selectedEmp.national_id && <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 16px' }}><div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>الرقم القومي</div><div style={{ fontWeight: 800, fontSize: 15 }}>🪪 {selectedEmp.national_id}</div></div>}
                                         {selectedEmp.hire_date && <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 16px' }}><div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>تاريخ التعيين</div><div style={{ fontWeight: 800, fontSize: 15 }}>📅 {new Date(selectedEmp.hire_date).toLocaleDateString('ar-EG')}</div></div>}
@@ -596,7 +598,7 @@ export default function HRPage() {
                                         return (
                                             <div style={{ background: '#f8fafc', borderRadius: 16, padding: '20px', border: '1.5px solid #e2e8f0' }}>
                                                 {/* Stats Grid */}
-                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+                                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
                                                     <div style={{ background: '#fff', borderRadius: 12, padding: '12px', textAlign: 'center', border: '1px solid #f1f5f9' }}>
                                                         <div style={{ fontSize: 24, fontWeight: 900, color: '#16a34a' }}>{actualAttended}</div>
                                                         <div style={{ fontSize: 12, color: '#64748b', fontWeight: 800 }}>يوم عمل (حضور)</div>
@@ -618,8 +620,8 @@ export default function HRPage() {
                                                 {/* Daily Logs Table — multiple sessions per day */}
                                                 <div>
                                                     <div style={{ fontSize: 16, fontWeight: 900, color: '#1e293b', marginBottom: 12 }}>تفاصيل السجل اليومي لشهر {new Date(y, m).toLocaleDateString('ar-EG', { month: 'long' })}:</div>
-                                                    <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-                                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, textAlign: 'center' }}>
+                                                    <div className="table-responsive" style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                                                        <table style={{ width: '100%', minWidth: 600, borderCollapse: 'collapse', fontSize: 13, textAlign: 'center' }}>
                                                             <thead>
                                                                 <tr style={{ background: '#f1f5f9', color: '#475569', fontWeight: 800 }}>
                                                                     <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>التاريخ</th>
@@ -738,7 +740,7 @@ export default function HRPage() {
                     </div>
 
                     {/* Summary Cards */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 24 }}>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
                         {Object.entries(paymentLabels).map(([key, cfg]) => {
                             const total = payments.filter(p => p.payment_type === key).reduce((s, p) => s + p.amount, 0);
                             return (
@@ -752,8 +754,8 @@ export default function HRPage() {
                     </div>
 
                     {/* Payments Table */}
-                    <div style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                    <div className="table-responsive" style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
+                        <table style={{ width: '100%', minWidth: 600, borderCollapse: 'collapse', fontSize: 14 }}>
                             <thead>
                                 <tr style={{ background: '#f8fafc' }}>
                                     {['الموظف', 'النوع', 'المبلغ', 'التاريخ', 'ملاحظات', ''].map(h => (
@@ -851,12 +853,12 @@ export default function HRPage() {
                                     if (val) loadAttendance(val);
                                     else loadAttendance(new Date().toISOString().slice(0, 7)); // reload month if date cleared
                                 }}
-                                    style={{ ...inp, width: '220px', color: '#0ea5e9', fontWeight: 800, background: '#f8fafc', borderColor: '#bae6fd' }} />
+                                    style={{ ...inp, flex: 1, minWidth: '200px', color: '#0ea5e9', fontWeight: 800, background: '#f8fafc', borderColor: '#bae6fd' }} />
                             </div>
                         </div>
 
                         {/* Stats Summary */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                             {[
                                 { label: 'حاضر', value: totalPresent, color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0', icon: '✅' },
                                 { label: 'متأخر', value: totalLate, color: '#f59e0b', bg: '#fffbeb', border: '#fef08a', icon: '⏰' },
@@ -875,8 +877,8 @@ export default function HRPage() {
                         {attLoading ? (
                             <div style={{ textAlign: 'center', padding: 40, fontSize: 18, fontWeight: 800, color: '#64748b' }}>⏳ جاري الفلترة والتحميل...</div>
                         ) : (
-                            <div style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                            <div className="table-responsive" style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0' }}>
+                                <table style={{ width: '100%', minWidth: 800, borderCollapse: 'collapse', fontSize: 14 }}>
                                     <thead>
                                         <tr style={{ background: '#f8fafc' }}>
                                             {['الموظف', 'التاريخ', 'الحضور', 'الانصراف', 'الحالة', 'المصدر'].map(h => (
@@ -944,7 +946,7 @@ export default function HRPage() {
                     </div>
 
                     {/* Overall Summary */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 28 }}>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-7">
                         {[
                             { label: 'إجمالي الرواتب', value: monthPayments.filter(p => p.payment_type === 'salary').reduce((s, p) => s + p.amount, 0), color: '#16a34a', icon: '💵' },
                             { label: 'إجمالي السلف', value: monthPayments.filter(p => p.payment_type === 'advance').reduce((s, p) => s + p.amount, 0), color: '#f59e0b', icon: '💳' },
@@ -961,8 +963,8 @@ export default function HRPage() {
 
                     {/* Per Employee Report */}
                     <h3 style={{ fontSize: 18, fontWeight: 900, color: '#1e293b', marginBottom: 16 }}>تفصيل لكل موظف</h3>
-                    <div style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                    <div className="table-responsive" style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
+                        <table style={{ width: '100%', minWidth: 800, borderCollapse: 'collapse', fontSize: 14 }}>
                             <thead>
                                 <tr style={{ background: '#f8fafc' }}>
                                     {['الموظف', 'الراتب الأساسي', 'الرواتب المدفوعة', 'السلف', 'الحوافز', 'الخصومات + المسحوبات', 'الصافي'].map(h => (
@@ -1028,16 +1030,16 @@ export default function HRPage() {
                         <div style={{ padding: '24px 28px' }}>
                             {/* TAB: بيانات */}
                             {empModalTab === 'info' && (
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                                    <div style={{ gridColumn: '1/-1' }}><label style={label}>الاسم الكامل *</label><input style={inp} value={empForm.name} onChange={e => setEmpForm({ ...empForm, name: e.target.value })} placeholder="مثال: أحمد محمد علي" /></div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="sm:col-span-2"><label style={label}>الاسم الكامل *</label><input style={inp} value={empForm.name} onChange={e => setEmpForm({ ...empForm, name: e.target.value })} placeholder="مثال: أحمد محمد علي" /></div>
                                     <div><label style={label}>المسمى الوظيفي</label><input style={inp} value={empForm.job_title} onChange={e => setEmpForm({ ...empForm, job_title: e.target.value })} placeholder="مثال: كاشير" /></div>
                                     <div><label style={label}>الرقم السري (PIN)</label><input type="text" style={inp} value={empForm.pin_code} onChange={e => setEmpForm({ ...empForm, pin_code: e.target.value })} placeholder="مثال: 1234" maxLength={4} title="رقم سري مكون من 4 أرقام للموظف" /></div>
                                     <div><label style={label}>رقم الهاتف</label><input style={inp} value={empForm.phone} onChange={e => setEmpForm({ ...empForm, phone: e.target.value })} placeholder="01xxxxxxxxx" /></div>
                                     <div><label style={label}>الرقم القومي</label><input style={inp} value={empForm.national_id} onChange={e => setEmpForm({ ...empForm, national_id: e.target.value })} placeholder="14 رقم" /></div>
                                     <div><label style={label}>تاريخ التعيين</label><input type="date" style={inp} value={empForm.hire_date} onChange={e => setEmpForm({ ...empForm, hire_date: e.target.value })} /></div>
                                     <div><label style={label}>الراتب الأساسي (ج.م)</label><input type="number" style={inp} value={empForm.base_salary} onChange={e => setEmpForm({ ...empForm, base_salary: e.target.value })} placeholder="0" /></div>
-                                    <div style={{ gridColumn: '1/-1' }}><label style={label}>ملاحظات</label><textarea style={{ ...inp, resize: 'vertical', minHeight: 72 } as React.CSSProperties} value={empForm.notes} onChange={e => setEmpForm({ ...empForm, notes: e.target.value })} placeholder="أي ملاحظات إضافية..." /></div>
-                                    <div style={{ gridColumn: '1/-1', display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <div className="sm:col-span-2"><label style={label}>ملاحظات</label><textarea style={{ ...inp, resize: 'vertical', minHeight: 72 } as React.CSSProperties} value={empForm.notes} onChange={e => setEmpForm({ ...empForm, notes: e.target.value })} placeholder="أي ملاحظات إضافية..." /></div>
+                                    <div className="sm:col-span-2 flex items-center gap-3">
                                         <input type="checkbox" id="is_active" checked={empForm.is_active} onChange={e => setEmpForm({ ...empForm, is_active: e.target.checked })} style={{ width: 18, height: 18 }} />
                                         <label htmlFor="is_active" style={{ fontWeight: 700, fontSize: 15, color: '#374151', cursor: 'pointer' }}>موظف نشط</label>
                                     </div>
@@ -1047,10 +1049,10 @@ export default function HRPage() {
                             {/* TAB: جدول العمل */}
                             {empModalTab === 'schedule' && (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div><label style={label}>⏰ بداية الدوام</label><input type="time" style={inp} value={empForm.work_start_time || '09:00'} onChange={e => setEmpForm({ ...empForm, work_start_time: e.target.value })} /></div>
                                         <div><label style={label}>🔚 نهاية الدوام</label><input type="time" style={inp} value={empForm.work_end_time || '17:00'} onChange={e => setEmpForm({ ...empForm, work_end_time: e.target.value })} /></div>
-                                        <div style={{ gridColumn: '1/-1' }}><label style={label}>⏱️ هامش التأخير (دقيقة)</label><input type="number" style={inp} value={empForm.late_threshold_minutes ?? 15} onChange={e => setEmpForm({ ...empForm, late_threshold_minutes: parseInt(e.target.value) || 15 })} min={0} max={120} /></div>
+                                        <div className="sm:col-span-2"><label style={label}>⏱️ هامش التأخير (دقيقة)</label><input type="number" style={inp} value={empForm.late_threshold_minutes ?? 15} onChange={e => setEmpForm({ ...empForm, late_threshold_minutes: parseInt(e.target.value) || 15 })} min={0} max={120} /></div>
                                     </div>
                                     <div>
                                         <label style={{ ...label, marginBottom: 12 }}>📅 أيام الراحة الأسبوعية</label>
@@ -1086,7 +1088,7 @@ export default function HRPage() {
                                             {/* Add Leave Form */}
                                             <div style={{ background: '#f8fafc', borderRadius: 16, padding: '18px 20px', marginBottom: 20, border: '1.5px solid #e2e8f0' }}>
                                                 <div style={{ fontWeight: 900, fontSize: 15, color: '#1e293b', marginBottom: 14 }}>➕ إضافة إجازة جديدة</div>
-                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                     <div><label style={label}>من تاريخ</label><input type="date" style={inp} value={leaveForm.leave_start} onChange={e => setLeaveForm({ ...leaveForm, leave_start: e.target.value })} /></div>
                                                     <div><label style={label}>إلى تاريخ</label><input type="date" style={inp} value={leaveForm.leave_end} onChange={e => setLeaveForm({ ...leaveForm, leave_end: e.target.value })} /></div>
                                                     <div>
@@ -1144,7 +1146,7 @@ export default function HRPage() {
             {/* ===== PAYMENT MODAL ===== */}
             {payModal && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-                    <div style={{ background: '#fff', borderRadius: 24, padding: 32, width: '100%', maxWidth: 480, boxShadow: '0 30px 80px rgba(0,0,0,0.25)' }}>
+                    <div style={{ background: '#fff', borderRadius: 24, padding: "24px 28px", width: '100%', maxWidth: 480, boxShadow: '0 30px 80px rgba(0,0,0,0.25)', maxHeight: '90vh', overflowY: 'auto' }}>
                         <h2 style={{ margin: '0 0 24px', fontSize: 22, fontWeight: 900, color: '#1e293b' }}>💰 تسجيل مدفوعة</h2>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                             <div>
@@ -1184,7 +1186,7 @@ export default function HRPage() {
             {/* ===== PURCHASE MODAL ===== */}
             {purchaseModal && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-                    <div style={{ background: '#fff', borderRadius: 24, padding: 32, width: '100%', maxWidth: 480, boxShadow: '0 30px 80px rgba(0,0,0,0.25)' }}>
+                    <div style={{ background: '#fff', borderRadius: 24, padding: "24px 28px", width: '100%', maxWidth: 480, boxShadow: '0 30px 80px rgba(0,0,0,0.25)', maxHeight: '90vh', overflowY: 'auto' }}>
                         <h2 style={{ margin: '0 0 24px', fontSize: 22, fontWeight: 900, color: '#1e293b' }}>🍔 تسجيل مسحوبة (كافيتيريا)</h2>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                             <div>
@@ -1230,7 +1232,7 @@ export default function HRPage() {
                         </div>
 
                         {/* Form */}
-                        <div style={{ padding: '28px 28px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+                        <div className="p-5 md:p-7 flex flex-col gap-5">
 
                             {/* Employee Selection (if opened generally) */}
                             {!manualAttForm.employee_name && (
@@ -1269,7 +1271,7 @@ export default function HRPage() {
                             </div>
 
                             {/* Times row */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label style={label}>🟢 وقت الحضور *</label>
                                     <input type="time" value={manualAttForm.check_in_time}
@@ -1295,7 +1297,7 @@ export default function HRPage() {
                             </div>
 
                             {/* Buttons */}
-                            <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
+                            <div className="flex flex-col sm:flex-row gap-3 mt-1">
                                 <button onClick={handleManualAtt} disabled={saving || !manualAttForm.check_in_time}
                                     style={{
                                         flex: 1, background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#fff',
