@@ -258,6 +258,9 @@ export default function HRPage() {
     };
 
     const handleManualAtt = async () => {
+        if (!manualAttForm.employee_id) {
+            setToast({ msg: 'يرجى اختيار الموظف', type: 'error' }); return;
+        }
         if (!manualAttForm.check_in_time) {
             setToast({ msg: 'يرجى إدخال وقت الحضور على الأقل', type: 'error' }); return;
         }
@@ -281,6 +284,7 @@ export default function HRPage() {
             setManualAttModal(false);
             setManualAttForm(emptyManualAtt);
             if (selectedEmp) loadEmpProfileMonth(selectedEmp.id, empProfileMonth);
+            loadAttendance(attDate || getLocalYYYYMMDD().slice(0, 7));
         } else {
             setToast({ msg: 'حدث خطأ أثناء الحفظ', type: 'error' });
         }
@@ -807,6 +811,12 @@ export default function HRPage() {
                                     <span>جدول الحضور والانصراف</span>
                                     <span>📅</span>
                                 </div>
+                                <button onClick={() => {
+                                    setManualAttForm({ ...emptyManualAtt, attendance_date: attDate || getLocalYYYYMMDD() });
+                                    setManualAttModal(true);
+                                }} style={{ background: '#0ea5e9', color: '#fff', border: 'none', borderRadius: 12, padding: '10px 20px', fontWeight: 800, fontSize: 14, cursor: 'pointer', fontFamily: 'Cairo', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    ➕ تحضير يدوي
+                                </button>
                             </div>
 
                             <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
@@ -1203,7 +1213,7 @@ export default function HRPage() {
                             <div>
                                 <div style={{ color: '#fff', fontWeight: 900, fontSize: 20 }}>✏️ تحضير يدوي</div>
                                 <div style={{ color: '#7dd3fc', fontSize: 14, marginTop: 4 }}>
-                                    {manualAttForm.employee_name} • {manualAttForm.attendance_date}
+                                    {manualAttForm.employee_name || 'تسجيل حضور عام'} • {manualAttForm.attendance_date}
                                 </div>
                             </div>
                             <button onClick={() => setManualAttModal(false)}
@@ -1212,6 +1222,19 @@ export default function HRPage() {
 
                         {/* Form */}
                         <div style={{ padding: '28px 28px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+                            {/* Employee Selection (if opened generally) */}
+                            {!manualAttForm.employee_name && (
+                                <div>
+                                    <label style={label}>الموظف *</label>
+                                    <select style={inp} value={manualAttForm.employee_id || ''} onChange={e => {
+                                        setManualAttForm(f => ({ ...f, employee_id: Number(e.target.value) }));
+                                    }}>
+                                        <option value="">اختر موظف...</option>
+                                        {employees.filter(e => e.is_active).map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                                    </select>
+                                </div>
+                            )}
 
                             {/* Status */}
                             <div>
