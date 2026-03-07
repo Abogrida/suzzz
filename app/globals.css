@@ -428,6 +428,18 @@ body {
     font-variant-numeric: normal;
 }
 
+/* Blur salary - hide by default, show on hover */
+.blur-salary {
+    filter: blur(6px);
+    transition: filter 0.25s ease;
+    cursor: pointer;
+    user-select: none;
+}
+
+.blur-salary:hover {
+    filter: blur(0);
+}
+
 /* Layout Responsiveness */
 .main-content {
     transition: margin-right 0.3s ease;

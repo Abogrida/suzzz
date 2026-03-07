@@ -368,7 +368,7 @@ export default function HRPage() {
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
                                         <div style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 12px' }}>
                                             <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700 }}>الراتب الأساسي</div>
-                                            <div style={{ fontSize: 18, fontWeight: 900, color: '#16a34a' }}>{emp.base_salary.toLocaleString('ar-EG')} ج.م</div>
+                                            <div className="blur-salary" style={{ fontSize: 18, fontWeight: 900, color: '#16a34a' }}>{emp.base_salary.toLocaleString('ar-EG')} ج.م</div>
                                         </div>
                                         <div style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 12px' }}>
                                             <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700 }}>تاريخ التعيين</div>
@@ -984,7 +984,7 @@ export default function HRPage() {
                                     return (
                                         <tr key={emp.id} style={{ background: i % 2 === 0 ? '#fff' : '#fafafa', borderBottom: '1px solid #f1f5f9' }}>
                                             <td style={{ padding: '12px 16px', fontWeight: 900 }}>{emp.name}<div style={{ fontSize: 12, color: '#94a3b8' }}>{emp.job_title}</div></td>
-                                            <td style={{ padding: '12px 16px', color: '#64748b' }}>{emp.base_salary.toLocaleString()} ج.م</td>
+                                            <td style={{ padding: '12px 16px', color: '#64748b' }} className="blur-salary">{emp.base_salary.toLocaleString()} ج.م</td>
                                             <td style={{ padding: '12px 16px', color: '#16a34a', fontWeight: 800 }}>{salaries.toLocaleString()}</td>
                                             <td style={{ padding: '12px 16px', color: '#f59e0b', fontWeight: 800 }}>{advances.toLocaleString()}</td>
                                             <td style={{ padding: '12px 16px', color: '#6366f1', fontWeight: 800 }}>{bonuses.toLocaleString()}</td>
