@@ -629,7 +629,7 @@ export default function HRPage() {
                                                                     <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>الحالة</th>
                                                                     <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>حضور</th>
                                                                     <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>انصراف</th>
-                                                                    <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>إجراء</th>
+                                                                    <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0', position: 'sticky', left: 0, background: '#f1f5f9', zIndex: 10, boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)' }}>إجراء</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
@@ -659,7 +659,7 @@ export default function HRPage() {
                                                                                 </td>
                                                                                 <td style={{ padding: '10px', color: '#94a3b8' }}>—</td>
                                                                                 <td style={{ padding: '10px', color: '#94a3b8' }}>—</td>
-                                                                                <td style={{ padding: '10px' }}>
+                                                                                <td style={{ padding: '10px', position: 'sticky', left: 0, background: 'inherit', zIndex: 5, boxShadow: '2px 0 5px -2px rgba(0,0,0,0.05)' }}>
                                                                                     {!log.isFuture && !log.hasLeave && !log.isOffDay && (
                                                                                         <button
                                                                                             onClick={() => openManualAtt(selectedEmp.id, selectedEmp.name, log.dateStr)}
@@ -693,7 +693,7 @@ export default function HRPage() {
                                                                                 <td style={{ padding: '10px', fontWeight: 900, color: '#ea580c' }}>
                                                                                     {session.check_out_time ? session.check_out_time.slice(0, 5) : '—'}
                                                                                 </td>
-                                                                                <td style={{ padding: '10px' }}>
+                                                                                <td style={{ padding: '10px', position: 'sticky', left: 0, background: 'inherit', zIndex: 5, boxShadow: '2px 0 5px -2px rgba(0,0,0,0.05)' }}>
                                                                                     <div style={{ display: 'flex', gap: 5, justifyContent: 'center' }}>
                                                                                         {si === 0 && !log.isFuture && !log.isOffDay && (
                                                                                             <button
