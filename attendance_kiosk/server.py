@@ -584,20 +584,35 @@ def checkin():
                 db.close()
                 return jsonify({'error': 'الرمز السري (PIN) غير صحيح'}), 403
 
-        # Find latest session for this employee today
+        # Find latest session globally for this employee
         existing = db.execute("""
             SELECT * FROM attendance 
-            WHERE employee_id = ? AND attendance_date = ? 
+            WHERE employee_id = ? 
             ORDER BY id DESC LIMIT 1
-        """, (emp_id, today)).fetchone()
+        """, (emp_id,)).fetchone()
+        
+        now_dt = datetime.now()
+        
+        is_open_shift_valid = False
+        if existing and not existing['check_out_time']:
+            try:
+                # Check if the open shift is within 16 hours
+                ci_date_str = existing['attendance_date']
+                ci_time_str = existing['check_in_time'][:5]
+                ci_dt = datetime.strptime(f"{ci_date_str} {ci_time_str}", "%Y-%m-%d %H:%M")
+                
+                if (now_dt - ci_dt).total_seconds() <= 16 * 3600:
+                    is_open_shift_valid = True
+            except:
+                pass
 
         off_days = json.loads(emp['off_days'] or '[]')
-        weekday = date.today().weekday()  # 0=Mon...6=Sun; python
+        weekday = now_dt.weekday()  # 0=Mon...6=Sun; python
         # Convert Python weekday (Mon=0) to JS-style (Sun=0)
         js_weekday = (weekday + 1) % 7
         is_off_day = js_weekday in off_days
 
-        if not existing or existing['check_out_time']:
+        if not is_open_shift_valid:
             # First punch OR new cycle after checkout
             status = calculate_status(now_time, emp['work_start_time'], emp['late_threshold_minutes'])
             if is_off_day:
@@ -638,8 +653,8 @@ def checkin():
 
         db.commit()
         record = db.execute(
-            "SELECT * FROM attendance WHERE employee_id=? AND attendance_date=? ORDER BY id DESC LIMIT 1",
-            (emp_id, today)
+            "SELECT * FROM attendance WHERE employee_id=? ORDER BY id DESC LIMIT 1",
+            (emp_id,)
         ).fetchone()
         db.close()
 

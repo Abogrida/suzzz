@@ -125,6 +125,24 @@ export default function HRPage() {
         setManualAttModal(true);
     };
 
+    // Edit existing attendance modal
+    type EditAttForm = { id: number; employee_name: string; attendance_date: string; check_in_time: string; check_out_time: string; status: string; notes: string; };
+    const [editAttModal, setEditAttModal] = useState(false);
+    const [editAttForm, setEditAttForm] = useState<EditAttForm | null>(null);
+
+    const openEditAtt = (record: Attendance, empName: string) => {
+        setEditAttForm({
+            id: record.id,
+            employee_name: empName,
+            attendance_date: record.attendance_date,
+            check_in_time: record.check_in_time || '',
+            check_out_time: record.check_out_time || '',
+            status: record.status,
+            notes: record.notes || ''
+        });
+        setEditAttModal(true);
+    };
+
     const loadEmployees = useCallback(async () => {
         const d = await fetch('/api/hr/employees').then(r => r.json());
         setEmployees(Array.isArray(d) ? d : []);
@@ -288,6 +306,33 @@ export default function HRPage() {
             loadAttendance(attDate || getLocalYYYYMMDD().slice(0, 7));
         } else {
             setToast({ msg: 'حدث خطأ أثناء الحفظ', type: 'error' });
+        }
+    };
+
+    const handleEditAtt = async () => {
+        if (!editAttForm) return;
+        setSaving(true);
+        const requestData = {
+            check_in_time: editAttForm.check_in_time || null,
+            check_out_time: editAttForm.check_out_time || null,
+            status: editAttForm.status,
+            notes: editAttForm.notes || '',
+        };
+
+        const res = await fetch(`/api/hr/attendance/${editAttForm.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestData)
+        });
+        setSaving(false);
+        if (res.ok) {
+            setToast({ msg: 'تم تعديل الحضور بنجاح ✅', type: 'success' });
+            setEditAttModal(false);
+            setEditAttForm(null);
+            if (selectedEmp) loadEmpProfileMonth(selectedEmp.id, empProfileMonth);
+            loadAttendance(attDate || getLocalYYYYMMDD().slice(0, 7));
+        } else {
+            setToast({ msg: 'حدث خطأ أثناء التعديل', type: 'error' });
         }
     };
 
@@ -695,6 +740,10 @@ export default function HRPage() {
                                                                                 </td>
                                                                                 <td style={{ padding: '10px', position: 'sticky', left: 0, background: 'inherit', zIndex: 5, boxShadow: '2px 0 5px -2px rgba(0,0,0,0.05)' }}>
                                                                                     <div style={{ display: 'flex', gap: 5, justifyContent: 'center' }}>
+                                                                                        <button 
+                                                                                            onClick={() => openEditAtt(session, selectedEmp.name)}
+                                                                                            title="تعديل هذا السجل"
+                                                                                            style={{ background: '#fef3c7', color: '#f59e0b', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 800, fontFamily: 'Cairo' }}>✏️</button>
                                                                                         {si === 0 && !log.isFuture && !log.isOffDay && (
                                                                                             <button
                                                                                                 onClick={() => openManualAtt(selectedEmp.id, selectedEmp.name, log.dateStr)}
@@ -881,7 +930,7 @@ export default function HRPage() {
                                 <table style={{ width: '100%', minWidth: 800, borderCollapse: 'collapse', fontSize: 14 }}>
                                     <thead>
                                         <tr style={{ background: '#f8fafc' }}>
-                                            {['الموظف', 'التاريخ', 'الحضور', 'الانصراف', 'الحالة', 'المصدر'].map(h => (
+                                            {['الموظف', 'التاريخ', 'الحضور', 'الانصراف', 'الحالة', 'المصدر', 'إجراء'].map(h => (
                                                 <th key={h} style={{ padding: '16px 24px', textAlign: 'center', fontWeight: 900, color: '#1e293b', borderBottom: '2px solid #e2e8f0', fontSize: 15 }}>{h}</th>
                                             ))}
                                         </tr>
@@ -917,6 +966,13 @@ export default function HRPage() {
                                                         <span style={{ background: '#f3e8ff', color: '#7e22ce', borderRadius: 8, padding: '6px 14px', fontSize: 13, fontWeight: 900, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                                                             تطبيق البصمة 📱
                                                         </span>
+                                                    </td>
+                                                    <td style={{ padding: '16px 24px', textAlign: 'center' }}>
+                                                        <button 
+                                                        onClick={() => openEditAtt(record, emp?.name || 'مجهول')}
+                                                        style={{ background: '#fef3c7', color: '#d97706', border: '1.5px solid #fde68a', borderRadius: 10, padding: '8px 16px', fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: 'Cairo', display: 'flex', alignItems: 'center', gap: 6, margin: 'auto' }}>
+                                                            ✏️ تعديل
+                                                        </button>
                                                     </td>
                                                 </tr>
                                             );
@@ -1314,6 +1370,98 @@ export default function HRPage() {
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ===== EDIT ATTENDANCE MODAL ===== */}
+            {editAttModal && editAttForm && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: 20 }}
+                    onClick={() => setEditAttModal(false)}>
+                    <div style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: 500, boxShadow: '0 30px 80px rgba(0,0,0,0.3)', overflow: 'hidden' }}
+                         onClick={e => e.stopPropagation()}>
+                         
+                         {/* Header */}
+                         <div style={{ background: 'linear-gradient(135deg, #0f172a, #f59e0b)', padding: '24px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                             <div>
+                                 <div style={{ color: '#fff', fontWeight: 900, fontSize: 20 }}>✏️ تعديل سجل الحضور</div>
+                                 <div style={{ color: '#fef3c7', fontSize: 14, marginTop: 4 }}>
+                                     {editAttForm.employee_name} • {editAttForm.attendance_date}
+                                 </div>
+                             </div>
+                             <button onClick={() => setEditAttModal(false)}
+                                 style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: 10, width: 38, height: 38, cursor: 'pointer', fontSize: 18 }}>✕</button>
+                         </div>
+
+                         {/* Form */}
+                         <div className="p-5 md:p-7 flex flex-col gap-5">
+                             {/* Status */}
+                             <div>
+                                 <label style={label}>حالة الحضور</label>
+                                 <div style={{ display: 'flex', gap: 10 }}>
+                                     {[
+                                         { key: 'present', label: '✅ حاضر', color: '#16a34a', bg: '#dcfce7' },
+                                         { key: 'late', label: '⏰ متأخر', color: '#f59e0b', bg: '#fef3c7' },
+                                         { key: 'excused', label: '📋 إجازة', color: '#0ea5e9', bg: '#e0f2fe' },
+                                         { key: 'absent', label: '❌ غائب', color: '#ef4444', bg: '#fee2e2'},
+                                     ].map(s => (
+                                         <button key={s.key}
+                                             onClick={() => setEditAttForm(f => f ? ({ ...f, status: s.key }) : null)}
+                                             style={{
+                                                 flex: 1, padding: '10px 0', borderRadius: 12,
+                                                 border: `2px solid ${editAttForm.status === s.key ? s.color : '#e2e8f0'}`,
+                                                 background: editAttForm.status === s.key ? s.bg : '#f8fafc',
+                                                 color: editAttForm.status === s.key ? s.color : '#64748b',
+                                                 fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: 'Cairo',
+                                                 transition: 'all 0.15s',
+                                             }}>{s.label}</button>
+                                     ))}
+                                 </div>
+                             </div>
+
+                             {/* Times row */}
+                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                 <div>
+                                     <label style={label}>🟢 وقت الحضور</label>
+                                     <input type="time" value={editAttForm.check_in_time}
+                                         onChange={e => setEditAttForm(f => f ? ({ ...f, check_in_time: e.target.value }) : null)}
+                                         style={{ ...inp, borderColor: '#16a34a', fontWeight: 800, fontSize: 20, textAlign: 'center' }} />
+                                     <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>اتركه فارغا للإلغاء</div>
+                                 </div>
+                                 <div>
+                                     <label style={label}>🔴 وقت الانصراف</label>
+                                     <input type="time" value={editAttForm.check_out_time}
+                                         onChange={e => setEditAttForm(f => f ? ({ ...f, check_out_time: e.target.value }) : null)}
+                                         style={{ ...inp, borderColor: '#ea580c', fontWeight: 800, fontSize: 20, textAlign: 'center' }} />
+                                     <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>اتركه فارغا للإلغاء</div>
+                                 </div>
+                             </div>
+
+                             {/* Notes */}
+                             <div>
+                                 <label style={label}>📝 ملاحظات (اختياري)</label>
+                                 <input style={inp} value={editAttForm.notes}
+                                     onChange={e => setEditAttForm(f => f ? ({ ...f, notes: e.target.value }) : null)}
+                                 />
+                             </div>
+
+                             {/* Buttons */}
+                             <div className="flex flex-col sm:flex-row gap-3 mt-1">
+                                 <button onClick={handleEditAtt} disabled={saving}
+                                     style={{
+                                         flex: 1, background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff',
+                                         border: 'none', borderRadius: 14, padding: '14px', fontWeight: 900, fontSize: 16,
+                                         cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Cairo',
+                                         transition: 'all 0.2s',
+                                     }}>
+                                     {saving ? '⏳ جاري الحفظ...' : '💾 حفظ التعديلات'}
+                                 </button>
+                                 <button onClick={() => setEditAttModal(false)}
+                                     style={{ flex: 1, background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: 14, padding: '14px', fontWeight: 800, fontSize: 16, cursor: 'pointer', fontFamily: 'Cairo' }}>
+                                     إلغاء
+                                 </button>
+                             </div>
+                         </div>
                     </div>
                 </div>
             )}
