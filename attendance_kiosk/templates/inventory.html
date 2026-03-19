@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تسجيل جرد - {{ company }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/liquid_glass.css') }}">
     <style>
         body {
             margin: 0;
@@ -17,7 +18,6 @@
         }
 
         .top-bar {
-            background: linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%);
             padding: 16px 20px;
             display: flex;
             align-items: center;
@@ -25,7 +25,6 @@
             position: sticky;
             top: 0;
             z-index: 50;
-            box-shadow: 0 4px 20px rgba(14, 165, 233, 0.3);
         }
 
         .user-info {
@@ -198,12 +197,9 @@
 
         /* Inventory Section */
         .section-card {
-            background: #fff;
             border-radius: 20px;
             padding: 20px;
             margin-bottom: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e2e8f0;
         }
 
         .section-title {
@@ -260,16 +256,10 @@
         .btn-submit {
             width: 100%;
             padding: 18px;
-            border-radius: 16px;
-            border: none;
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            color: #fff;
             font-weight: 900;
             font-size: 20px;
-            cursor: pointer;
             font-family: 'Cairo';
             margin-top: 24px;
-            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -290,6 +280,41 @@
             margin-bottom: 20px;
             text-align: center;
             border: 2px solid #fecaca;
+        }
+
+        /* Search Bar */
+        .search-container {
+            margin-bottom: 20px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .search-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 14px;
+            padding: 12px 18px;
+            font-family: 'Cairo';
+            font-weight: 800;
+            font-size: 17px;
+            color: #1e293b;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .search-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.9);
+            border-color: #6366f1;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .search-icon {
+            font-size: 20px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
         }
 
         /* Success Screen */
@@ -332,9 +357,14 @@
 </head>
 
 <body>
+    <div class="liquid-background">
+        <div class="blob-1"></div>
+        <div class="blob-2"></div>
+        <div class="blob-3"></div>
+    </div>
 
     <div id="appView">
-        <div class="top-bar">
+        <div class="top-bar glass-nav">
             <div class="user-info">
                 <div class="user-icon" onclick="window.location.href='/'" style="cursor: pointer;">🔙</div>
                 <div style="margin-right: 15px;">
@@ -350,7 +380,7 @@
             </div>
         </div>
 
-        <div class="container">
+        <div class="container fade-in">
 
             <!-- Previous Counts -->
             <div style="margin-bottom: 16px;">
@@ -405,17 +435,23 @@
                 </button>
             </div>
 
+            <!-- Smart Search -->
+            <div class="search-container glass-card">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="itemSearch" class="search-input" placeholder="ابحث عن صنف..." oninput="filterItems(this.value)">
+            </div>
+
             <!-- Hot Items -->
-            <div class="section-card">
+            <div class="section-card glass-card">
                 <div id="hotItemsList"></div>
             </div>
 
             <!-- Cold Items -->
-            <div class="section-card">
+            <div class="section-card glass-card">
                 <div id="coldItemsList"></div>
             </div>
 
-            <button class="btn-submit" id="submitBtn" onclick="submitInventory()">
+            <button class="btn-submit glass-button" id="submitBtn" onclick="submitInventory()">
                 ✅ إرسال الجرد للسيستم
             </button>
             <br>
@@ -445,7 +481,7 @@
 
     <script>
         const HOT_ITEMS = ['فاتح ساده', 'فاتح محوج', 'وسط ساده', 'وسط محوج', 'غامق ساده', 'غامق محوج', 'بندق', 'اسبريسو', 'نسكافيه', 'سكر', 'شاي اسطف', 'شاي إفطار ليبتون', 'شاي احمد تى', 'ينسون', 'نعناع', 'قرفه', 'جنزبيل', 'شاي نكهات', 'شاي كرك', 'شاي عدنى'];
-        const COLD_ITEMS = ['بيبسي دايت', 'سفن', 'ريد بول', 'ستينج', 'دبل دير', 'فيروز', 'تويست', 'باور هورس', 'بيبسي', 'مياه', 'حليب', 'ايس كريم', 'بلح', 'افوكادو', 'موز', 'ليمون', 'كركديه', 'مانجو', 'فراوله', 'جوافه', 'ماتشا', 'بودر كوفي', 'بودر شوكليت', 'بودر فانيليا', 'نوتيلا', 'صوص بستاشيو', 'صوص لوتس', 'صوص دارك', 'صوص وايت', 'حليب مكثف', 'كريمة خفق', 'سيرب فانيليا', 'سيرب كراميل', 'سيرب نعناع', 'سيرب بلو كورواسو', 'سيرب بندق', 'سيرب توفي', 'سيرب جوز هند', 'سيرب ايرش', 'سيرب موخيتو', 'سيرب كراميل مملح', 'سيرب شيري كولا', 'سيرب بيناكولادا', 'سيرب فراوله', 'سيرب كريز', 'سيرب راسبيري', 'سيرب روز', 'توبينج خوخ', 'توبينج باشون', 'توبينج بلوبيري', 'توبينج راسبيري', 'توبينج كيوي', 'توبينج مانجو', 'توبينج فراوله', 'مونين وايت', 'مونين دارك', 'مونين كراميل', 'مولتن كيك', 'شوكليت كيك', 'شيز كيك', 'سويسرول', 'براونيزك', 'كوكيز'];
+        const COLD_ITEMS = ['بيبسي دايت', 'سفن', 'ريد بول', 'ستينج', 'دبل دير', 'فيروز', 'تويست', 'باور هورس', 'بيبسي', 'مياه', 'حليب', 'ايس كريم', 'بلح', 'افوكادو', 'موز', 'ليمون', 'كركديه', 'مانجو', 'فراوله', 'جوافه', 'ماتشا', 'بودر كوفي', 'بودر شوكليت', 'بودر فانيليا', 'نوتيلا', 'صوص بستاشيو', 'صوص لوتس', 'صوص دارك', 'صوص وايت', 'حليب مكثف', 'كريمة خفق', 'سيرب فانيليا', 'سيرب كراميل', 'سيرب نعناع', 'سيرب بلو كورواسو', 'سيرب بندق', 'سيرب توفي', 'سيرب جوز هند', 'سيرب ايرش', 'سيرب موخيتو', 'سيرب كراميل مملح', 'سيرب شيري كولا', 'سيرب بيناكولادا', 'سيرب فراوله', 'سيرب كريز', 'سيرب راسبيري', 'سيرب روز', 'توبينج خوخ', 'توبينج باشون', 'توبينج بلوبيري', 'توبينج راسبيري', 'توبينج كيوي', 'توبينج مانجو', 'توبينج فراوله', 'مونين وايت', 'مونين دارك', 'مونين كراميل', 'مولتن كيك', 'شوكليت كيك', 'شيز كيك', 'سويسرول', 'براونيزك', 'كوكيز', 'فيري جو', 'بريل', 'في كولا بيناكولادا', 'في كولا فراوله', 'في كولا توت ازرق'];
         const SHIFT_LABELS = { morning: 'صباحي ☀️', evening: 'مسائي 🌙', night: 'ليلي ✨' };
 
         let currentBranch = null;
@@ -455,9 +491,20 @@
         // Initialize UI
         document.getElementById('countDate').valueAsDate = new Date();
 
+        function normalizeArabic(text) {
+            if (!text) return '';
+            return text
+                .replace(/[أإآ]/g, 'ا')
+                .replace(/ة/g, 'ه')
+                .replace(/ى/g, 'ي')
+                .trim()
+                .toLowerCase();
+        }
+
         function createRow(name) {
+            const normalizedName = normalizeArabic(name);
             return `
-            <div class="item-row">
+            <div class="item-row" data-normalized="${normalizedName}">
                 <div class="item-name">☕ ${name}</div>
                 <input type="number" class="item-input" min="0" step="any" placeholder="0" 
                        data-item="${name}"
@@ -469,6 +516,28 @@
 
         document.getElementById('hotItemsList').innerHTML = HOT_ITEMS.map(createRow).join('');
         document.getElementById('coldItemsList').innerHTML = COLD_ITEMS.map(createRow).join('');
+
+        function filterItems(query) {
+            const q = normalizeArabic(query);
+            const rows = document.querySelectorAll('.item-row');
+            const sections = document.querySelectorAll('.section-card');
+            
+            rows.forEach(row => {
+                const name = row.getAttribute('data-normalized');
+                if (name.includes(q)) {
+                    row.style.display = 'flex';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Hide section if no items are visible
+            sections.forEach(sec => {
+                const list = sec.querySelector('div[id$="ItemsList"]');
+                const visibleRows = Array.from(list.querySelectorAll('.item-row')).filter(r => r.style.display !== 'none');
+                sec.style.display = visibleRows.length > 0 ? 'block' : 'none';
+            });
+        }
 
         function updateCount(name, val) {
             if (!val || val.trim() === '') {

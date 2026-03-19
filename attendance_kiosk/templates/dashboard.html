@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة تحكم {{ employee.name }} - {{ company }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/liquid_glass.css') }}">
     <style>
         body {
             margin: 0;
@@ -17,13 +18,11 @@
         }
 
         .header {
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
             color: #fff;
             padding: 20px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
             position: sticky;
             top: 0;
             z-index: 50;
@@ -105,7 +104,6 @@
         }
 
         .action-card {
-            background: #fff;
             border-radius: 24px;
             overflow: hidden;
             cursor: pointer;
@@ -161,8 +159,7 @@
 
         /* Colors for Attendance Card */
         .card-attendance {
-            box-shadow: 0 15px 40px rgba(16, 185, 129, 0.15);
-            border: 2px solid rgba(16, 185, 129, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
         }
 
         .card-attendance:hover {
@@ -189,8 +186,7 @@
 
         /* Colors for Inventory Card */
         .card-inventory {
-            box-shadow: 0 15px 40px rgba(56, 189, 248, 0.15);
-            border: 2px solid rgba(56, 189, 248, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
         }
 
         .card-inventory:hover {
@@ -337,8 +333,13 @@
 </head>
 
 <body>
+    <div class="liquid-background">
+        <div class="blob-1"></div>
+        <div class="blob-2"></div>
+        <div class="blob-3"></div>
+    </div>
 
-    <div class="header">
+    <div class="header glass-nav">
         <div class="header-user">
             <div class="user-avatar">👤</div>
             <div class="user-info">
@@ -349,7 +350,7 @@
     </div>
 
     <div class="container">
-        <div class="greeting">
+        <div class="greeting fade-in">
             <h2>👋 مرحباً بك يا {{ employee.name.split(' ')[0] }}!</h2>
             <p>الرجاء اختيار الخدمة المطلوبة للمتابعة</p>
         </div>
@@ -357,7 +358,7 @@
         <div class="cards-grid">
 
             <!-- Attendance Card -->
-            <div class="action-card card-attendance" onclick="punch()">
+            <div class="action-card card-attendance glass-card fade-in" onclick="punch()" style="animation-delay: 0.1s;">
                 <div class="card-topbar"></div>
                 <div class="card-content">
                     <div class="card-icon" id="punch-icon">
@@ -390,7 +391,7 @@
 
             <!-- Inventory Card -->
             {% if employee.can_view_inventory %}
-            <div class="action-card card-inventory" onclick="window.location.href='/inventory'">
+            <div class="action-card card-inventory glass-card fade-in" onclick="window.location.href='/inventory'" style="animation-delay: 0.2s;">
                 <div class="card-topbar"></div>
                 <div class="card-content">
                     <div class="card-icon">📦</div>

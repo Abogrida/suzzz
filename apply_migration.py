@@ -6,7 +6,7 @@ PASSWORD = "ISLam@2006#@"
 
 # Read the latest migrations
 sql_files = [
-    "supabase/migrations/005_purchases.sql"
+    "supabase/migrations/014_cashier_tables.sql"
 ]
 
 HOSTS_TO_TRY = [

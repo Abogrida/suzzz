@@ -9,9 +9,13 @@ echo [1/3] Installing dependencies...
 pip install -r requirements.txt
 pip install pyinstaller
 
-echo [2/3] Building EXE...
+echo [2/4] Generating application icon from logo...
+python create_icon.py
+
+echo [3/4] Building EXE (with embedded config)...
 python -m PyInstaller --onefile --windowed --clean ^
     --name "AttendanceKiosk" ^
+    --icon "app_icon.ico" ^
     --add-data "templates;templates" ^
     --add-data "static;static" ^
     --add-data "config.json;." ^
@@ -19,8 +23,9 @@ python -m PyInstaller --onefile --windowed --clean ^
     --hidden-import requests ^
     server.py
 
-echo [3/3] Copying config...
-if not exist dist\config.json copy config.json dist\config.json
+echo [4/4] Finalizing build...
+REM No longer copying config.json to dist as it is now embedded.
+
 
 echo.
 echo ============================================

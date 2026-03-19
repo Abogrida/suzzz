@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Package, Tag, Users, FileText, TrendingUp, Settings, LogOut, Menu, X, ClipboardList, UserCheck, ChefHat } from 'lucide-react';
+import { LayoutDashboard, Package, Tag, Users, FileText, TrendingUp, Settings, LogOut, Menu, X, ClipboardList, UserCheck, ChefHat, ShoppingBag, Clock } from 'lucide-react';
 import { useState } from 'react';
 
 const navLinks = [
@@ -16,6 +16,7 @@ const navLinks = [
     { href: '/employees', label: 'الموظفين', icon: UserCheck },
     { href: '/employee/settlement', label: 'رواتب وتقفيلات', icon: FileText },
     { href: '/inventory-reports', label: 'تقارير الجرد', icon: ClipboardList },
+    { href: '/cashier-stats', label: 'لوحة الكاشير', icon: LayoutDashboard },
     { href: '/settings', label: 'الإعدادات', icon: Settings },
 ];
 

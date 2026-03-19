@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة الإدارة الاحترافية — {{ company }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/liquid_glass.css') }}">
     <style>
         :root {
             --primary: #6366f1;
@@ -38,13 +39,11 @@
 
         /* Header & Nav */
         header {
-            background: linear-gradient(135deg, #0f172a, #1e3a5f);
             color: white;
             padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
         header h1 {
@@ -60,10 +59,8 @@
         }
 
         .nav-tabs {
-            background: white;
             display: flex;
             padding: 0 2rem;
-            border-bottom: 1px solid var(--border);
             gap: 2rem;
             position: sticky;
             top: 0;
@@ -125,10 +122,8 @@
         }
 
         .stat-card {
-            background: white;
             padding: 1.5rem;
             border-radius: 1rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             text-align: center;
         }
 
@@ -145,10 +140,8 @@
         }
 
         .card {
-            background: white;
             border-radius: 1rem;
             padding: 1.5rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             margin-bottom: 1.5rem;
         }
 
@@ -280,7 +273,6 @@
         }
 
         .modal-content {
-            background: white;
             width: 95%;
             max-width: 800px;
             border-radius: 1.5rem;
@@ -370,13 +362,18 @@
 </head>
 
 <body>
+    <div class="liquid-background">
+        <div class="blob-1"></div>
+        <div class="blob-2"></div>
+        <div class="blob-3"></div>
+    </div>
 
-    <header>
+    <header class="glass-nav">
         <h1>💎 Suzz Admin Pro</h1>
         <a href="/" class="back-link">← العودة للتطبيق</a>
     </header>
 
-    <nav class="nav-tabs">
+    <nav class="nav-tabs glass-nav">
         <button class="tab-btn active" onclick="switchTab('dashboard')">📊 الملخص</button>
         <button class="tab-btn" onclick="switchTab('attendance')">📅 الحضور</button>
         <button class="tab-btn" onclick="switchTab('inventory')">📦 الجرد</button>
@@ -388,25 +385,25 @@
         <!-- Tab: Dashboard -->
         <div id="dashboard" class="tab-content active">
             <div class="stats-grid">
-                <div class="stat-card">
+                <div class="stat-card glass-panel fade-in">
                     <div class="stat-num" id="stat-present">-</div>
                     <div class="stat-label">حضور اليوم</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card glass-panel fade-in" style="animation-delay: 0.1s;">
                     <div class="stat-num" id="stat-late" style="color: var(--warning)">-</div>
                     <div class="stat-label">تأخيرات</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card glass-panel fade-in" style="animation-delay: 0.2s;">
                     <div class="stat-num" id="stat-inventory" style="color: var(--secondary)">-</div>
                     <div class="stat-label">عمليات جرد اليوم</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card glass-panel fade-in" style="animation-delay: 0.3s;">
                     <div class="stat-num" id="stat-unsynced" style="color: var(--danger)">-</div>
                     <div class="stat-label">سجلات غير مزامنة</div>
                 </div>
             </div>
 
-            <div class="card">
+            <div class="card glass-panel">
                 <div class="card-header">
                     <h2 class="card-title">🚀 عمليات سريعة</h2>
                 </div>
@@ -419,9 +416,8 @@
             </div>
         </div>
 
-        <!-- Tab: Attendance -->
         <div id="attendance" class="tab-content">
-            <div class="card">
+            <div class="card glass-panel">
                 <div class="card-header">
                     <h2 class="card-title">سجل الحضور اليومي</h2>
                     <input type="date" id="att-filter-date" value="{{ today }}" onchange="renderAttendanceTable()">
@@ -443,7 +439,7 @@
         </div>
 
         <div id="inventory" class="tab-content">
-            <div class="card">
+            <div class="card glass-panel">
                 <div class="card-header" style="flex-wrap: wrap; gap: 10px;">
                     <h2 class="card-title">سجلات الجرد</h2>
                     <div class="filter-bar" style="border:none; padding:0; margin:0; gap:10px;">
@@ -485,9 +481,8 @@
             </div>
         </div>
 
-        <!-- Tab: Employees -->
         <div id="employees" class="tab-content">
-            <div class="card">
+            <div class="card glass-panel">
                 <div class="card-header">
                     <h2 class="card-title">قائمة الموظفين</h2>
                 </div>
@@ -542,7 +537,7 @@
 
     <!-- Modal: Edit Employee -->
     <div class="modal" id="editModal">
-        <div class="modal-content">
+        <div class="modal-content glass-panel">
             <span class="modal-close" onclick="closeModal('editModal')">&times;</span>
             <h2 style="margin-bottom: 1.5rem;">تعديل بيانات موظف</h2>
             <form id="editForm">
@@ -579,7 +574,7 @@
 
     <!-- Modal: Employee History -->
     <div class="modal" id="historyModal">
-        <div class="modal-content" style="max-width: 900px;">
+        <div class="modal-content glass-panel" style="max-width: 900px;">
             <span class="modal-close" onclick="closeModal('historyModal')">&times;</span>
             <h2 id="history-emp-name" style="margin-bottom: 0.5rem;">سجل الموظف</h2>
 
@@ -651,7 +646,7 @@
 
     <!-- Modal: Inventory Details -->
     <div class="modal" id="inventoryDetailsModal">
-        <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-content glass-panel" style="max-width: 600px;">
             <span class="modal-close" onclick="closeModal('inventoryDetailsModal')">&times;</span>
             <h2 style="margin-bottom: 1rem;">تفاصيل الجرد</h2>
             <div class="table-container">
