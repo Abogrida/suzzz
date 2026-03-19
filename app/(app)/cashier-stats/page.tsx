@@ -19,6 +19,8 @@ export default function CashierStatsPage() {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
+
+
     // -------------------------------------------------------------
     // GLOBAL DATA STATE
     // -------------------------------------------------------------
@@ -39,6 +41,21 @@ export default function CashierStatsPage() {
     const [selectedOrder, setSelectedOrder] = useState<any>(null);
     const [orderItems, setOrderItems] = useState<any[]>([]);
     const [orderItemsLoading, setOrderItemsLoading] = useState(false);
+
+    // -------------------------------------------------------------
+    // BLOCK BACKGROUND SCROLL WHEN MODAL IS OPEN
+    // -------------------------------------------------------------
+    useEffect(() => {
+        const isAnyModalOpen = selectedShift || showProductsReport || selectedOrder;
+        if (isAnyModalOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'auto';
+        }
+        return () => {
+            document.body.style.overflow = 'auto';
+        };
+    }, [selectedShift, showProductsReport, selectedOrder]);
 
     // -------------------------------------------------------------
     // FETCHING DATA
