@@ -398,23 +398,65 @@ export default function CashierStatsPage() {
                             {/* Stats Grid */}
                             <div style={{ 
                                 display: 'grid', 
-                                gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', 
+                                gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(3, 1fr)', 
                                 gap: isMobile ? '8px' : '16px', 
-                                marginBottom: '16px' 
+                                marginBottom: '20px' 
                             }}>
-                                <div style={{ background: '#fff', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', gridColumn: isMobile ? 'span 2' : 'span 1' }}>
-                                    <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>إجمالي المبيعات</div>
-                                    <div style={{ fontSize: isMobile ? '22px' : '26px', fontWeight: 900, color: '#10b981' }}>{Number(selectedShift.total_revenue || 0).toFixed(2)} <span style={{fontSize:'11px'}}>ج.م</span></div>
+                                <div style={{ background: '#fff', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0', gridColumn: isMobile ? 'span 2' : 'span 1' }}>
+                                    <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>إجمالي المبيعات (نظام)</div>
+                                    <div style={{ fontSize: isMobile ? '24px' : '28px', fontWeight: 900, color: '#0f172a' }}>{Number(selectedShift.total_revenue || 0).toFixed(2)} <span style={{fontSize:'12px'}}>ج.م</span></div>
                                 </div>
-                                <div style={{ background: '#fff', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                                    <div style={{ fontSize: '11px', color: '#64748b' }}>الطلبات</div>
-                                    <div style={{ fontSize: '16px', fontWeight: 800, color: '#3b82f6', marginTop: '2px' }}>{selectedShift.total_orders || 0}</div>
+                                <div style={{ background: '#fff', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                                    <div style={{ fontSize: '12px', color: '#64748b' }}>الطلبات</div>
+                                    <div style={{ fontSize: '18px', fontWeight: 800, color: '#3b82f6', marginTop: '2px' }}>{selectedShift.total_orders || 0}</div>
                                 </div>
-                                <div style={{ background: '#fff', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                                    <div style={{ fontSize: '11px', color: '#64748b' }}>الفواتير</div>
-                                    <div style={{ fontSize: '16px', fontWeight: 800, color: '#8b5cf6', marginTop: '2px' }}>{selectedShift.total_invoices || 0}</div>
+                                <div style={{ background: '#fff', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                                    <div style={{ fontSize: '12px', color: '#64748b' }}>الفواتير</div>
+                                    <div style={{ fontSize: '18px', fontWeight: 800, color: '#8b5cf6', marginTop: '2px' }}>{selectedShift.total_invoices || 0}</div>
                                 </div>
                             </div>
+
+                            {/* RECONCILIATION SECTION (Only if closed or has data) */}
+                            {(selectedShift.status === 'closed' || selectedShift.cash_drawer_amount > 0) && (
+                                <div style={{ 
+                                    display: 'grid', 
+                                    gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(3, 1fr)', 
+                                    gap: isMobile ? '8px' : '16px', 
+                                    marginBottom: '24px',
+                                    padding: '16px',
+                                    background: '#f1f5f9',
+                                    borderRadius: '16px',
+                                    border: '1px dashed #cbd5e1'
+                                }}>
+                                    <div style={{ gridColumn: isMobile ? 'span 2' : 'span 3', marginBottom: '4px' }}>
+                                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#475569', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <Wallet size={16} /> تسوية النقدية والعهدة
+                                        </div>
+                                    </div>
+                                    <div style={{ background: '#fff', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                                        <div style={{ fontSize: '11px', color: '#64748b' }}>النقدية المتوقعة</div>
+                                        <div style={{ fontSize: '18px', fontWeight: 900, color: '#334155' }}>{Number(selectedShift.cash_expected || selectedShift.total_revenue || 0).toFixed(2)}</div>
+                                    </div>
+                                    <div style={{ background: '#fff', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                                        <div style={{ fontSize: '11px', color: '#64748b' }}>النقدية الفعلية</div>
+                                        <div style={{ fontSize: '18px', fontWeight: 900, color: '#1e293b' }}>{Number(selectedShift.cash_drawer_amount || 0).toFixed(2)}</div>
+                                    </div>
+                                    <div style={{ 
+                                        background: selectedShift.cash_difference === 0 ? '#fff' : selectedShift.cash_difference > 0 ? '#ecfdf5' : '#fef2f2', 
+                                        padding: '12px', borderRadius: '12px', border: '1px solid',
+                                        borderColor: selectedShift.cash_difference === 0 ? '#e2e8f0' : selectedShift.cash_difference > 0 ? '#10b981' : '#ef4444',
+                                        gridColumn: isMobile ? 'span 2' : 'span 1'
+                                    }}>
+                                        <div style={{ fontSize: '11px', color: '#64748b' }}>العجز / الزيادة</div>
+                                        <div style={{ 
+                                            fontSize: '18px', fontWeight: 900, 
+                                            color: selectedShift.cash_difference === 0 ? '#334155' : selectedShift.cash_difference > 0 ? '#10b981' : '#ef4444' 
+                                        }}>
+                                            {selectedShift.cash_difference > 0 ? '+' : ''}{Number(selectedShift.cash_difference || 0).toFixed(2)}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Inner Search Container (Sticky-ish?) */}
                             <div style={{ 
