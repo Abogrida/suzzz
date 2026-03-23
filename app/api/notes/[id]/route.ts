@@ -3,13 +3,14 @@ import { requireAuth } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase';
 
 // PATCH /api/notes/[id]
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const authError = requireAuth(req);
     if (authError) return authError;
 
     const db = createAdminClient();
     const body = await req.json();
-    const id = Number(params.id);
+    const { id: rawId } = await params;
+    const id = Number(rawId);
 
     const updates: Record<string, string> = {};
     if (body.title !== undefined) updates.title = body.title;
@@ -28,12 +29,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 // DELETE /api/notes/[id]
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const authError = requireAuth(req);
     if (authError) return authError;
 
     const db = createAdminClient();
-    const id = Number(params.id);
+    const { id: rawId } = await params;
+    const id = Number(rawId);
 
     const { error } = await db.from('work_notes').delete().eq('id', id);
     if (error) return NextResponse.json({ success: false, message: error.message }, { status: 400 });
