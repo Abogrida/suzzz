@@ -381,6 +381,56 @@ export default function HRPage() {
             {/* ===== TAB: EMPLOYEES ===== */}
             {tab === 'employees' && (
                 <div>
+                    {/* Total Salaries Summary Card */}
+                    <div style={{
+                        background: 'linear-gradient(135deg, #1e293b, #0f172a)',
+                        borderRadius: 16,
+                        padding: '20px 24px',
+                        marginBottom: 20,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+                        border: '1px solid #334155',
+                        position: 'relative',
+                        overflow: 'hidden'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                            <div style={{ width: 48, height: 48, background: 'rgba(56, 189, 248, 0.1)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>
+                                💰
+                            </div>
+                            <div>
+                                <div style={{ color: '#94a3b8', fontSize: 14, fontWeight: 700, marginBottom: 4 }}>إجمالي الرواتب الأساسية (للموظفين النشطين)</div>
+                                {/* Blurred amount that unblurs on hover/touch */}
+                                <div 
+                                    style={{ 
+                                        color: '#10b981', 
+                                        fontSize: 22, 
+                                        fontWeight: 900,
+                                        filter: 'blur(8px)',
+                                        transition: 'filter 0.3s ease',
+                                        cursor: 'pointer',
+                                        userSelect: 'none'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.filter = 'blur(0)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.filter = 'blur(8px)'}
+                                    onTouchStart={(e) => e.currentTarget.style.filter = 'blur(0)'}
+                                    onTouchEnd={(e) => {
+                                        const el = e.currentTarget;
+                                        setTimeout(() => {
+                                            if (el) el.style.filter = 'blur(8px)';
+                                        }, 2000);
+                                    }}
+                                >
+                                    {employees.filter(e => e.is_active).reduce((sum, emp) => sum + (Number(emp.base_salary) || 0), 0).toLocaleString('ar-EG')} ج.م
+                                </div>
+                            </div>
+                        </div>
+                        <div style={{ fontSize: 12, color: '#64748b', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span>👁️</span> مرر الماوس أو المس للعرض
+                        </div>
+                    </div>
+
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                         <div style={{ fontSize: 16, fontWeight: 700, color: '#64748b' }}>{employees.filter(e => e.is_active).length} موظف نشط من {employees.length}</div>
                         <button onClick={() => { setEditingEmp(null); setEmpForm(emptyEmp); setEmpModal(true); }}
