@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase';
 
 // PATCH /api/notes/[id]
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id: idParam } = await params;
     const authError = requireAuth(req);
     if (authError) return authError;
 
@@ -30,6 +31,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 // DELETE /api/notes/[id]
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id: idParam } = await params;
+    const { id: idParam } = await params;
     const authError = requireAuth(req);
     if (authError) return authError;
 

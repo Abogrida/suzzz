@@ -13,6 +13,8 @@ export function getAuthFromRequest(req: NextRequest): boolean {
     return false;
 }
 
+export const isSuperAdmin = getAuthFromRequest;
+
 export function requireAuth(req: NextRequest): NextResponse | null {
     if (!getAuthFromRequest(req)) {
         return NextResponse.json({ error: 'يجب تسجيل الدخول' }, { status: 401 });

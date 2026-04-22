@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Settings, Lock, Info, CheckCircle, XCircle } from 'lucide-react';
+import { Settings, Lock, Info, CheckCircle, XCircle, ClipboardList } from 'lucide-react';
 
 function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error'; onClose: () => void }) {
     useState(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); });
@@ -182,6 +182,24 @@ export default function SettingsPage() {
                                 <span className="font-semibold text-gray-800 text-sm">{value}</span>
                             </div>
                         ))}
+                    </div>
+                </div>
+
+                {/* Inventory Settings */}
+                <div className="card">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                            <ClipboardList className="w-5 h-5 text-purple-600" />
+                        </div>
+                        <h2 className="font-bold text-gray-800 text-lg">إعدادات أصناف الجرد</h2>
+                    </div>
+                    <div className="flex flex-col gap-4 h-full">
+                        <p className="text-sm text-gray-500">
+                            قم بإدارة الأصناف (الساخنة والباردة) التي تظهر للموظفين في شاشة الجرد اليومي.
+                        </p>
+                        <a href="/settings/inventory-items" className="btn btn-outline mt-auto justify-center">
+                            إدارة الأصناف
+                        </a>
                     </div>
                 </div>
 

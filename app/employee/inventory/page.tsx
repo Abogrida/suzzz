@@ -1,8 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 
-const HOT_ITEMS = ['فاتح ساده', 'فاتح محوج', 'وسط ساده', 'وسط محوج', 'غامق ساده', 'غامق محوج', 'بندق', 'اسبريسو', 'نسكافيه', 'سكر', 'شاي اسطف', 'شاي إفطار ليبتون', 'شاي احمد تى', 'ينسون', 'نعناع', 'قرفه', 'جنزبيل', 'شاي نكهات', 'شاي كرك', 'شاي عدنى'];
-const COLD_ITEMS = ['فيري جو', 'بريل', 'في كولا بيناكولادا', 'في كولا فراوله', 'في كولا توت ازرق', 'بيبسي دايت', 'سفن', 'ريد بول', 'ستينج', 'دبل دير', 'فيروز', 'تويست', 'باور هورس', 'بيبسي', 'مياه', 'حليب', 'ايس كريم', 'بلح', 'افوكادو', 'موز', 'ليمون', 'كركديه', 'مانجو', 'فراوله', 'جوافه', 'ماتشا', 'بودر كوفي', 'بودر شوكليت', 'بودر فانيليا', 'نوتيلا', 'صوص بستاشيو', 'صوص لوتس', 'صوص دارك', 'صوص وايت', 'حليب مكثف', 'كريمة خفق', 'سيرب فانيليا', 'سيرب كراميل', 'سيرب نعناع', 'سيرب بلو كورواسو', 'سيرب بندق', 'سيرب توفي', 'سيرب جوز هند', 'سيرب ايرش', 'سيرب موخيتو', 'سيرب كراميل مملح', 'سيرب شيري كولا', 'سيرب بيناكولادا', 'سيرب فراوله', 'سيرب كريز', 'سيرب راسبيري', 'سيرب روز', 'توبينج خوخ', 'توبينج باشون', 'توبينج بلوبيري', 'توبينج راسبيري', 'توبينج كيوي', 'توبينج مانجو', 'توبينج فراوله', 'مونين وايت', 'مونين دارك', 'مونين كراميل', 'مولتن كيك', 'شوكليت كيك', 'شيز كيك', 'سويسرول', 'براونيزك', 'كوكيز'];
+// Items are now fetched dynamically from settings
 
 const SHIFT_LABELS: Record<string, string> = { morning: 'صباحي ☀️', evening: 'مسائي 🌙', night: 'ليلي ✨' };
 
@@ -18,8 +17,13 @@ export default function EmployeeInventoryPage() {
     const [error, setError] = useState('');
     const [todayCounts, setTodayCounts] = useState<{ id: number; shift: string; branch: string; created_at: string; employees?: { name: string } | null }[]>([]);
     const [showTodayCounts, setShowTodayCounts] = useState(false);
+    
+    const [hotItems, setHotItems] = useState<string[]>([]);
+    const [coldItems, setColdItems] = useState<string[]>([]);
+    const [loadingItems, setLoadingItems] = useState(true);
+    const [loadingLatest, setLoadingLatest] = useState(false);
 
-    const ALL_ITEMS = [...HOT_ITEMS, ...COLD_ITEMS];
+    const ALL_ITEMS = [...hotItems, ...coldItems];
 
     const fetchTodayCounts = (_empId: number, date: string) => {
         fetch(`/api/inventory-counts?count_date=${date}`)
@@ -30,16 +34,59 @@ export default function EmployeeInventoryPage() {
 
     useEffect(() => {
         fetch('/api/auth/me').then(r => r.json()).then(d => {
-            if (d.role === 'employee') {
-                setEmpInfo({ id: d.id, name: d.name });
-                fetchTodayCounts(d.id, new Date().toISOString().split('T')[0]);
-            } else window.location.href = '/login';
-        }).catch(() => window.location.href = '/login');
+            // Bulletproof check: If we have an ID, we are logged in. 
+            // Admins go to dashboard, everyone else (employee, jard, staff) stays here.
+            if (d.id) {
+                if (d.role === 'admin') {
+                    window.location.href = '/dashboard';
+                } else {
+                    setEmpInfo({ id: d.id, name: d.name });
+                    fetchTodayCounts(d.id, new Date().toISOString().split('T')[0]);
+                    
+                    // Fetch dynamic inventory items
+                    fetch('/api/settings/inventory-items')
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.hot) setHotItems(data.hot);
+                            if (data.cold) setColdItems(data.cold);
+                        })
+                        .catch(() => console.error('Failed to load inventory items'))
+                        .finally(() => setLoadingItems(false));
+                }
+            } else {
+                window.location.href = '/login';
+            }
+        }).catch(() => {
+            console.error('InventoryPage: Auth check failed');
+            window.location.href = '/login';
+        });
     }, []);
 
     const setVal = (item: string, v: string) => {
         if (v && !/^\d*\.?\d*$/.test(v)) return;
         setValues(prev => ({ ...prev, [item]: v }));
+    };
+
+    const handleCopyLatest = async () => {
+        if (!branch) return;
+        setLoadingLatest(true);
+        setError('');
+        try {
+            const res = await fetch(`/api/inventory-counts/latest?branch=${encodeURIComponent(branch)}`);
+            const data = await res.json();
+            if (res.ok && data.inventory_count_items) {
+                const newValues: Record<string, string> = {};
+                data.inventory_count_items.forEach((it: any) => {
+                    newValues[it.item_name] = it.quantity.toString();
+                });
+                setValues(newValues);
+            } else {
+                setError(data.error || 'لا يوجد جرد سابق لهذا الفرع');
+            }
+        } catch {
+            setError('خطأ في الاتصال');
+        }
+        setLoadingLatest(false);
     };
 
     const handleSubmit = async () => {
@@ -77,11 +124,11 @@ export default function EmployeeInventoryPage() {
 
         // Build the professional message
         const separator = '━━━━━━━━━━━━━━━━━━━━━━';
-        const hotSection = HOT_ITEMS.map(item => {
+        const hotSection = hotItems.map(item => {
             const qty = parseFloat(values[item] || '0') || 0;
             return `  • ${item}: *${qty}*`;
         }).join('\n');
-        const coldSection = COLD_ITEMS.map(item => {
+        const coldSection = coldItems.map(item => {
             const qty = parseFloat(values[item] || '0') || 0;
             return `  • ${item}: *${qty}*`;
         }).join('\n');
@@ -109,7 +156,7 @@ export default function EmployeeInventoryPage() {
         window.open(`https://wa.me/?text=${encoded}`, '_blank');
     };
 
-    if (!empInfo) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', fontFamily: 'Cairo' }}><div style={{ fontSize: 44 }}>⏳</div></div>;
+    if (!empInfo || loadingItems) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', fontFamily: 'Cairo' }}><div style={{ fontSize: 44 }}>⏳</div></div>;
 
     if (done) return (
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg,#ecfdf5 0%,#d1fae5 100%)', fontFamily: 'Cairo', padding: 20, textAlign: 'center' }}>
@@ -213,7 +260,28 @@ export default function EmployeeInventoryPage() {
 
                 {/* Branch Selection */}
                 <div style={{ background: '#fff', borderRadius: 16, padding: '18px 18px', marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '2.5px solid #e2e8f0' }}>
-                    <label style={{ display: 'block', fontWeight: 700, marginBottom: 12, fontSize: 16, color: '#1e293b' }}>📍 اختر الفرع *</label>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                        <label style={{ fontWeight: 700, fontSize: 16, color: '#1e293b' }}>📍 اختر الفرع *</label>
+                        <button 
+                            onClick={handleCopyLatest}
+                            disabled={!branch || loadingLatest}
+                            style={{ 
+                                background: branch ? '#6366f1' : '#f1f5f9', 
+                                color: branch ? '#fff' : '#94a3b8', 
+                                border: 'none', 
+                                borderRadius: 12, 
+                                padding: '8px 16px', 
+                                fontSize: 14, 
+                                fontWeight: 800, 
+                                cursor: branch ? 'pointer' : 'not-allowed', 
+                                fontFamily: 'Cairo',
+                                boxShadow: branch ? '0 4px 12px rgba(99,102,241,0.3)' : 'none',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            {loadingLatest ? '⏳ جاري النسخ...' : '📋 نسخ آخر جرد'}
+                        </button>
+                    </div>
                     <div style={{ display: 'flex', gap: 10 }}>
                         <button onClick={() => setBranch('Suzz 1')}
                             style={{ flex: 1, padding: '15px 0', borderRadius: 14, border: '2.5px solid', borderColor: branch === 'Suzz 1' ? '#6366f1' : '#e2e8f0', background: branch === 'Suzz 1' ? '#6366f1' : '#fff', color: branch === 'Suzz 1' ? '#fff' : '#1e293b', fontWeight: 800, fontSize: 18, cursor: 'pointer', fontFamily: 'Cairo', transition: 'all 0.2s' }}>

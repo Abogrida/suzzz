@@ -101,43 +101,80 @@ export default function CustomersPage() {
                         <div style={{ fontSize: 13, marginTop: 4 }}>لا يوجد {isSupplier ? 'موردين' : 'عملاء'} مسجلين حتى الآن</div>
                     </div>
                 ) : (
-                    <div className="table-responsive">
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, minWidth: 500 }}>
-                            <thead>
-                                <tr style={{ background: '#1e293b' }}>
-                                    {['#', 'الاسم', 'الهاتف', 'العنوان', 'ملاحظات', 'الإجراءات'].map(h => (
-                                        <th key={h} style={{ padding: '12px 14px', color: '#fff', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filtered.map((c, i) => (
-                                    <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#f8fafc' }}>
-                                        <td style={{ padding: '10px 14px', color: '#94a3b8', fontWeight: 600 }}>#{c.id}</td>
-                                        <td style={{ padding: '10px 14px' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                <div style={{ width: 32, height: 32, borderRadius: 8, background: themeColor, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
-                                                    {c.name.charAt(0)}
-                                                </div>
-                                                <span style={{ fontWeight: 700, color: '#1e293b' }}>{c.name}</span>
-                                            </div>
-                                        </td>
-                                        <td style={{ padding: '10px 14px', color: '#475569', whiteSpace: 'nowrap' }}>📞 {c.phone || '—'}</td>
-                                        <td style={{ padding: '10px 14px', color: '#64748b', fontSize: 13 }}>📍 {c.address || '—'}</td>
-                                        <td style={{ padding: '10px 14px', color: '#94a3b8', fontSize: 12, maxWidth: 160 }}>{c.notes || '—'}</td>
-                                        <td style={{ padding: '10px 14px' }}>
-                                            <div style={{ display: 'flex', gap: 6 }}>
-                                                <button onClick={() => { setEditing(c); setForm({ name: c.name, phone: c.phone, address: c.address, customer_type: c.customer_type, notes: c.notes }); setModalOpen(true); }}
-                                                    style={{ background: '#0ea5e9', color: '#fff', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 14 }}>✏️</button>
-                                                <button onClick={() => handleDelete(c.id)}
-                                                    style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 14 }}>🗑️</button>
-                                            </div>
-                                        </td>
+                    <>
+                        <div className="table-responsive">
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, minWidth: 500 }}>
+                                <thead>
+                                    <tr style={{ background: '#1e293b' }}>
+                                        {['#', 'الاسم', 'الهاتف', 'العنوان', 'ملاحظات', 'الإجراءات'].map(h => (
+                                            <th key={h} style={{ padding: '12px 14px', color: '#fff', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
+                                        ))}
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    {filtered.map((c, i) => (
+                                        <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#f8fafc' }}>
+                                            <td style={{ padding: '10px 14px', color: '#94a3b8', fontWeight: 600 }}>#{c.id}</td>
+                                            <td style={{ padding: '10px 14px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    <div style={{ width: 32, height: 32, borderRadius: 8, background: themeColor, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
+                                                        {c.name.charAt(0)}
+                                                    </div>
+                                                    <span style={{ fontWeight: 700, color: '#1e293b' }}>{c.name}</span>
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '10px 14px', color: '#475569', whiteSpace: 'nowrap' }}>📞 {c.phone || '—'}</td>
+                                            <td style={{ padding: '10px 14px', color: '#64748b', fontSize: 13 }}>📍 {c.address || '—'}</td>
+                                            <td style={{ padding: '10px 14px', color: '#94a3b8', fontSize: 12, maxWidth: 160 }}>{c.notes || '—'}</td>
+                                            <td style={{ padding: '10px 14px' }}>
+                                                <div style={{ display: 'flex', gap: 6 }}>
+                                                    <button onClick={() => { setEditing(c); setForm({ name: c.name, phone: c.phone, address: c.address, customer_type: c.customer_type, notes: c.notes }); setModalOpen(true); }}
+                                                        style={{ background: '#0ea5e9', color: '#fff', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 14 }}>✏️</button>
+                                                    <button onClick={() => handleDelete(c.id)}
+                                                        style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 14 }}>🗑️</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {/* Mobile card rows */}
+                        <div className="mobile-card-rows" style={{ padding: '12px' }}>
+                            {filtered.map(c => (
+                                <div key={c.id} className="mobile-card-row" style={{ borderRight: `4px solid ${themeColor}` }}>
+                                    <div className="mobile-card-row-header">
+                                        <div style={{ width: 38, height: 38, borderRadius: 10, background: themeColor, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 16, flexShrink: 0 }}>
+                                            {c.name.charAt(0)}
+                                        </div>
+                                        <span className="mobile-card-row-title">{c.name}</span>
+                                    </div>
+                                    <div className="mobile-card-row-body">
+                                        <div className="mobile-card-row-field">
+                                            <span className="mobile-card-row-label">الهاتف</span>
+                                            <span className="mobile-card-row-value">📞 {c.phone || '—'}</span>
+                                        </div>
+                                        <div className="mobile-card-row-field">
+                                            <span className="mobile-card-row-label">العنوان</span>
+                                            <span className="mobile-card-row-value">📍 {c.address || '—'}</span>
+                                        </div>
+                                        {c.notes && (
+                                            <div className="mobile-card-row-field" style={{ gridColumn: 'span 2' }}>
+                                                <span className="mobile-card-row-label">ملاحظات</span>
+                                                <span className="mobile-card-row-value" style={{ color: '#64748b' }}>{c.notes}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="mobile-card-row-actions">
+                                        <button onClick={() => { setEditing(c); setForm({ name: c.name, phone: c.phone, address: c.address, customer_type: c.customer_type, notes: c.notes }); setModalOpen(true); }}
+                                            className="btn" style={{ background: '#0ea5e9', color: '#fff' }}>✏️ تعديل</button>
+                                        <button onClick={() => handleDelete(c.id)}
+                                            className="btn btn-danger">🗑️ حذف</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </>
                 )}
             </div>
 

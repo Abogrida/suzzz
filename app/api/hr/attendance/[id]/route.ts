@@ -3,6 +3,8 @@ import { requireAuth } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase';
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id: idParam } = await params;
+    const { id: idParam } = await params;
     const authError = requireAuth(req);
     if (authError) return authError;
 
@@ -29,6 +31,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id: idParam } = await params;
     const authError = requireAuth(req);
     if (authError) return authError;
 

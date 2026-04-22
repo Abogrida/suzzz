@@ -102,6 +102,46 @@ export default function InvoicesPage() {
                             </tbody>
                         </table>
                     </div>}
+                {/* Mobile card rows */}
+                {!loading && (
+                    <div className="mobile-card-rows" style={{ padding: '12px' }}>
+                        {filtered.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '48px 0', color: '#94a3b8' }}>
+                                <div style={{ fontSize: 40, marginBottom: 10 }}>📄</div>
+                                <div style={{ fontWeight: 800, fontSize: 16, color: '#374151' }}>لا توجد فواتير</div>
+                            </div>
+                        ) : filtered.map(inv => (
+                            <div key={inv.id} className="mobile-card-row" style={{ borderRight: `4px solid ${inv.type === 'sale' ? '#16a34a' : '#0ea5e9'}` }}>
+                                <div className="mobile-card-row-header">
+                                    <span className="mobile-card-row-title">{inv.invoice_number}</span>
+                                    <span className={`badge ${inv.type === 'sale' ? 'badge-green' : 'badge-blue'}`}>
+                                        {inv.type === 'sale' ? '📈 بيع' : '📉 شراء'}
+                                    </span>
+                                </div>
+                                <div className="mobile-card-row-body">
+                                    <div className="mobile-card-row-field">
+                                        <span className="mobile-card-row-label">العميل / المورد</span>
+                                        <span className="mobile-card-row-value">{inv.customer_name || inv.supplier_name || '—'}</span>
+                                    </div>
+                                    <div className="mobile-card-row-field">
+                                        <span className="mobile-card-row-label">الإجمالي</span>
+                                        <span className="mobile-card-row-value" style={{ color: inv.type === 'sale' ? '#16a34a' : '#0ea5e9', fontSize: 16 }}>{n2(inv.total)} ج.م</span>
+                                    </div>
+                                    <div className="mobile-card-row-field" style={{ gridColumn: 'span 2' }}>
+                                        <span className="mobile-card-row-label">التاريخ</span>
+                                        <span className="mobile-card-row-value" style={{ color: '#64748b', fontSize: 12 }}>{new Date(inv.created_at).toLocaleString('en-US')}</span>
+                                    </div>
+                                    {inv.notes && (
+                                        <div className="mobile-card-row-field" style={{ gridColumn: 'span 2' }}>
+                                            <span className="mobile-card-row-label">ملاحظات</span>
+                                            <span className="mobile-card-row-value" style={{ color: '#64748b' }}>{inv.notes}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );

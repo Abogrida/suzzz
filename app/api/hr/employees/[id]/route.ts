@@ -4,9 +4,11 @@ import { createAdminClient } from '@/lib/supabase';
 
 // PUT /api/hr/employees/[id]
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id: idParam } = await params;
+    const { id: idParam } = await params;
     const authError = requireAuth(req);
     if (authError) return authError;
-    const { id } = await params;
+    const { id: idParam } = await params;
     const db = createAdminClient();
     const body = await req.json();
 
@@ -34,9 +36,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // DELETE /api/hr/employees/[id]
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id: idParam } = await params;
     const authError = requireAuth(req);
     if (authError) return authError;
-    const { id } = await params;
+    const { id: idParam } = await params;
     const db = createAdminClient();
     const { error } = await db.from('hr_employees').delete().eq('id', id);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });

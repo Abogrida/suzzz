@@ -4,9 +4,38 @@ import { createAdminClient } from '@/lib/supabase';
 export async function GET() {
     try {
         const supabase = createAdminClient();
-        const { data, error } = await supabase.from('employees').select('*').order('created_at', { ascending: false });
+        const { data, error } = await supabase
+            .from('employees')
+            .select('*')
+            .order('name');
+            
         if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-        return NextResponse.json(data);
+        
+        const adminUser = {
+            id: 0,
+            name: 'مدير النظام',
+            job_title: 'المالك',
+            is_admin: true,
+            permissions: ['admin'],
+            role: 'admin'
+        };
+
+        // Manual filter: Hide those who only have inventory permission
+        const filtered = data.filter(e => {
+            const perms = e.permissions || [];
+            
+            // If they have no permissions, show them (new users)
+            if (perms.length === 0) return true;
+            
+            // If they ONLY have the inventory permission, hide them
+            const hasOnlyInventory = perms.length === 1 && perms[0] === '/employee/inventory';
+            if (hasOnlyInventory) return false;
+            
+            // Allow everyone else (Managers, Admins, etc.)
+            return true;
+        });
+        
+        return NextResponse.json([adminUser, ...filtered]);
     } catch { return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 }); }
 }
 

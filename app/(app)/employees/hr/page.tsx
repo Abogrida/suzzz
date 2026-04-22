@@ -364,8 +364,8 @@ export default function HRPage() {
             <h1 className="page-title" style={{ marginBottom: 20 }}>👔 إدارة الموظفين <span style={{ fontSize: 16, color: '#0ea5e9', fontWeight: 700 }}>HR System</span></h1>
 
             {/* Tabs */}
-            <div className="table-responsive" style={{ marginBottom: 24, paddingBottom: 8 }}>
-                <div style={{ display: 'flex', gap: 8, background: '#f1f5f9', borderRadius: 14, padding: 6, width: 'max-content', minWidth: '100%' }}>
+            <div className="hr-tabs-container" style={{ marginBottom: 24, paddingBottom: 8 }}>
+                <div className="hr-tabs-inner" style={{ display: 'flex', gap: 8, background: '#f1f5f9', borderRadius: 14, padding: 6 }}>
                     {tabs.map(t => (
                         <button key={t.key} onClick={() => setTab(t.key)}
                             style={{
@@ -382,7 +382,7 @@ export default function HRPage() {
             {tab === 'employees' && (
                 <div>
                     {/* Total Salaries Summary Card */}
-                    <div style={{
+                    <div className="mobile-stack" style={{
                         background: 'linear-gradient(135deg, #1e293b, #0f172a)',
                         borderRadius: 16,
                         padding: '20px 24px',
@@ -439,7 +439,7 @@ export default function HRPage() {
                         </button>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+                    <div className="emp-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
                         {employees.map(emp => (
                             <div key={emp.id} style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', border: '1.5px solid #e2e8f0', cursor: 'pointer' }}
                                 onClick={() => openEmpProfile(emp)}>
@@ -497,10 +497,10 @@ export default function HRPage() {
 
                     {/* Employee Profile Modal */}
                     {selectedEmp && (
-                        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }} onClick={() => setSelectedEmp(null)}>
-                            <div style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: 700, maxHeight: '90vh', overflow: 'auto', boxShadow: '0 30px 80px rgba(0,0,0,0.3)' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }} onClick={() => setSelectedEmp(null)}>
+                            <div className="emp-profile-modal" style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: 700, maxHeight: '90vh', overflow: 'auto', boxShadow: '0 30px 80px rgba(0,0,0,0.3)' }} onClick={e => e.stopPropagation()}>
                                 {/* Header */}
-                                <div style={{ background: 'linear-gradient(135deg, #0f172a, #1e3a5f)', padding: '28px 30px', borderRadius: '24px 24px 0 0' }}>
+                                <div style={{ background: 'linear-gradient(135deg, #0f172a, #1e3a5f)', padding: '28px 30px', borderRadius: 'var(--mobile-modal-radius, 24px 24px 0 0)' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                                             <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg, #0ea5e9, #38bdf8)', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>👔</div>
@@ -511,7 +511,7 @@ export default function HRPage() {
                                         </div>
                                         <button onClick={() => setSelectedEmp(null)} style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: 10, width: 40, height: 40, cursor: 'pointer', fontSize: 20 }}>✕</button>
                                     </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 20 }}>
+                                    <div className="emp-profile-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 20 }}>
                                         {[
                                             { label: 'الراتب الأساسي', value: `${selectedEmp.base_salary.toLocaleString()} ج.م`, color: '#4ade80' },
                                             { label: 'إجمالي مدفوعاته', value: `${empPayments.filter(p => p.payment_type !== 'deduction').reduce((s, p) => s + p.amount, 0).toLocaleString()} ج.م`, color: '#60a5fa' },
@@ -816,6 +816,75 @@ export default function HRPage() {
                                                             </tbody>
                                                         </table>
                                                     </div>
+
+                                                    {/* Mobile Card Layout for Daily Logs */}
+                                                    <div className="mobile-card-rows mt-3">
+                                                        {dailyLogs.slice().reverse().flatMap((log) => {
+                                                            const isOffOrFuture = (log.isOffDay || (log.isFuture && isCurrentMonth));
+                                                            const headerBg = isOffOrFuture ? '#f8fafc' : '#fff';
+
+                                                            if (!log.dayRecords || log.dayRecords.length === 0) {
+                                                                return (
+                                                                    <div key={`${log.dayNum}-empty`} className="mobile-card-row" style={{ background: headerBg }}>
+                                                                        <div className="mobile-card-row-header" style={{ marginBottom: 6 }}>
+                                                                            <div className="mobile-card-row-title" style={{ fontSize: 13, fontWeight: 800 }}>
+                                                                                {log.dayNum} {log.date.toLocaleDateString('ar-EG', { weekday: 'long' })}
+                                                                            </div>
+                                                                            {log.displayObj ? (
+                                                                                <span style={{ background: log.displayObj.bg, color: log.displayObj.color, borderRadius: 6, padding: '4px 8px', fontSize: 11, fontWeight: 800 }}>{log.displayObj.icon} {log.displayObj.label}</span>
+                                                                            ) : (
+                                                                                <span style={{ color: '#94a3b8', fontSize: 12 }}>{log.displayStatus}</span>
+                                                                            )}
+                                                                        </div>
+                                                                        {!log.isFuture && !log.hasLeave && !log.isOffDay && (
+                                                                            <div className="mobile-card-row-actions mt-2 pt-2 border-t border-slate-100">
+                                                                                <button onClick={() => openManualAtt(selectedEmp.id, selectedEmp.name, log.dateStr)}
+                                                                                    className="btn shadow-sm" style={{ background: 'linear-gradient(135deg, #0ea5e9, #38bdf8)', color: '#fff', fontSize: 12, padding: '6px 0', width: '100%' }}>
+                                                                                    ✏️ تحضير يدوي
+                                                                                </button>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            }
+
+                                                            return log.dayRecords.map((session: any, si: number) => {
+                                                                const sObj = attendanceLabels[session.status] || attendanceLabels.present;
+                                                                return (
+                                                                    <div key={`${log.dayNum}-s${si}`} className="mobile-card-row" style={{ borderRight: `4px solid ${sObj.color}`, background: si % 2 === 0 ? headerBg : '#fafff8' }}>
+                                                                        <div className="mobile-card-row-header">
+                                                                            <div className="mobile-card-row-title" style={{ fontSize: 13, fontWeight: 800 }}>
+                                                                                {log.dayNum} {log.date.toLocaleDateString('ar-EG', { weekday: 'short' })}
+                                                                                {log.dayRecords.length > 1 && <span style={{ color: '#64748b', fontSize: 11, marginRight: 6 }}>(جلسة {si + 1})</span>}
+                                                                            </div>
+                                                                            <span style={{ background: sObj.bg, color: sObj.color, borderRadius: 6, padding: '4px 8px', fontSize: 11, fontWeight: 800 }}>{sObj.icon} {sObj.label}</span>
+                                                                        </div>
+                                                                        <div className="mobile-card-row-body mt-2">
+                                                                            <div className="mobile-card-row-field">
+                                                                                <span className="mobile-card-row-label">حضور</span>
+                                                                                <span className="mobile-card-row-value" style={{ color: '#16a34a', fontSize: 15 }}>{session.check_in_time ? session.check_in_time.slice(0, 5) : '—'}</span>
+                                                                            </div>
+                                                                            <div className="mobile-card-row-field" style={{ alignItems: 'flex-end', textAlign: 'left' }}>
+                                                                                <span className="mobile-card-row-label">انصراف</span>
+                                                                                <span className="mobile-card-row-value" style={{ color: '#ea580c', fontSize: 15 }}>{session.check_out_time ? session.check_out_time.slice(0, 5) : '—'}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="mobile-card-row-actions mt-2">
+                                                                            <button onClick={() => openEditAtt(session, selectedEmp.name)} style={{ background: '#fef3c7', color: '#f59e0b', fontSize: 12, padding: '6px' }} className="btn">تعديل</button>
+                                                                            {si === 0 && !log.isFuture && !log.isOffDay && (
+                                                                                <button onClick={() => openManualAtt(selectedEmp.id, selectedEmp.name, log.dateStr)} style={{ background: '#e0f2fe', color: '#0284c7', fontSize: 12, padding: '6px' }} className="btn">يدوي</button>
+                                                                            )}
+                                                                            <button onClick={async () => {
+                                                                                if (!confirm('حذف هذه الجلسة نهائياً؟')) return;
+                                                                                await fetch(`/api/hr/attendance/${session.id}`, { method: 'DELETE' });
+                                                                                loadEmpProfileMonth(selectedEmp.id, empProfileMonth);
+                                                                            }} style={{ background: '#fee2e2', color: '#ef4444', fontSize: 12, padding: '6px' }} className="btn">حذف</button>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            });
+                                                        })}
+                                                    </div>
                                                 </div>
                                             </div>
                                         );
@@ -887,6 +956,40 @@ export default function HRPage() {
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Mobile Payments Cards */}
+                    <div className="mobile-card-rows">
+                        {payments.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>لا توجد مدفوعات مسجلة</div>
+                        ) : payments.map(p => {
+                            const cfg = paymentLabels[p.payment_type] || paymentLabels.salary;
+                            const emp = employees.find(e => e.id === p.employee_id);
+                            return (
+                                <div key={p.id} className="mobile-card-row" style={{ borderRight: `4px solid ${cfg.color}` }}>
+                                    <div className="mobile-card-row-header">
+                                        <div className="mobile-card-row-title">{emp?.name || '—'}</div>
+                                        <span style={{ background: cfg.bg, color: cfg.color, borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 800 }}>{cfg.icon} {cfg.label}</span>
+                                    </div>
+                                    <div className="mobile-card-row-body">
+                                        <div className="mobile-card-row-field">
+                                            <span className="mobile-card-row-label">المبلغ</span>
+                                            <span className="mobile-card-row-value" style={{ color: p.payment_type === 'deduction' ? '#ef4444' : '#16a34a', fontSize: 18, fontWeight: 900 }}>
+                                                {p.payment_type === 'deduction' ? '-' : '+'}{p.amount.toLocaleString()} ج.م
+                                            </span>
+                                        </div>
+                                        <div className="mobile-card-row-field" style={{ alignItems: 'flex-end', textAlign: 'left' }}>
+                                            <span className="mobile-card-row-label">التاريخ</span>
+                                            <span className="mobile-card-row-value">{new Date(p.payment_date).toLocaleDateString('ar-EG')}</span>
+                                        </div>
+                                    </div>
+                                    {p.notes && <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>📝 {p.notes}</div>}
+                                    <div className="mobile-card-row-actions">
+                                        <button onClick={() => handleDeletePay(p.id)} className="btn shadow-sm flex items-center gap-2 justify-center" style={{ background: '#fee2e2', color: '#ef4444', border: '1px solid #fecaca', width: '100%', flex: 'none', fontWeight: 800 }}>🗑 حذف المدفوعة</button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             )}
 
@@ -915,28 +1018,28 @@ export default function HRPage() {
                 return (
                     <div>
                         {/* New Filter Bar Matching the Image */}
-                        <div style={{ background: '#fff', borderRadius: 16, padding: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', marginBottom: 24, border: '1px solid #f1f5f9' }}>
+                        <div className="mobile-toolbar" style={{ background: '#fff', borderRadius: 16, padding: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', marginBottom: 24, border: '1px solid #f1f5f9' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                                 <div style={{ fontSize: 18, fontWeight: 900, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <span>جدول الحضور والانصراف</span>
+                                    <span>سجل الحضور</span>
                                     <span>📅</span>
                                 </div>
                                 <button onClick={() => {
                                     setManualAttForm({ ...emptyManualAtt, attendance_date: attDate || getLocalYYYYMMDD() });
                                     setManualAttModal(true);
-                                }} style={{ background: '#0ea5e9', color: '#fff', border: 'none', borderRadius: 12, padding: '10px 20px', fontWeight: 800, fontSize: 14, cursor: 'pointer', fontFamily: 'Cairo', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                }} className="btn shadow-sm" style={{ background: '#0ea5e9', color: '#fff', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', fontWeight: 800 }}>
                                     ➕ تحضير يدوي
                                 </button>
                             </div>
 
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                            <div className="mobile-stack" style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                                 <button onClick={() => { setAttDate(''); setAttSearch(''); setAttStatusFilter('all'); loadAttendance(''); }}
-                                    style={{ background: '#0ea5e9', color: '#fff', border: 'none', borderRadius: 12, padding: '12px 24px', fontWeight: 800, fontSize: 15, cursor: 'pointer', fontFamily: 'Cairo', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, whiteSpace: 'nowrap' }}>
+                                    className="btn border" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, whiteSpace: 'nowrap', fontWeight: 800 }}>
                                     إلغاء الفلاتر
                                 </button>
 
                                 <select value={attStatusFilter} onChange={e => setAttStatusFilter(e.target.value)}
-                                    style={{ ...inp, width: '200px', cursor: 'pointer' }}>
+                                    className="form-input" style={{ flex: 1, minWidth: '150px' }}>
                                     <option value="all">كل الحالات</option>
                                     <option value="present">حاضر</option>
                                     <option value="late">متأخر</option>
@@ -944,7 +1047,7 @@ export default function HRPage() {
                                 </select>
 
                                 <input type="text" placeholder="ابحث باسم الموظف..." value={attSearch} onChange={e => setAttSearch(e.target.value)}
-                                    style={{ ...inp, flex: 1, minWidth: '200px' }} />
+                                    className="form-input" style={{ flex: 2, minWidth: '200px' }} />
 
                                 <input type="date" value={attDate} onChange={e => {
                                     const val = e.target.value;
@@ -952,7 +1055,7 @@ export default function HRPage() {
                                     if (val) loadAttendance(val);
                                     else loadAttendance(new Date().toISOString().slice(0, 7)); // reload month if date cleared
                                 }}
-                                    style={{ ...inp, flex: 1, minWidth: '200px', color: '#0ea5e9', fontWeight: 800, background: '#f8fafc', borderColor: '#bae6fd' }} />
+                                    className="form-input" style={{ flex: 1, minWidth: '150px', color: '#0ea5e9', fontWeight: 800 }} />
                             </div>
                         </div>
 
@@ -976,69 +1079,111 @@ export default function HRPage() {
                         {attLoading ? (
                             <div style={{ textAlign: 'center', padding: 40, fontSize: 18, fontWeight: 800, color: '#64748b' }}>⏳ جاري الفلترة والتحميل...</div>
                         ) : (
-                            <div className="table-responsive" style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0' }}>
-                                <table style={{ width: '100%', minWidth: 800, borderCollapse: 'collapse', fontSize: 14 }}>
-                                    <thead>
-                                        <tr style={{ background: '#f8fafc' }}>
-                                            {['الموظف', 'التاريخ', 'الحضور', 'الانصراف', 'الحالة', 'المصدر', 'إجراء'].map(h => (
-                                                <th key={h} style={{ padding: '16px 24px', textAlign: 'center', fontWeight: 900, color: '#1e293b', borderBottom: '2px solid #e2e8f0', fontSize: 15 }}>{h}</th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {filteredAttendance.slice().sort((a, b) => new Date(b.attendance_date).getTime() - new Date(a.attendance_date).getTime()).map((record, i) => {
-                                            const emp = employees.find(e => e.id === record.employee_id);
-                                            const statusObj = attendanceLabels[record.status] || attendanceLabels.present;
-
-                                            return (
-                                                <tr key={record.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s', cursor: 'default' }}
-                                                    onMouseOver={e => e.currentTarget.style.background = '#f8fafc'}
-                                                    onMouseOut={e => e.currentTarget.style.background = 'transparent'}
-                                                >
-                                                    <td style={{ padding: '16px 24px', fontWeight: 900, color: '#0f172a', textAlign: 'center' }}>
-                                                        {emp?.name || 'مجهول'}
-                                                    </td>
-                                                    <td style={{ padding: '16px 24px', color: '#64748b', fontWeight: 800, textAlign: 'center' }}>
-                                                        {record.attendance_date}
-                                                    </td>
-                                                    <td style={{ padding: '16px 24px', color: '#16a34a', fontWeight: 900, textAlign: 'center', fontSize: 15 }}>
-                                                        {record.check_in_time ? record.check_in_time.slice(0, 5) : '—'}
-                                                    </td>
-                                                    <td style={{ padding: '16px 24px', color: '#ea580c', fontWeight: 900, textAlign: 'center', fontSize: 15 }}>
-                                                        {record.check_out_time ? record.check_out_time.slice(0, 5) : '—'}
-                                                    </td>
-                                                    <td style={{ padding: '16px 24px', textAlign: 'center' }}>
-                                                        <span style={{ background: statusObj.bg, color: statusObj.color, borderRadius: 6, padding: '6px 14px', fontSize: 13, fontWeight: 900, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                                                            {statusObj.label} {statusObj.icon}
-                                                        </span>
-                                                    </td>
-                                                    <td style={{ padding: '16px 24px', textAlign: 'center' }}>
-                                                        <span style={{ background: '#f3e8ff', color: '#7e22ce', borderRadius: 8, padding: '6px 14px', fontSize: 13, fontWeight: 900, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                                                            تطبيق البصمة 📱
-                                                        </span>
-                                                    </td>
-                                                    <td style={{ padding: '16px 24px', textAlign: 'center' }}>
-                                                        <button 
-                                                        onClick={() => openEditAtt(record, emp?.name || 'مجهول')}
-                                                        style={{ background: '#fef3c7', color: '#d97706', border: '1.5px solid #fde68a', borderRadius: 10, padding: '8px 16px', fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: 'Cairo', display: 'flex', alignItems: 'center', gap: 6, margin: 'auto' }}>
-                                                            ✏️ تعديل
-                                                        </button>
+                            <>
+                                <div className="table-responsive" style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0' }}>
+                                    <table style={{ width: '100%', minWidth: 800, borderCollapse: 'collapse', fontSize: 14 }}>
+                                        <thead>
+                                            <tr style={{ background: '#f8fafc' }}>
+                                                {['الموظف', 'التاريخ', 'الحضور', 'الانصراف', 'الحالة', 'المصدر', 'إجراء'].map(h => (
+                                                    <th key={h} style={{ padding: '16px 24px', textAlign: 'center', fontWeight: 900, color: '#1e293b', borderBottom: '2px solid #e2e8f0', fontSize: 15 }}>{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredAttendance.slice().sort((a, b) => new Date(b.attendance_date).getTime() - new Date(a.attendance_date).getTime()).map((record, i) => {
+                                                const emp = employees.find(e => e.id === record.employee_id);
+                                                const statusObj = attendanceLabels[record.status] || attendanceLabels.present;
+    
+                                                return (
+                                                    <tr key={record.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s', cursor: 'default' }}
+                                                        onMouseOver={e => e.currentTarget.style.background = '#f8fafc'}
+                                                        onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                                                    >
+                                                        <td style={{ padding: '16px 24px', fontWeight: 900, color: '#0f172a', textAlign: 'center' }}>
+                                                            {emp?.name || 'مجهول'}
+                                                        </td>
+                                                        <td style={{ padding: '16px 24px', color: '#64748b', fontWeight: 800, textAlign: 'center' }}>
+                                                            {record.attendance_date}
+                                                        </td>
+                                                        <td style={{ padding: '16px 24px', color: '#16a34a', fontWeight: 900, textAlign: 'center', fontSize: 15 }}>
+                                                            {record.check_in_time ? record.check_in_time.slice(0, 5) : '—'}
+                                                        </td>
+                                                        <td style={{ padding: '16px 24px', color: '#ea580c', fontWeight: 900, textAlign: 'center', fontSize: 15 }}>
+                                                            {record.check_out_time ? record.check_out_time.slice(0, 5) : '—'}
+                                                        </td>
+                                                        <td style={{ padding: '16px 24px', textAlign: 'center' }}>
+                                                            <span style={{ background: statusObj.bg, color: statusObj.color, borderRadius: 6, padding: '6px 14px', fontSize: 13, fontWeight: 900, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                                                {statusObj.label} {statusObj.icon}
+                                                            </span>
+                                                        </td>
+                                                        <td style={{ padding: '16px 24px', textAlign: 'center' }}>
+                                                            <span style={{ background: '#f3e8ff', color: '#7e22ce', borderRadius: 8, padding: '6px 14px', fontSize: 13, fontWeight: 900, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                                                تطبيق البصمة 📱
+                                                            </span>
+                                                        </td>
+                                                        <td style={{ padding: '16px 24px', textAlign: 'center' }}>
+                                                            <button 
+                                                            onClick={() => openEditAtt(record, emp?.name || 'مجهول')}
+                                                            style={{ background: '#fef3c7', color: '#d97706', border: '1.5px solid #fde68a', borderRadius: 10, padding: '8px 16px', fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: 'Cairo', display: 'flex', alignItems: 'center', gap: 6, margin: 'auto' }}>
+                                                                ✏️ تعديل
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                            {filteredAttendance.length === 0 && (
+                                                <tr>
+                                                    <td colSpan={6} style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>
+                                                        <div style={{ fontSize: 40, marginBottom: 16 }}>📊</div>
+                                                        <div style={{ fontWeight: 800, fontSize: 18, color: '#475569' }}>لا توجد بيانات مطابقة للفلتر المحدد</div>
                                                     </td>
                                                 </tr>
-                                            );
-                                        })}
-                                        {filteredAttendance.length === 0 && (
-                                            <tr>
-                                                <td colSpan={6} style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>
-                                                    <div style={{ fontSize: 40, marginBottom: 16 }}>📊</div>
-                                                    <div style={{ fontWeight: 800, fontSize: 18, color: '#475569' }}>لا توجد بيانات مطابقة للفلتر المحدد</div>
-                                                    <div style={{ fontSize: 14, marginTop: 8 }}>حاول تغيير التاريخ أو الغاء الفلاتر</div>
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Mobile Attendance Cards */}
+                                <div className="mobile-card-rows">
+                                    {filteredAttendance.length === 0 ? (
+                                        <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>لا توجد بيانات حضور مسجلة</div>
+                                    ) : filteredAttendance.slice().sort((a, b) => new Date(b.attendance_date).getTime() - new Date(a.attendance_date).getTime()).map(record => {
+                                        const emp = employees.find(e => e.id === record.employee_id);
+                                        const statusObj = attendanceLabels[record.status] || attendanceLabels.present;
+                                        return (
+                                            <div key={record.id} className="mobile-card-row" style={{ borderRight: `4px solid ${statusObj.color}` }}>
+                                                <div className="mobile-card-row-header">
+                                                    <div className="mobile-card-row-title">{emp?.name || 'مجهول'}</div>
+                                                    <span style={{ background: statusObj.bg, color: statusObj.color, borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 800 }}>{statusObj.label} {statusObj.icon}</span>
+                                                </div>
+                                                <div className="mobile-card-row-body">
+                                                    <div className="mobile-card-row-field">
+                                                        <span className="mobile-card-row-label">التاريخ</span>
+                                                        <span className="mobile-card-row-value">{record.attendance_date}</span>
+                                                    </div>
+                                                    <div className="mobile-card-row-field" style={{ alignItems: 'flex-end', textAlign: 'left' }}>
+                                                        <span className="mobile-card-row-label">المصدر</span>
+                                                        <span className="mobile-card-row-value" style={{ color: '#7e22ce' }}>📱 البصمة</span>
+                                                    </div>
+                                                    <div className="mobile-card-row-field mt-1">
+                                                        <span className="mobile-card-row-label">الحضور</span>
+                                                        <span className="mobile-card-row-value" style={{ color: '#16a34a', fontSize: 16, fontWeight: 900 }}>{record.check_in_time ? record.check_in_time.slice(0, 5) : '—'}</span>
+                                                    </div>
+                                                    <div className="mobile-card-row-field mt-1" style={{ alignItems: 'flex-end', textAlign: 'left' }}>
+                                                        <span className="mobile-card-row-label">الانصراف</span>
+                                                        <span className="mobile-card-row-value" style={{ color: '#ea580c', fontSize: 16, fontWeight: 900 }}>{record.check_out_time ? record.check_out_time.slice(0, 5) : '—'}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="mobile-card-row-actions mt-1">
+                                                    <button onClick={() => openEditAtt(record, emp?.name || 'مجهول')} className="btn flex items-center gap-2 justify-center shadow-sm" style={{ background: '#fef3c7', color: '#d97706', border: '1px solid #fde68a', flex: 'none', width: '100%', fontWeight: 800 }}>
+                                                        ✏️ تعديل التحضير
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </>
                         )}
                     </div>
                 );
@@ -1057,23 +1202,23 @@ export default function HRPage() {
                             { label: 'إجمالي الرواتب', value: monthPayments.filter(p => p.payment_type === 'salary').reduce((s, p) => s + p.amount, 0), color: '#16a34a', icon: '💵' },
                             { label: 'إجمالي السلف', value: monthPayments.filter(p => p.payment_type === 'advance').reduce((s, p) => s + p.amount, 0), color: '#f59e0b', icon: '💳' },
                             { label: 'إجمالي الحوافز', value: monthPayments.filter(p => p.payment_type === 'bonus').reduce((s, p) => s + p.amount, 0), color: '#6366f1', icon: '🎁' },
-                            { label: 'الخصومات + المسحوبات', value: monthPayments.filter(p => p.payment_type === 'deduction').reduce((s, p) => s + p.amount, 0) + monthPurchases.reduce((s, p) => s + Number(p.amount), 0), color: '#ef4444', icon: '✂️' },
+                            { label: 'الخصومات والمشتريات', value: monthPayments.filter(p => p.payment_type === 'deduction').reduce((s, p) => s + p.amount, 0) + monthPurchases.reduce((s, p) => s + Number(p.amount), 0), color: '#ef4444', icon: '✂️' },
                         ].map(s => (
-                            <div key={s.label} style={{ background: '#fff', borderRadius: 16, padding: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', textAlign: 'center' }}>
+                            <div key={s.label} style={{ background: '#fff', borderRadius: 16, padding: '16px 12px', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', textAlign: 'center' }}>
                                 <div style={{ fontSize: 28, marginBottom: 8 }}>{s.icon}</div>
-                                <div style={{ fontSize: 24, fontWeight: 900, color: s.color }}>{s.value.toLocaleString()} ج.م</div>
-                                <div style={{ fontSize: 13, color: '#64748b', fontWeight: 700, marginTop: 4 }}>{s.label}</div>
+                                <div style={{ fontSize: 24, fontWeight: 900, color: s.color }}>{s.value.toLocaleString()}</div>
+                                <div style={{ fontSize: 12, color: '#64748b', fontWeight: 800, marginTop: 4 }}>{s.label}</div>
                             </div>
                         ))}
                     </div>
 
-                    {/* Per Employee Report */}
+                    {/* Per Employee Report Table */}
                     <h3 style={{ fontSize: 18, fontWeight: 900, color: '#1e293b', marginBottom: 16 }}>تفصيل لكل موظف</h3>
                     <div className="table-responsive" style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
                         <table style={{ width: '100%', minWidth: 800, borderCollapse: 'collapse', fontSize: 14 }}>
                             <thead>
                                 <tr style={{ background: '#f8fafc' }}>
-                                    {['الموظف', 'الراتب الأساسي', 'الرواتب المدفوعة', 'السلف', 'الحوافز', 'الخصومات + المسحوبات', 'الصافي'].map(h => (
+                                    {['الموظف', 'الراتب الأساسي', 'الرواتب المدفوعة', 'السلف', 'الحوافز', 'الخصومات + المسحوبات', 'الصافي المتبقي'].map(h => (
                                         <th key={h} style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 800, color: '#374151', borderBottom: '1.5px solid #e2e8f0' }}>{h}</th>
                                     ))}
                                 </tr>
@@ -1093,10 +1238,10 @@ export default function HRPage() {
                                         <tr key={emp.id} style={{ background: i % 2 === 0 ? '#fff' : '#fafafa', borderBottom: '1px solid #f1f5f9' }}>
                                             <td style={{ padding: '12px 16px', fontWeight: 900 }}>{emp.name}<div style={{ fontSize: 12, color: '#94a3b8' }}>{emp.job_title}</div></td>
                                             <td style={{ padding: '12px 16px', color: '#64748b' }} className="blur-salary">{emp.base_salary.toLocaleString()} ج.م</td>
-                                            <td style={{ padding: '12px 16px', color: '#16a34a', fontWeight: 800 }}>{salaries.toLocaleString()}</td>
-                                            <td style={{ padding: '12px 16px', color: '#f59e0b', fontWeight: 800 }}>{advances.toLocaleString()}</td>
-                                            <td style={{ padding: '12px 16px', color: '#6366f1', fontWeight: 800 }}>{bonuses.toLocaleString()}</td>
-                                            <td style={{ padding: '12px 16px', color: '#ef4444', fontWeight: 800 }}>{deductionsAndPurchases.toLocaleString()}</td>
+                                            <td style={{ padding: '12px 16px', color: '#16a34a', fontWeight: 800 }}>{salaries.toLocaleString()} ج.م</td>
+                                            <td style={{ padding: '12px 16px', color: '#f59e0b', fontWeight: 800 }}>{advances.toLocaleString()} ج.م</td>
+                                            <td style={{ padding: '12px 16px', color: '#6366f1', fontWeight: 800 }}>{bonuses.toLocaleString()} ج.م</td>
+                                            <td style={{ padding: '12px 16px', color: '#ef4444', fontWeight: 800 }}>{deductionsAndPurchases.toLocaleString()} ج.م</td>
                                             <td style={{ padding: '12px 16px', fontWeight: 900, fontSize: 16, color: net >= 0 ? '#16a34a' : '#ef4444' }}>{net.toLocaleString()} ج.م</td>
                                         </tr>
                                     );
@@ -1106,6 +1251,57 @@ export default function HRPage() {
                                 )}
                             </tbody>
                         </table>
+                    </div>
+
+                    {/* Mobile Report Cards */}
+                    <div className="mobile-card-rows">
+                        {employees.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>لا يوجد موظفون</div>
+                        ) : employees.map((emp) => {
+                            const empPays = monthPayments.filter(p => p.employee_id === emp.id);
+                            const salaries = empPays.filter(p => p.payment_type === 'salary').reduce((s, p) => s + p.amount, 0);
+                            const advances = empPays.filter(p => p.payment_type === 'advance').reduce((s, p) => s + p.amount, 0);
+                            const bonuses = empPays.filter(p => p.payment_type === 'bonus').reduce((s, p) => s + p.amount, 0);
+                            const empPur = monthPurchases.filter(p => p.employee_id === emp.id);
+                            const deductionsAndPurchases = empPays.filter(p => p.payment_type === 'deduction').reduce((s, p) => s + p.amount, 0) + empPur.reduce((s, p) => s + Number(p.amount), 0);
+                            const net = salaries + bonuses - deductionsAndPurchases - advances;
+
+                            return (
+                                <div key={emp.id} className="mobile-card-row" style={{ borderRight: `4px solid ${net >= 0 ? '#16a34a' : '#ef4444'}` }}>
+                                    <div className="mobile-card-row-header" style={{ marginBottom: 4 }}>
+                                        <div className="mobile-card-row-title">{emp.name} <span style={{ color: '#94a3b8', fontSize: 13, fontWeight: 700 }}>({emp.job_title})</span></div>
+                                    </div>
+                                    <div className="mobile-card-row-field" style={{ marginBottom: 8 }}>
+                                        <span className="mobile-card-row-label">الراتب الأساسي</span>
+                                        <span className="mobile-card-row-value blur-salary" style={{ color: '#64748b' }}>{emp.base_salary.toLocaleString()} ج.م</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 p-3 rounded-xl bg-slate-50 border border-slate-100 mb-2">
+                                        <div className="flex flex-col">
+                                            <span style={{ fontSize: 10, color: '#64748b', fontWeight: 800 }}>المدفوع</span>
+                                            <span style={{ fontSize: 14, fontWeight: 900, color: '#16a34a' }}>{salaries.toLocaleString()} ج</span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span style={{ fontSize: 10, color: '#64748b', fontWeight: 800 }}>الحوافز</span>
+                                            <span style={{ fontSize: 14, fontWeight: 900, color: '#6366f1' }}>{bonuses.toLocaleString()} ج</span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span style={{ fontSize: 10, color: '#64748b', fontWeight: 800 }}>السلف</span>
+                                            <span style={{ fontSize: 14, fontWeight: 900, color: '#f59e0b' }}>{advances.toLocaleString()} ج</span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span style={{ fontSize: 10, color: '#64748b', fontWeight: 800 }}>الخصومات/سحب</span>
+                                            <span style={{ fontSize: 14, fontWeight: 900, color: '#ef4444' }}>{deductionsAndPurchases.toLocaleString()} ج</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between items-center rounded-xl bg-slate-100 p-3 mt-1">
+                                        <span style={{ fontSize: 12, fontWeight: 800, color: '#475569' }}>الصافي للفترة</span>
+                                        <span style={{ fontSize: 18, fontWeight: 900, color: net >= 0 ? '#16a34a' : '#ef4444' }}>
+                                            {net.toLocaleString()} ج.م
+                                        </span>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}

@@ -9,7 +9,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     const authError = requireAuth(req);
     if (authError) return authError;
 
-    const { id } = await params;
+    const { id: idParam } = await params;
     const db = createAdminClient();
     const { data, error } = await db.from('products').select('*').eq('id', id).single();
 
@@ -22,7 +22,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const authError = requireAuth(req);
     if (authError) return authError;
 
-    const { id } = await params;
+    const { id: idParam } = await params;
     const db = createAdminClient();
     const data = await req.json();
 
@@ -46,7 +46,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     const authError = requireAuth(req);
     if (authError) return authError;
 
-    const { id } = await params;
+    const { id: idParam } = await params;
     const db = createAdminClient();
 
     // Delete related stock movements first

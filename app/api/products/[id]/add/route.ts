@@ -9,7 +9,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const authError = requireAuth(req);
     if (authError) return authError;
 
-    const { id } = await params;
+    const { id: idParam } = await params;
     const db = createAdminClient();
     const data = await req.json();
     const quantity = parseFloat(data.quantity) || 0;
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     // Log movement
     await db.from('stock_movements').insert({
-        product_id: parseInt(id),
+        product_id: parseInt(idParam),
         movement_type: 'إضافة',
         quantity,
         notes,

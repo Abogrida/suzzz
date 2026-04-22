@@ -2,7 +2,7 @@ const { Client } = require('pg');
 const fs = require('fs');
 
 async function run() {
-    const sql = fs.readFileSync('supabase/migrations/005_purchases.sql', 'utf8');
+    const sql = fs.readFileSync('supabase/migrations/015_drop_unique_constraints.sql', 'utf8');
 
     const hosts = [
         "aws-0-eu-central-1.pooler.supabase.com",

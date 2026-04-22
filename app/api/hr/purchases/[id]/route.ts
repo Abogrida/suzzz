@@ -6,7 +6,7 @@ export async function DELETE(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> } // Fix for Next.js 15
 ) {
-    const { id } = await params;
+    const { id: idParam } = await params;
 
     const db = createAdminClient();
     const { error } = await db

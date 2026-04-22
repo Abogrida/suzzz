@@ -79,7 +79,7 @@ export default function CashierStatsPage() {
                 .from('cashier_shifts')
                 .select('*')
                 .order('opened_at', { ascending: false })
-                .or(`closed_at.is.null,opened_at.gte.${isoFilter}`);
+                .gte('opened_at', isoFilter);
 
             if (shiftsError) console.error(shiftsError);
             setShifts(fetchedShifts || []);

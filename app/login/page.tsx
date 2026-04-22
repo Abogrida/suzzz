@@ -23,7 +23,7 @@ export default function LoginPage() {
             });
             const data = await res.json();
             if (res.ok) {
-                if (data.role === 'employee') {
+                if (data.role === 'employee' || data.role === 'jard') {
                     router.push('/employee/inventory');
                 } else {
                     router.push('/dashboard');

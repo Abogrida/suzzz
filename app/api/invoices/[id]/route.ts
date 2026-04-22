@@ -9,7 +9,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     const authError = requireAuth(req);
     if (authError) return authError;
 
-    const { id } = await params;
+    const { id: idParam } = await params;
     const db = createAdminClient();
     const { data, error } = await db
         .from('invoices')
@@ -26,7 +26,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     const authError = requireAuth(req);
     if (authError) return authError;
 
-    const { id } = await params;
+    const { id: idParam } = await params;
     const db = createAdminClient();
 
     // Get invoice items to reverse stock

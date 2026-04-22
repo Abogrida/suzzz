@@ -9,7 +9,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const authError = requireAuth(req);
     if (authError) return authError;
 
-    const { id } = await params;
+    const { id: idParam } = await params;
     const db = createAdminClient();
     const data = await req.json();
 
@@ -29,7 +29,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     const authError = requireAuth(req);
     if (authError) return authError;
 
-    const { id } = await params;
+    const { id: idParam } = await params;
     const db = createAdminClient();
     const { error } = await db.from('customers').delete().eq('id', id);
     if (error) return NextResponse.json({ success: false, message: error.message }, { status: 400 });

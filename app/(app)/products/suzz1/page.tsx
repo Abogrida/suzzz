@@ -149,46 +149,101 @@ export default function Suzz1WarehousePage() {
             {/* Table */}
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
                 {loading ? <div style={{ textAlign: 'center', padding: 60 }}><div className="spinner" style={{ width: '2.5rem', height: '2.5rem' }}></div><div style={{ color: '#64748b', fontSize: 16, marginTop: 12 }}>جاري التحميل...</div></div> :
-                    <div className="table-responsive">
-                        <table className="data-table">
-                            <thead><tr>
-                                {['الرقم', 'اسم المنتج', 'الفئة', 'الوحدة', 'الكمية', 'السعر', 'سعر البيع', 'الحالة', 'الإجراءات'].map(h => <th key={h}>{h}</th>)}
-                            </tr></thead>
-                            <tbody>
-                                {filtered.map((p) => <tr key={p.id}>
-                                    <td style={{ color: '#94a3b8', fontWeight: 700 }}>#{p.id}</td>
-                                    <td><div style={{ fontWeight: 800, color: '#1e293b' }}>{p.name}</div>{p.barcode && <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>🔖 {p.barcode}</div>}</td>
-                                    <td>{p.category ? <span className="badge badge-blue">{p.category}</span> : <span style={{ color: '#94a3b8' }}>—</span>}</td>
-                                    <td style={{ color: '#475569', fontWeight: 700 }}>{p.unit || '—'}</td>
-                                    <td style={{ fontWeight: 900, fontSize: 20 }}>
-                                        <span style={{ color: p.current_quantity <= 0 ? '#ef4444' : p.current_quantity <= p.min_quantity ? '#f59e0b' : '#16a34a' }}>{p.current_quantity}</span>
-                                        {p.unit && <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}> {p.unit}</span>}
-                                    </td>
-                                    <td style={{ fontWeight: 700, color: '#374151' }}>{n2(p.price)}</td>
-                                    <td style={{ fontWeight: 900, color: '#16a34a' }}>{n2(p.sale_price)}</td>
-                                    <td>
-                                        {p.current_quantity <= 0 ? <span className="badge badge-red">نافذ</span>
-                                            : p.current_quantity <= p.min_quantity ? <span className="badge badge-yellow">منخفض</span>
-                                                : <span className="badge badge-green">متوفر</span>}
-                                    </td>
-                                    <td><div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                                        <button onClick={() => setStockModal({ type: 'add', product: p })}
-                                            style={{ width: 42, height: 42, borderRadius: 10, background: '#16a34a', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 22, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
-                                        <button onClick={() => setStockModal({ type: 'withdraw', product: p })}
-                                            style={{ width: 42, height: 42, borderRadius: 10, background: '#f59e0b', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 22, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
-                                        <button onClick={() => { setEditing(p); setForm({ ...p }); setModalOpen(true) }}
-                                            style={{ width: 42, height: 42, borderRadius: 10, background: '#3b82f6', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✏️</button>
-                                        <button onClick={() => handleDelete(p.id)}
-                                            style={{ width: 42, height: 42, borderRadius: 10, background: '#ef4444', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🗑️</button>
-                                    </div></td>
-                                </tr>)}
-                                {filtered.length === 0 && <tr><td colSpan={9} style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>
+                    <>
+                        <div className="table-responsive">
+                            <table className="data-table">
+                                <thead><tr>
+                                    {['الرقم', 'اسم المنتج', 'الفئة', 'الوحدة', 'الكمية', 'السعر', 'سعر البيع', 'الحالة', 'الإجراءات'].map(h => <th key={h}>{h}</th>)}
+                                </tr></thead>
+                                <tbody>
+                                    {filtered.map((p) => <tr key={p.id}>
+                                        <td style={{ color: '#94a3b8', fontWeight: 700 }}>#{p.id}</td>
+                                        <td><div style={{ fontWeight: 800, color: '#1e293b' }}>{p.name}</div>{p.barcode && <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>🔖 {p.barcode}</div>}</td>
+                                        <td>{p.category ? <span className="badge badge-blue">{p.category}</span> : <span style={{ color: '#94a3b8' }}>—</span>}</td>
+                                        <td style={{ color: '#475569', fontWeight: 700 }}>{p.unit || '—'}</td>
+                                        <td style={{ fontWeight: 900, fontSize: 20 }}>
+                                            <span style={{ color: p.current_quantity <= 0 ? '#ef4444' : p.current_quantity <= p.min_quantity ? '#f59e0b' : '#16a34a' }}>{p.current_quantity}</span>
+                                            {p.unit && <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}> {p.unit}</span>}
+                                        </td>
+                                        <td style={{ fontWeight: 700, color: '#374151' }}>{n2(p.price)}</td>
+                                        <td style={{ fontWeight: 900, color: '#16a34a' }}>{n2(p.sale_price)}</td>
+                                        <td>
+                                            {p.current_quantity <= 0 ? <span className="badge badge-red">نافذ</span>
+                                                : p.current_quantity <= p.min_quantity ? <span className="badge badge-yellow">منخفض</span>
+                                                    : <span className="badge badge-green">متوفر</span>}
+                                        </td>
+                                        <td><div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                            <button onClick={() => setStockModal({ type: 'add', product: p })}
+                                                style={{ width: 42, height: 42, borderRadius: 10, background: '#16a34a', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 22, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                                            <button onClick={() => setStockModal({ type: 'withdraw', product: p })}
+                                                style={{ width: 42, height: 42, borderRadius: 10, background: '#f59e0b', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 22, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+                                            <button onClick={() => { setEditing(p); setForm({ ...p }); setModalOpen(true) }}
+                                                style={{ width: 42, height: 42, borderRadius: 10, background: '#3b82f6', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✏️</button>
+                                            <button onClick={() => handleDelete(p.id)}
+                                                style={{ width: 42, height: 42, borderRadius: 10, background: '#ef4444', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🗑️</button>
+                                        </div></td>
+                                    </tr>)}
+                                    {filtered.length === 0 && <tr><td colSpan={9} style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>
+                                        <div style={{ fontSize: 44, marginBottom: 12 }}>📭</div>
+                                        <div style={{ fontWeight: 800, fontSize: 18, color: '#374151' }}>لا توجد منتجات — اضغط "إضافة منتج" للبدء</div>
+                                    </td></tr>}
+                                </tbody>
+                            </table>
+                        </div>
+                        {/* Mobile Card Layout for Products */}
+                        <div className="mobile-card-rows" style={{ padding: '12px' }}>
+                            {filtered.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>
                                     <div style={{ fontSize: 44, marginBottom: 12 }}>📭</div>
-                                    <div style={{ fontWeight: 800, fontSize: 18, color: '#374151' }}>لا توجد منتجات — اضغط "إضافة منتج" للبدء</div>
-                                </td></tr>}
-                            </tbody>
-                        </table>
-                    </div>}
+                                    <div style={{ fontWeight: 800, fontSize: 18, color: '#374151' }}>لا توجد منتجات مطابقة</div>
+                                </div>
+                            ) : filtered.map((p) => {
+                                const statusColor = p.current_quantity <= 0 ? '#ef4444' : p.current_quantity <= p.min_quantity ? '#f59e0b' : '#16a34a';
+                                return (
+                                    <div key={p.id} className="mobile-card-row" style={{ borderRight: `5px solid ${statusColor}` }}>
+                                        <div className="mobile-card-row-header">
+                                            <div className="mobile-card-row-title">
+                                                {p.name}
+                                                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2, fontWeight: 700 }}>#{p.id} {p.barcode && `| 🔖 ${p.barcode}`}</div>
+                                            </div>
+                                            {p.current_quantity <= 0 ? <span className="badge badge-red">نافذ</span>
+                                                : p.current_quantity <= p.min_quantity ? <span className="badge badge-yellow">منخفض</span>
+                                                    : <span className="badge badge-green">متوفر</span>}
+                                        </div>
+                                        <div className="mobile-card-row-body">
+                                            <div className="mobile-card-row-field">
+                                                <span className="mobile-card-row-label">الفئة</span>
+                                                <span className="mobile-card-row-value">{p.category || '—'}</span>
+                                            </div>
+                                            <div className="mobile-card-row-field" style={{ alignItems: 'flex-end', textAlign: 'left' }}>
+                                                <span className="mobile-card-row-label">الكمية</span>
+                                                <span className="mobile-card-row-value" style={{ fontSize: 18, color: statusColor }}>{p.current_quantity} <small style={{ fontSize: 10, color: '#94a3b8' }}>{p.unit}</small></span>
+                                            </div>
+                                            <div className="mobile-card-row-field mt-1">
+                                                <span className="mobile-card-row-label">سعر الشراء</span>
+                                                <span className="mobile-card-row-value">{n2(p.price)} ج.م</span>
+                                            </div>
+                                            <div className="mobile-card-row-field mt-1" style={{ alignItems: 'flex-end', textAlign: 'left' }}>
+                                                <span className="mobile-card-row-label">سعر البيع</span>
+                                                <span className="mobile-card-row-value" style={{ color: '#16a34a', fontSize: 16 }}>{n2(p.sale_price)} ج.م</span>
+                                            </div>
+                                        </div>
+                                        <div className="mobile-card-row-actions">
+                                            <button onClick={() => setStockModal({ type: 'add', product: p })}
+                                                className="btn btn-success" style={{ padding: '8px', fontSize: 18 }}>＋</button>
+                                            <button onClick={() => setStockModal({ type: 'withdraw', product: p })}
+                                                className="btn btn-warning" style={{ padding: '8px', fontSize: 18, color: '#fff' }}>−</button>
+                                            <button onClick={() => { setEditing(p); setForm({ ...p }); setModalOpen(true) }}
+                                                className="btn btn-primary" style={{ padding: '8px' }}>✏️</button>
+                                            <button onClick={() => handleDelete(p.id)}
+                                                className="btn btn-danger" style={{ padding: '8px' }}>🗑️</button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </>
+                }
             </div>
 
             {/* Add/Edit Modal */}
@@ -267,6 +322,44 @@ export default function Suzz1WarehousePage() {
                                     {fMov.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}><div style={{ fontSize: 40, marginBottom: 10 }}>📊</div><div style={{ fontWeight: 800, fontSize: 16, color: '#374151' }}>لا توجد حركات</div></td></tr>}
                                 </tbody>
                             </table>
+                        </div>
+
+                        {/* Mobile Card Layout for Movements */}
+                        <div className="mobile-card-rows" style={{ padding: '12px' }}>
+                            {fMov.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>
+                                    <div style={{ fontSize: 40, marginBottom: 10 }}>📊</div>
+                                    <div style={{ fontWeight: 800, fontSize: 16, color: '#374151' }}>لا توجد حركات</div>
+                                </div>
+                            ) : fMov.map((m) => (
+                                <div key={m.id} className="mobile-card-row" style={{ borderRight: `5px solid ${m.movement_type === 'إضافة' ? '#16a34a' : '#ef4444'}` }}>
+                                    <div className="mobile-card-row-header">
+                                        <div className="mobile-card-row-title">
+                                            {m.product_name || '—'}
+                                            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2, fontWeight: 700 }}>#{m.id}</div>
+                                        </div>
+                                        <span style={{ background: m.movement_type === 'إضافة' ? '#dcfce7' : '#fee2e2', color: m.movement_type === 'إضافة' ? '#15803d' : '#b91c1c', borderRadius: 8, padding: '4px 10px', fontWeight: 800, fontSize: 12 }}>
+                                            {m.movement_type === 'إضافة' ? '▲ إضافة' : '▼ سحب'}
+                                        </span>
+                                    </div>
+                                    <div className="mobile-card-row-body">
+                                        <div className="mobile-card-row-field">
+                                            <span className="mobile-card-row-label">الكمية</span>
+                                            <span className="mobile-card-row-value" style={{ fontSize: 18, color: m.movement_type === 'إضافة' ? '#16a34a' : '#ef4444' }}>{m.quantity}</span>
+                                        </div>
+                                        <div className="mobile-card-row-field" style={{ alignItems: 'flex-end', textAlign: 'left' }}>
+                                            <span className="mobile-card-row-label">التاريخ</span>
+                                            <span className="mobile-card-row-value" style={{ fontSize: 12 }}>{new Date(m.created_at).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                                        </div>
+                                        {m.notes && (
+                                            <div className="mobile-card-row-field" style={{ gridColumn: 'span 2' }}>
+                                                <span className="mobile-card-row-label">ملاحظات</span>
+                                                <span className="mobile-card-row-value" style={{ fontStyle: 'italic', color: '#64748b' }}>{m.notes}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>

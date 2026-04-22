@@ -185,6 +185,63 @@ export default function MainWarehousePage() {
                             </tbody>
                         </table>
                     </div>}
+                {/* Mobile card rows */}
+                {!loading && (
+                    <div className="mobile-card-rows" style={{ padding: '12px' }}>
+                        {filtered.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '48px 0', color: '#94a3b8' }}>
+                                <div style={{ fontSize: 40, marginBottom: 10 }}>📭</div>
+                                <div style={{ fontWeight: 800, fontSize: 16, color: '#374151' }}>{filterMode !== 'all' ? 'لا توجد منتجات في هذا الفلتر' : 'لا توجد منتجات'}</div>
+                            </div>
+                        ) : filtered.map(p => (
+                            <div key={p.id} className="mobile-card-row" style={{
+                                borderRight: `4px solid ${p.current_quantity <= 0 ? '#ef4444' : p.current_quantity <= p.min_quantity ? '#f59e0b' : '#16a34a'}`
+                            }}>
+                                <div className="mobile-card-row-header">
+                                    <div style={{ flex: 1 }}>
+                                        <div className="mobile-card-row-title">{p.name}</div>
+                                        {p.category && <span className="badge badge-blue" style={{ marginTop: 4 }}>{p.category}</span>}
+                                    </div>
+                                    {p.current_quantity <= 0
+                                        ? <span className="badge badge-red">نافذ</span>
+                                        : p.current_quantity <= p.min_quantity
+                                            ? <span className="badge badge-yellow">منخفض</span>
+                                            : <span className="badge badge-green">متوفر</span>}
+                                </div>
+                                <div className="mobile-card-row-body">
+                                    <div className="mobile-card-row-field">
+                                        <span className="mobile-card-row-label">الكمية</span>
+                                        <span className="mobile-card-row-value" style={{ fontSize: 20, fontWeight: 900, color: p.current_quantity <= 0 ? '#ef4444' : p.current_quantity <= p.min_quantity ? '#f59e0b' : '#16a34a' }}>
+                                            {p.current_quantity} {p.unit || ''}
+                                        </span>
+                                    </div>
+                                    <div className="mobile-card-row-field">
+                                        <span className="mobile-card-row-label">سعر البيع</span>
+                                        <span className="mobile-card-row-value" style={{ color: '#16a34a' }}>{n2(p.sale_price)} ج.م</span>
+                                    </div>
+                                    <div className="mobile-card-row-field">
+                                        <span className="mobile-card-row-label">سعر الشراء</span>
+                                        <span className="mobile-card-row-value">{n2(p.price)} ج.م</span>
+                                    </div>
+                                    <div className="mobile-card-row-field">
+                                        <span className="mobile-card-row-label">الحد الأدنى</span>
+                                        <span className="mobile-card-row-value">{p.min_quantity} {p.unit || ''}</span>
+                                    </div>
+                                </div>
+                                <div className="mobile-card-row-actions">
+                                    <button onClick={() => setStockModal({ type: 'add', product: p })}
+                                        className="btn btn-success" style={{ fontSize: 13 }}>+ إضافة</button>
+                                    <button onClick={() => setStockModal({ type: 'withdraw', product: p })}
+                                        className="btn btn-warning" style={{ fontSize: 13 }}>− سحب</button>
+                                    <button onClick={() => { setEditing(p); setForm({ ...p }); setModalOpen(true) }}
+                                        className="btn" style={{ background: '#3b82f6', color: '#fff', fontSize: 13 }}>✏️</button>
+                                    <button onClick={() => handleDelete(p.id)}
+                                        className="btn btn-danger" style={{ fontSize: 13 }}>🗑️</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Add/Edit Modal */}

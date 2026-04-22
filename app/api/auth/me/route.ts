@@ -8,11 +8,18 @@ export async function GET(req: NextRequest) {
     }
 
     // Check employee cookie
-    const empToken = req.cookies.get('employee-token')?.value;
+    const empToken = req.cookies.get('sys-user-token')?.value;
     if (empToken) {
         try {
-            const emp = JSON.parse(empToken);
-            return NextResponse.json({ role: 'employee', id: emp.id, name: emp.name });
+            const decoded = Buffer.from(empToken, 'base64').toString('utf-8');
+            const emp = JSON.parse(decoded);
+            return NextResponse.json({ 
+                role: emp.role || 'staff', 
+                id: emp.id, 
+                name: emp.name,
+                job_title: emp.job_title || '',
+                permissions: emp.permissions || []
+            });
         } catch { }
     }
 

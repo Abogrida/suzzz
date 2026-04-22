@@ -456,12 +456,19 @@ body {
     .mobile-header {
         display: none !important;
     }
+
+    .mobile-only {
+        display: none !important;
+    }
 }
 
 @media (max-width: 1024px) {
     .main-content {
         margin-right: 0 !important;
-        width: 100%;
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        overflow-x: hidden;
         padding-top: 60px;
     }
 
@@ -529,7 +536,7 @@ body {
     width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 8px; /* Room for scrollbar */
+    padding-bottom: 8px;
 }
 
 /* Custom horizontal scrollbar for tables */
@@ -566,5 +573,351 @@ body {
     .mobile-stack a.btn {
         width: 100%;
         justify-content: center;
+    }
+}
+
+/* ============================================================
+   MOBILE APP EXPERIENCE  (max-width: 768px only)
+   All rules below are isolated — zero impact on desktop/laptop
+   ============================================================ */
+
+/* Mobile card row list — hidden on desktop */
+.mobile-card-rows {
+    display: none;
+}
+
+/* Bottom nav bar — hidden on desktop */
+.mobile-bottom-nav {
+    display: none;
+}
+
+@media (max-width: 768px) {
+
+    /* ── Body & page ── */
+    body {
+        font-size: 14px;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .page-content {
+        padding: 0.65rem 0.65rem 5rem; /* bottom space for nav bar */
+    }
+
+    /* ── Page header: stacks vertically, buttons full-width ── */
+    .page-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+
+    .page-header .btn,
+    .page-header a.btn {
+        width: 100%;
+        justify-content: center;
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+    }
+
+    .page-header > div {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+    }
+
+    /* ── Stat cards: 2 columns ── */
+    .card {
+        border-radius: 14px;
+        padding: 1rem;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.9rem;
+        border-radius: 10px;
+    }
+
+    .btn-lg {
+        font-size: 0.95rem;
+        padding: 0.65rem 1.2rem;
+    }
+
+    /* ── Forms ── */
+    .form-input {
+        font-size: 16px; /* prevents iOS zoom on focus */
+        padding: 0.65rem 0.85rem;
+        border-radius: 10px;
+    }
+
+    /* ── Badges ── */
+    .badge {
+        font-size: 0.72rem;
+        padding: 0.1rem 0.55rem;
+    }
+
+    /* ── Tables: hide on mobile, show card rows instead ── */
+    .table-responsive {
+        display: none;
+    }
+
+    .mobile-card-rows {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    /* ── Mobile card row ── */
+    .mobile-card-row {
+        background: #fff;
+        border-radius: 14px;
+        padding: 14px 16px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        border: 1px solid #f1f5f9;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        position: relative;
+    }
+
+    .mobile-card-row-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .mobile-card-row-title {
+        font-size: 15px;
+        font-weight: 800;
+        color: #0f172a;
+        flex: 1;
+    }
+
+    .mobile-card-row-body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .mobile-card-row-field {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .mobile-card-row-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .mobile-card-row-value {
+        font-size: 14px;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .mobile-card-row-actions {
+        display: flex;
+        gap: 8px;
+        padding-top: 8px;
+        border-top: 1px solid #f1f5f9;
+    }
+
+    .mobile-card-row-actions .btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    /* ── Modals: bottom sheet on mobile ── */
+    .modal-overlay {
+        align-items: flex-end !important;
+        padding: 0 !important;
+    }
+
+    .modal-box {
+        border-radius: 22px 22px 0 0 !important;
+        max-height: 90vh !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        animation: slideUpModal 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes slideUpModal {
+        from { transform: translateY(100%); opacity: 0.5; }
+        to   { transform: translateY(0);    opacity: 1;   }
+    }
+
+    .modal-header {
+        padding: 1.1rem 1.25rem 0.9rem;
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 1;
+        border-radius: 22px 22px 0 0;
+    }
+
+    .modal-body {
+        padding: 1rem 1.25rem;
+    }
+
+    .modal-footer {
+        padding: 0.85rem 1.25rem;
+        position: sticky;
+        bottom: 0;
+        background: #fff;
+        border-radius: 0;
+    }
+
+    .modal-footer .btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    /* ── Toolbar areas (filter buttons + search) ── */
+    .mobile-toolbar {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+
+    .mobile-toolbar > div,
+    .mobile-toolbar > input {
+        width: 100% !important;
+    }
+
+    /* ── Inline filter pill buttons: horizontal scroll ── */
+    .filter-pills {
+        display: flex;
+        overflow-x: auto;
+        gap: 6px;
+        padding-bottom: 2px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .filter-pills::-webkit-scrollbar {
+        display: none;
+    }
+
+    .filter-pills .btn {
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    /* ── Bottom Navigation Bar ── */
+    .mobile-bottom-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        height: 62px;
+        background: #0f172a;
+        z-index: 45;
+        align-items: stretch;
+        border-top: 1px solid rgba(255,255,255,0.08);
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.25);
+    }
+
+    .mobile-nav-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        color: #64748b;
+        text-decoration: none;
+        font-size: 10px;
+        font-weight: 700;
+        font-family: 'Cairo', sans-serif;
+        transition: color 0.15s;
+        padding: 6px 2px;
+        -webkit-tap-highlight-color: transparent;
+        position: relative;
+    }
+
+    .mobile-nav-item.active {
+        color: #6366f1;
+    }
+
+    .mobile-nav-item.active::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 20%;
+        right: 20%;
+        height: 2.5px;
+        background: #6366f1;
+        border-radius: 0 0 4px 4px;
+    }
+
+    .mobile-nav-item svg {
+        width: 22px;
+        height: 22px;
+    }
+
+    /* ── Toast: lower on mobile to avoid nav bar ── */
+    .toast-success,
+    .toast-error {
+        bottom: 70px;
+        top: auto;
+        transform: translateX(-50%);
+        font-size: 0.85rem;
+        padding: 0.6rem 1.2rem;
+        border-radius: 12px;
+    }
+
+    /* ── Mobile utility ── */
+    .desktop-only {
+        display: none !important;
+    }
+
+    .mobile-only {
+        display: block !important;
+    }
+
+    /* ── HR Employees Page Specifics ── */
+    .hr-tabs-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 5px;
+        margin-right: -10px;
+        margin-left: -10px;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    .hr-tabs-container::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .hr-tabs-inner {
+        width: max-content;
+        min-width: 100%;
+    }
+
+    /* Make employee cards stack properly */
+    .emp-cards-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Fix the profile modal on mobile */
+    .emp-profile-modal {
+        border-radius: 20px 20px 0 0 !important;
+        max-height: 90vh !important;
+        align-self: flex-end;
+        animation: slideUpModal 0.3s ease-out forwards;
+    }
+    
+    .emp-profile-stats {
+        grid-template-columns: 1fr !important;
+    }
+    .emp-profile-stats-item {
+        margin-bottom: 8px;
     }
 }

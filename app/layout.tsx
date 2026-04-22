@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { Cairo } from 'next/font/google';
 import './globals.css';
+import ChatWidget from '@/components/chat/ChatWidget';
+import getSessionServer from '@/lib/session-server';
 
 const cairo = Cairo({
     subsets: ['arabic', 'latin'],
@@ -14,11 +16,14 @@ export const metadata: Metadata = {
     description: 'نظام متكامل لإدارة المخزون والفواتير',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+    const user = await getSessionServer();
+    
     return (
         <html lang="ar" dir="rtl">
             <body className={cairo.className} style={{ fontFamily: 'Cairo, sans-serif' }}>
                 {children}
+                <ChatWidget user={user} />
             </body>
         </html>
     );

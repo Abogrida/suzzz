@@ -4,9 +4,11 @@ import { createAdminClient } from '@/lib/supabase';
 
 // GET /api/hr/employees/[id]/leaves
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id: idParam } = await params;
+    const { id: idParam } = await params;
     const authError = requireAuth(req);
     if (authError) return authError;
-    const { id } = await params;
+    const { id: idParam } = await params;
     const db = createAdminClient();
     const { data, error } = await db
         .from('hr_employee_leaves')
@@ -19,9 +21,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // POST /api/hr/employees/[id]/leaves
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id: idParam } = await params;
     const authError = requireAuth(req);
     if (authError) return authError;
-    const { id } = await params;
+    const { id: idParam } = await params;
     const db = createAdminClient();
     const body = await req.json();
     if (!body.leave_start || !body.leave_end) {
@@ -30,7 +33,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { data, error } = await db
         .from('hr_employee_leaves')
         .insert({
-            employee_id: parseInt(id),
+            employee_id: parseInt(idParam),
             leave_start: body.leave_start,
             leave_end: body.leave_end,
             leave_type: body.leave_type || 'annual',

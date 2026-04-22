@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthFromRequest } from '@/lib/auth';
+import { getAuthFromRequest, isSuperAdmin } from '@/lib/auth';
 
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
@@ -15,49 +15,95 @@ export function middleware(request: NextRequest) {
         return NextResponse.next();
     }
 
-    const isAdmin = getAuthFromRequest(request);
-    const hasEmployeeToken = request.cookies.has('employee-token');
+    const isAdmin = isSuperAdmin(request);
+    const empToken = request.cookies.get('sys-user-token')?.value;
+    let userPermissions: string[] = [];
+    let userRole = '';
+
+    if (empToken) {
+        try {
+            // Base64 decode
+            const decoded = Buffer.from(empToken, 'base64').toString('utf-8');
+            const parsed = JSON.parse(decoded);
+            userPermissions = parsed.permissions || [];
+            userRole = parsed.role || 'staff';
+        } catch (e) {
+            console.error('Middleware: Error parsing base64 employee token', e);
+        }
+    }
 
     // API routes
     if (pathname.startsWith('/api/')) {
-        // Allow inventory-counts, movements, and hr settlement for employees
-        const allowedForEmployee = ['/api/inventory-counts', '/api/auth/logout', '/api/auth/me', '/api/hr/settlement'];
-        if (hasEmployeeToken && allowedForEmployee.some(p => pathname.startsWith(p))) {
+        // 🏆 Super Admin bypass
+        if (isAdmin) return NextResponse.next();
+
+        // 1. Common APIs & Super Admin bypass
+        const isChat = pathname.includes('/api/chat');
+        const commonApis = ['/api/auth/logout', '/api/auth/me', '/api/employee/profile', '/api/employees', '/api/settings/inventory-items', '/api/inventory-counts/latest'];
+        const isCommon = commonApis.some(p => pathname === p || pathname.startsWith(p + '/'));
+        
+        if (isAdmin || isChat || isCommon) {
             return NextResponse.next();
         }
 
-        if (!isAdmin) {
-            return NextResponse.json({ error: 'يجب تسجيل الدخول كمسؤول' }, { status: 401 });
+        // 2. Permission-based APIs
+        const apiPermissionMap: Record<string, string[]> = {
+            '/api/chat': ['/inventory-reports', '/employee/inventory', '/products', '/categories', '/customers', '/invoices', '/recipes', '/reports', '/employees', '/employee/settlement', '/settings/users', '/settings', '/notes', '/employee/profile'],
+            '/api/inventory-counts': ['/inventory-reports', '/employee/inventory'],
+            '/api/products': ['/products', '/inventory-reports', '/recipes'],
+            '/api/categories': ['/categories', '/products'],
+            '/api/customers': ['/customers', '/invoices'],
+            '/api/invoices': ['/invoices', '/reports'],
+            '/api/recipes': ['/recipes'],
+            '/api/reports': ['/reports'],
+            '/api/hr': ['/employees', '/employee/settlement'],
+            '/api/settings/users': ['/settings/users'],
+            '/api/settings/inventory-items': ['/employee/inventory', '/settings'],
+            '/api/settings': ['/settings'],
+            '/api/notes': ['/notes'],
+        };
+
+        if (userRole) {
+            // Check if any of the user's permissions grant access to this API
+            const hasApiAccess = Object.entries(apiPermissionMap).some(([apiPath, allowedPages]) => {
+                if (pathname.startsWith(apiPath)) {
+                    return allowedPages.some(page => userPermissions.includes(page));
+                }
+                return false;
+            });
+
+            if (hasApiAccess) return NextResponse.next();
         }
-        return NextResponse.next();
+
+        return NextResponse.json({ error: 'غير مصرح لك بالوصول لهذه العملية' }, { status: 403 });
     }
 
     // Page routes
-
-    // If it's an employee route, check for employee token
-    if (pathname.startsWith('/employee/')) {
-        if (!hasEmployeeToken && !isAdmin) {
-            return NextResponse.redirect(new URL('/login', request.url));
-        }
+    if (pathname === '/login') {
+        if (isAdmin || userRole) return NextResponse.redirect(new URL('/dashboard', request.url));
         return NextResponse.next();
     }
 
-    // For all other pages (admin app), require admin auth
-    if (!isAdmin) {
-        // Exception: if an employee is logged in but tries to access admin dashboard,
-        // redirect them to their inventory page instead of login page (to avoid loop)
-        if (hasEmployeeToken) {
-            return NextResponse.redirect(new URL('/employee/inventory', request.url));
-        }
-        return NextResponse.redirect(new URL('/login', request.url));
+    // 🏆 SUPER ADMIN BYPASS - Has total access
+    if (isAdmin) return NextResponse.next();
+
+    // 🔒 SYSTEM USER BYPASS (Staff/Admin from DB) - Must follow permissions checklist
+    if (userRole) {
+        // Essential pages for everyone with a system login
+        const essentialPages = ['/employee/inventory', '/employee/profile'];
+        if (essentialPages.some(p => pathname.startsWith(p))) return NextResponse.next();
+
+        // Check if user has explicit permission for this page
+        const hasPermission = userPermissions.some(p => pathname === p || pathname.startsWith(p + '/'));
+        
+        if (hasPermission) return NextResponse.next();
+
+        // If no permission, redirect to their first allowed page or a default
+        const defaultPage = userPermissions.length > 0 ? userPermissions[0] : '/employee/inventory';
+        return NextResponse.redirect(new URL(defaultPage, request.url));
     }
 
-    // If authenticated as admin and trying to go to login, redirect to dashboard
-    if (pathname === '/login') {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-
-    return NextResponse.next();
+    return NextResponse.redirect(new URL('/login', request.url));
 }
 
 export const config = {

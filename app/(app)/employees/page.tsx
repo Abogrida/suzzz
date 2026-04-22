@@ -29,10 +29,10 @@ export default function EmployeesHubPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 28, maxWidth: 900 }}>
 
-                {/* Card 1: حسابات الجرد */}
+                {/* Card 1: إدارة الحسابات */}
                 <div
                     style={cardStyle('#6366f1', 'rgba(99,102,241,0.18)')}
-                    onClick={() => router.push('/employees/accounts')}
+                    onClick={() => router.push('/settings/users')}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-8px) scale(1.02)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 30px 80px rgba(99,102,241,0.25)'; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0) scale(1)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 20px 70px rgba(99,102,241,0.18)'; }}
                 >
@@ -41,14 +41,14 @@ export default function EmployeesHubPage() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
                             <div style={{ width: 72, height: 72, borderRadius: 20, background: 'linear-gradient(135deg, #6366f1, #818cf8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, flexShrink: 0, boxShadow: '0 8px 24px rgba(99,102,241,0.32)' }}>🔐</div>
                             <div>
-                                <div style={{ fontSize: 22, fontWeight: 900, color: '#1e293b', lineHeight: 1.2 }}>حسابات الجرد</div>
-                                <div style={{ fontSize: 14, color: '#6366f1', fontWeight: 700, marginTop: 4 }}>Inventory Accounts</div>
+                                <div style={{ fontSize: 22, fontWeight: 900, color: '#1e293b', lineHeight: 1.2 }}>إدارة الحسابات</div>
+                                <div style={{ fontSize: 14, color: '#6366f1', fontWeight: 700, marginTop: 4 }}>Accounts Management</div>
                             </div>
                         </div>
                         <div style={{ background: 'rgba(99,102,241,0.08)', borderRadius: 16, padding: '18px 20px', marginBottom: 24 }}>
-                            <div style={{ fontSize: 13, color: '#64748b', fontWeight: 700, marginBottom: 6 }}>موظفو الجرد النشطون</div>
+                            <div style={{ fontSize: 13, color: '#64748b', fontWeight: 700, marginBottom: 6 }}>كل الحسابات (إداريين وجرد)</div>
                             <div style={{ fontSize: 38, fontWeight: 900, color: '#6366f1' }}>{accountsCount ?? '...'}</div>
-                            <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>حساب دخول للنظام</div>
+                            <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>تحكم شامل في الدخول</div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1.5px solid #e0e7ff', paddingTop: 18 }}>
                             <span style={{ fontSize: 14, color: '#6366f1', fontWeight: 800 }}>اضغط للدخول</span>
