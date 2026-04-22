@@ -577,8 +577,8 @@ export default function HRPage() {
                             </div>
                         )}
                     </div>
-                        );
-                    })()
+                );
+            })()
 
                     {/* Employee Profile Modal */}
                     {selectedEmp && (
