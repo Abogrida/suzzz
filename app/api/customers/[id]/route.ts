@@ -18,7 +18,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
         phone: data.phone || '',
         address: data.address || '',
         notes: data.notes || '',
-    }).eq('id', id);
+    }).eq('id', idParam);
 
     if (error) return NextResponse.json({ success: false, message: error.message }, { status: 400 });
     return NextResponse.json({ success: true });
@@ -31,7 +31,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
     const { id: idParam } = await params;
     const db = createAdminClient();
-    const { error } = await db.from('customers').delete().eq('id', id);
+    const { error } = await db.from('customers').delete().eq('id', idParam);
     if (error) return NextResponse.json({ success: false, message: error.message }, { status: 400 });
     return NextResponse.json({ success: true });
 }
