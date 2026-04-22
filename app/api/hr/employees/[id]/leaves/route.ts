@@ -5,15 +5,14 @@ import { createAdminClient } from '@/lib/supabase';
 // GET /api/hr/employees/[id]/leaves
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id: idParam } = await params;
-    const { id: idParam } = await params;
     const authError = requireAuth(req);
     if (authError) return authError;
-    const { id: idParam } = await params;
+
     const db = createAdminClient();
     const { data, error } = await db
         .from('hr_employee_leaves')
         .select('*')
-        .eq('employee_id', id)
+        .eq('employee_id', idParam)
         .order('leave_start', { ascending: false });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json(data);
@@ -24,7 +23,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { id: idParam } = await params;
     const authError = requireAuth(req);
     if (authError) return authError;
-    const { id: idParam } = await params;
+
     const db = createAdminClient();
     const body = await req.json();
     if (!body.leave_start || !body.leave_end) {

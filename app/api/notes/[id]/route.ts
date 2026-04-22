@@ -4,13 +4,12 @@ import { createAdminClient } from '@/lib/supabase';
 
 // PATCH /api/notes/[id]
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { id: idParam } = await params;
+    const { id: rawId } = await params;
     const authError = requireAuth(req);
     if (authError) return authError;
 
     const db = createAdminClient();
     const body = await req.json();
-    const { id: rawId } = await params;
     const id = Number(rawId);
 
     const updates: Record<string, string> = {};
@@ -31,13 +30,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 // DELETE /api/notes/[id]
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { id: idParam } = await params;
-    const { id: idParam } = await params;
+    const { id: rawId } = await params;
     const authError = requireAuth(req);
     if (authError) return authError;
 
     const db = createAdminClient();
-    const { id: rawId } = await params;
     const id = Number(rawId);
 
     const { error } = await db.from('work_notes').delete().eq('id', id);

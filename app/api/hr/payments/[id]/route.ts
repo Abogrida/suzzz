@@ -5,12 +5,11 @@ import { createAdminClient } from '@/lib/supabase';
 // DELETE /api/hr/payments/[id]
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id: idParam } = await params;
-    const { id: idParam } = await params;
     const authError = requireAuth(req);
     if (authError) return authError;
-    const { id: idParam } = await params;
+
     const db = createAdminClient();
-    const { error } = await db.from('hr_payments').delete().eq('id', id);
+    const { error } = await db.from('hr_payments').delete().eq('id', idParam);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json({ success: true });
 }

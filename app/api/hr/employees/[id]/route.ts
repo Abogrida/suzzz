@@ -5,14 +5,12 @@ import { createAdminClient } from '@/lib/supabase';
 // PUT /api/hr/employees/[id]
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id: idParam } = await params;
-    const { id: idParam } = await params;
     const authError = requireAuth(req);
     if (authError) return authError;
-    const { id: idParam } = await params;
+
     const db = createAdminClient();
     const body = await req.json();
 
-    // Partial update payload
     const updateData: any = {};
     if (body.name !== undefined) updateData.name = body.name;
     if (body.job_title !== undefined) updateData.job_title = body.job_title || '';
@@ -29,7 +27,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (body.pin_code !== undefined) updateData.pin_code = body.pin_code;
     if (body.device_id !== undefined) updateData.device_id = body.device_id;
 
-    const { error } = await db.from('hr_employees').update(updateData).eq('id', id);
+    const { error } = await db.from('hr_employees').update(updateData).eq('id', idParam);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json({ success: true });
 }
@@ -39,9 +37,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     const { id: idParam } = await params;
     const authError = requireAuth(req);
     if (authError) return authError;
-    const { id: idParam } = await params;
+
     const db = createAdminClient();
-    const { error } = await db.from('hr_employees').delete().eq('id', id);
+    const { error } = await db.from('hr_employees').delete().eq('id', idParam);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json({ success: true });
 }

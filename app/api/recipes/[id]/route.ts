@@ -5,16 +5,14 @@ import { createAdminClient } from '@/lib/supabase';
 // DELETE /api/recipes/[id]
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id: idParam } = await params;
-    const { id: idParam } = await params;
     const authError = requireAuth(req);
     if (authError) return authError;
 
     try {
-        const { id: idParam } = await params;
         const db = createAdminClient();
 
         // Cascade delete will handle recipe_items
-        const { error } = await db.from('menu_items').delete().eq('id', id);
+        const { error } = await db.from('menu_items').delete().eq('id', idParam);
         if (error) throw error;
 
         return NextResponse.json({ success: true, message: 'تم حذف المنتج بنجاح' });
