@@ -580,404 +580,7 @@ export default function HRPage() {
                 );
             })()
 
-                    {/* Employee Profile Modal */}
-                    {selectedEmp && (
-                        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }} onClick={() => setSelectedEmp(null)}>
-                            <div className="emp-profile-modal" style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: 700, maxHeight: '90vh', overflow: 'auto', boxShadow: '0 30px 80px rgba(0,0,0,0.3)' }} onClick={e => e.stopPropagation()}>
-                                {/* Header */}
-                                <div style={{ background: 'linear-gradient(135deg, #0f172a, #1e3a5f)', padding: '28px 30px', borderRadius: 'var(--mobile-modal-radius, 24px 24px 0 0)' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                                            <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg, #0ea5e9, #38bdf8)', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>👔</div>
-                                            <div>
-                                                <div style={{ color: '#fff', fontWeight: 900, fontSize: 22 }}>{selectedEmp.name}</div>
-                                                <div style={{ color: '#7dd3fc', fontSize: 14, marginTop: 3 }}>{selectedEmp.job_title || 'موظف'}</div>
-                                            </div>
-                                        </div>
-                                        <button onClick={() => setSelectedEmp(null)} style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: 10, width: 40, height: 40, cursor: 'pointer', fontSize: 20 }}>✕</button>
-                                    </div>
-                                    <div className="emp-profile-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 20 }}>
-                                        {[
-                                            { label: 'الراتب الأساسي', value: `${selectedEmp.base_salary.toLocaleString()} ج.م`, color: '#4ade80' },
-                                            { label: 'إجمالي مدفوعاته', value: `${empPayments.filter(p => p.payment_type !== 'deduction').reduce((s, p) => s + p.amount, 0).toLocaleString()} ج.م`, color: '#60a5fa' },
-                                            { label: 'إجمالي الخصومات', value: `${(empPayments.filter(p => p.payment_type === 'deduction').reduce((s, p) => s + p.amount, 0) + empPurchases.reduce((s, p) => s + Number(p.amount), 0)).toLocaleString()} ج.م`, color: '#f87171' },
-                                        ].map(s => (
-                                            <div key={s.label} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 16px', textAlign: 'center' }}>
-                                                <div style={{ fontSize: 20, fontWeight: 900, color: s.color }}>{s.value}</div>
-                                                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 4 }}>{s.label}</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div style={{ padding: '24px 20px', overflowX: 'hidden' }}>
-                                    {/* Details */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-                                        {selectedEmp.phone && <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 16px' }}><div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>الهاتف</div><div style={{ fontWeight: 800, fontSize: 15 }}>📞 {selectedEmp.phone}</div></div>}
-                                        {selectedEmp.national_id && <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 16px' }}><div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>الرقم القومي</div><div style={{ fontWeight: 800, fontSize: 15 }}>🪪 {selectedEmp.national_id}</div></div>}
-                                        {selectedEmp.hire_date && <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 16px' }}><div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>تاريخ التعيين</div><div style={{ fontWeight: 800, fontSize: 15 }}>📅 {new Date(selectedEmp.hire_date).toLocaleDateString('ar-EG')}</div></div>}
-                                        {selectedEmp.notes && <div style={{ background: '#fffbeb', borderRadius: 12, padding: '12px 16px' }}><div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>ملاحظات</div><div style={{ fontWeight: 700, fontSize: 14 }}>📝 {selectedEmp.notes}</div></div>}
-                                    </div>
-
-                                    {/* Payments History */}
-                                    <h3 style={{ fontSize: 17, fontWeight: 900, margin: '0 0 14px', color: '#1e293b' }}>💰 سجل المدفوعات</h3>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 200, overflowY: 'auto', marginBottom: 20 }}>
-                                        {empPayments.length === 0 ? <div style={{ textAlign: 'center', color: '#94a3b8', padding: '20px 0' }}>لا توجد مدفوعات</div> : empPayments.map(p => {
-                                            const t = paymentLabels[p.payment_type] || paymentLabels.salary;
-                                            return (
-                                                <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', borderRadius: 12, padding: '12px 16px', border: `1.5px solid ${t.bg}` }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                        <span style={{ background: t.bg, borderRadius: 8, padding: '4px 10px', fontSize: 13, fontWeight: 800, color: t.color }}>{t.icon} {t.label}</span>
-                                                        <span style={{ fontSize: 13, color: '#64748b' }}>{new Date(p.payment_date).toLocaleDateString('ar-EG')}</span>
-                                                        {p.notes && <span style={{ fontSize: 12, color: '#94a3b8' }}>— {p.notes}</span>}
-                                                    </div>
-                                                    <div style={{ fontWeight: 900, fontSize: 16, color: p.payment_type === 'deduction' ? '#ef4444' : '#16a34a' }}>
-                                                        {p.payment_type === 'deduction' ? '-' : '+'}{p.amount.toLocaleString()} ج.م
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-
-                                    {/* Purchases History */}
-                                    <h3 style={{ fontSize: 17, fontWeight: 900, margin: '24px 0 14px', color: '#1e293b' }}>🍔 سجل المسحوبات كافيتيريا</h3>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 200, overflowY: 'auto', marginBottom: 20 }}>
-                                        {empPurchases.length === 0 ? <div style={{ textAlign: 'center', color: '#94a3b8', padding: '20px 0' }}>لا توجد مسحوبات</div> : empPurchases.map(p => {
-                                            return (
-                                                <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', borderRadius: 12, padding: '12px 16px', border: `1.5px solid #fecaca` }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                        <span style={{ background: '#fee2e2', borderRadius: 8, padding: '4px 10px', fontSize: 13, fontWeight: 800, color: '#ef4444' }}>🥤 {p.item_name}</span>
-                                                        <span style={{ fontSize: 13, color: '#64748b' }}>{new Date(p.purchase_date).toLocaleDateString('ar-EG')}</span>
-                                                        {p.notes && <span style={{ fontSize: 12, color: '#94a3b8' }}>— {p.notes}</span>}
-                                                    </div>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                                        <div style={{ fontWeight: 900, fontSize: 16, color: '#ef4444' }}>
-                                                            -{Number(p.amount).toLocaleString()} ج.م
-                                                        </div>
-                                                        <button onClick={async () => {
-                                                            if (!confirm('حذف هذه المسحوبة؟')) return;
-                                                            await fetch(`/api/hr/purchases/${p.id}`, { method: 'DELETE' });
-                                                            const pur = await fetch(`/api/hr/purchases?employee_id=${selectedEmp.id}`).then(r => r.json());
-                                                            setEmpPurchases(Array.isArray(pur) ? pur : []);
-                                                            loadPurchases(getLocalYYYYMMDD().slice(0, 7)); // update reports
-                                                        }} style={{ background: '#fef2f2', color: '#ef4444', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontFamily: 'Cairo', fontWeight: 800, fontSize: 13 }}>🗑</button>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-
-                                    {/* Attendance Summary */}
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '24px 0 14px' }}>
-                                        <h3 style={{ fontSize: 17, fontWeight: 900, color: '#1e293b', margin: 0 }}>📅 سجل وإحصائيات الحضور</h3>
-                                        <input type="month" value={empProfileMonth} onChange={e => {
-                                            setEmpProfileMonth(e.target.value);
-                                            loadEmpProfileMonth(selectedEmp.id, e.target.value);
-                                        }} style={{ ...inp, width: 'auto', padding: '6px 12px', fontSize: 14 }} />
-                                    </div>
-
-                                    {empProfileLoading ? (
-                                        <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontWeight: 800 }}>⏳ جاري التحميل...</div>
-                                    ) : (() => {
-                                        // Calculate late days — count unique DATES that have at least one 'late' record
-                                        const lateDates = new Set(
-                                            empAttendance.filter(a => a.status === 'late').map(a => a.attendance_date)
-                                        );
-                                        const lateDays = lateDates.size;
-
-                                        const y = parseInt(empProfileMonth.split('-')[0]);
-                                        const m = parseInt(empProfileMonth.split('-')[1]) - 1;
-                                        const isCurrentMonth = new Date().getFullYear() === y && new Date().getMonth() === m;
-                                        const daysInMonth = new Date(y, m + 1, 0).getDate();
-                                        const todayDay = new Date().getDate();
-
-                                        const offDaysKeys = selectedEmp.off_days || [];
-                                        let expectedWorkDays = 0;
-                                        let attendedDays = 0;
-                                        let approvedLeaveDays = 0;
-                                        let calculatedAbsences = 0;
-
-                                        // Generate the detailed daily logs to view
-                                        const dailyLogs = [];
-
-                                        for (let d = 1; d <= daysInMonth; d++) {
-                                            const date = new Date(y, m, d);
-                                            const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                                            const isFuture = date > new Date();
-                                            const isOffDay = offDaysKeys.includes(date.getDay());
-
-                                            // Check if employee has an approved leave for this day (sick/annual/etc)
-                                            // Ensure leaves are loaded from empLeaves array
-                                            const hasLeave = empLeaves.find(lv => {
-                                                const ls = new Date(lv.leave_start).getTime();
-                                                const le = new Date(lv.leave_end).getTime();
-                                                const curr = date.getTime();
-                                                return curr >= ls && curr <= le && !['unpaid'].includes(lv.leave_type);
-                                            });
-
-                                            // Find ALL attendance records for this date (multiple sessions possible)
-                                            const dayRecords = empAttendance.filter(a => a.attendance_date === dateStr);
-                                            const firstRecord = dayRecords[0] || null;
-                                            const didAttend = dayRecords.some(r => ['present', 'late'].includes(r.status));
-                                            const isExcused = dayRecords.some(r => r.status === 'excused');
-
-                                            let displayStatus = '—';
-                                            let displayObj: any = null;
-
-                                            if (firstRecord) {
-                                                displayObj = attendanceLabels[firstRecord.status] || attendanceLabels.present;
-                                                displayStatus = displayObj.label;
-                                            } else if (isFuture) {
-                                                displayStatus = 'مستقبل';
-                                            } else if (hasLeave) {
-                                                displayStatus = 'إجازة معتمدة';
-                                                displayObj = attendanceLabels.excused;
-                                            } else if (isOffDay) {
-                                                displayStatus = 'عطلة أسبوعية';
-                                            } else {
-                                                displayStatus = 'غائب';
-                                                displayObj = attendanceLabels.absent;
-                                            }
-
-                                            dailyLogs.push({
-                                                dayNum: d,
-                                                dateStr,
-                                                date,
-                                                dayRecords,
-                                                record: firstRecord,
-                                                hasLeave,
-                                                isOffDay,
-                                                isFuture,
-                                                displayStatus,
-                                                displayObj,
-                                            });
-
-                                            // Stop counting stats for days that haven't arrived yet
-                                            if (isFuture && isCurrentMonth) continue;
-
-                                            if (!isOffDay) {
-                                                expectedWorkDays++;
-                                                if (hasLeave || isExcused) {
-                                                    approvedLeaveDays++;
-                                                } else if (didAttend) {
-                                                    attendedDays++;
-                                                } else {
-                                                    calculatedAbsences++;
-                                                }
-                                            }
-                                        }
-
-                                        const actualAttended = attendedDays; // pure work days!
-                                        const actualBase = Math.max(0, expectedWorkDays - approvedLeaveDays);
-                                        const completionRate = actualBase > 0 ? Math.round((actualAttended / actualBase) * 100) : (approvedLeaveDays > 0 ? 100 : 0);
-
-                                        let rating = { label: 'ممتاز 🌟', color: '#16a34a', bg: '#dcfce7' };
-                                        if (completionRate < 70) rating = { label: 'ضعيف ⚠️', color: '#ef4444', bg: '#fee2e2' };
-                                        else if (completionRate < 90) rating = { label: 'متوسط 📊', color: '#f59e0b', bg: '#fef3c7' };
-
-                                        return (
-                                            <div style={{ background: '#f8fafc', borderRadius: 16, padding: '16px', border: '1.5px solid #e2e8f0', width: '100%' }}>
-                                                {/* Stats Grid */}
-                                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-                                                    <div style={{ background: '#fff', borderRadius: 12, padding: '12px', textAlign: 'center', border: '1px solid #f1f5f9' }}>
-                                                        <div style={{ fontSize: 24, fontWeight: 900, color: '#16a34a' }}>{actualAttended}</div>
-                                                        <div style={{ fontSize: 12, color: '#64748b', fontWeight: 800 }}>يوم عمل (حضور)</div>
-                                                    </div>
-                                                    <div style={{ background: '#fff', borderRadius: 12, padding: '12px', textAlign: 'center', border: '1px solid #f1f5f9' }}>
-                                                        <div style={{ fontSize: 24, fontWeight: 900, color: calculatedAbsences > 0 ? '#ef4444' : '#64748b' }}>{calculatedAbsences}</div>
-                                                        <div style={{ fontSize: 12, color: '#64748b', fontWeight: 800 }}>يوم غياب (بدون عذر)</div>
-                                                    </div>
-                                                    <div style={{ background: '#fff', borderRadius: 12, padding: '12px', textAlign: 'center', border: '1px solid #f1f5f9' }}>
-                                                        <div style={{ fontSize: 24, fontWeight: 900, color: '#f59e0b' }}>{lateDays}</div>
-                                                        <div style={{ fontSize: 12, color: '#64748b', fontWeight: 800 }}>مرات تأخير من الحضور</div>
-                                                    </div>
-                                                    <div style={{ background: rating.bg, borderRadius: 12, padding: '12px', textAlign: 'center', border: `1px solid ${rating.color}40` }}>
-                                                        <div style={{ fontSize: 24, fontWeight: 900, color: rating.color }}>{completionRate}%</div>
-                                                        <div style={{ fontSize: 12, color: rating.color, fontWeight: 800 }}>التقييم {rating.label}</div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Daily Logs Table — multiple sessions per day */}
-                                                <div style={{ width: '100%', overflowX: 'hidden' }}>
-                                                    <div style={{ fontSize: 16, fontWeight: 900, color: '#1e293b', marginBottom: 12 }}>تفاصيل السجل اليومي لشهر {new Date(y, m).toLocaleDateString('ar-EG', { month: 'long' })}:</div>
-                                                    <div className="table-responsive" style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0' }}>
-                                                        <table style={{ width: '100%', minWidth: 600, borderCollapse: 'collapse', fontSize: 13, textAlign: 'center' }}>
-                                                            <thead>
-                                                                <tr style={{ background: '#f1f5f9', color: '#475569', fontWeight: 800 }}>
-                                                                    <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>التاريخ</th>
-                                                                    <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>الجلسة</th>
-                                                                    <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>الحالة</th>
-                                                                    <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>حضور</th>
-                                                                    <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>انصراف</th>
-                                                                    <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0', position: 'sticky', left: 0, background: '#f1f5f9', zIndex: 10, boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)' }}>إجراء</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                {dailyLogs.slice().reverse().flatMap((log) => {
-                                                                    const rowBg = log.isOffDay ? '#f8fafc' : (log.isFuture && isCurrentMonth) ? '#F9FAFB' : '#fff';
-                                                                    const opacity = (log.isFuture && isCurrentMonth) ? 0.6 : 1;
-                                                                    const dateCell = (
-                                                                        <td style={{ padding: '10px', fontWeight: 800, color: '#374151', verticalAlign: 'top' }}>
-                                                                            {log.dayNum} {log.date.toLocaleDateString('ar-EG', { weekday: 'short' })}
-                                                                        </td>
-                                                                    );
-
-                                                                    // Days with no sessions at all → single summary row
-                                                                    if (!log.dayRecords || log.dayRecords.length === 0) {
-                                                                        return [
-                                                                            <tr key={`${log.dayNum}-empty`} style={{ borderBottom: '1px solid #f1f5f9', background: rowBg, opacity }}>
-                                                                                {dateCell}
-                                                                                <td style={{ padding: '10px' }}>—</td>
-                                                                                <td style={{ padding: '10px' }}>
-                                                                                    {log.displayObj ? (
-                                                                                        <span style={{ background: log.displayObj.bg, color: log.displayObj.color, borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 800 }}>
-                                                                                            {log.displayObj.icon} {log.displayObj.label}
-                                                                                        </span>
-                                                                                    ) : (
-                                                                                        <span style={{ color: '#94a3b8', fontSize: 12 }}>{log.displayStatus}</span>
-                                                                                    )}
-                                                                                </td>
-                                                                                <td style={{ padding: '10px', color: '#94a3b8' }}>—</td>
-                                                                                <td style={{ padding: '10px', color: '#94a3b8' }}>—</td>
-                                                                                <td style={{ padding: '10px', position: 'sticky', left: 0, background: 'inherit', zIndex: 5, boxShadow: '2px 0 5px -2px rgba(0,0,0,0.05)' }}>
-                                                                                    {!log.isFuture && !log.hasLeave && !log.isOffDay && (
-                                                                                        <button
-                                                                                            onClick={() => openManualAtt(selectedEmp.id, selectedEmp.name, log.dateStr)}
-                                                                                            style={{ background: 'linear-gradient(135deg, #0ea5e9, #38bdf8)', color: '#fff', border: 'none', borderRadius: 8, padding: '5px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 800, fontFamily: 'Cairo', display: 'flex', alignItems: 'center', gap: 5 }}>
-                                                                                            ✏️ تحضير يدوي
-                                                                                        </button>
-                                                                                    )}
-                                                                                </td>
-                                                                            </tr>
-                                                                        ];
-                                                                    }
-
-                                                                    // Days WITH one or more sessions → one row per session
-                                                                    return log.dayRecords.map((session: any, si: number) => {
-                                                                        const sObj = attendanceLabels[session.status] || attendanceLabels.present;
-                                                                        return (
-                                                                            <tr key={`${log.dayNum}-s${si}`} style={{ borderBottom: '1px solid #f1f5f9', background: si % 2 === 0 ? rowBg : '#fafff8', opacity }}>
-                                                                                {/* Show date only on first session */}
-                                                                                {si === 0 ? dateCell : <td style={{ padding: '10px' }} />}
-                                                                                <td style={{ padding: '6px 10px', fontSize: 11, color: '#64748b', fontWeight: 700 }}>
-                                                                                    {log.dayRecords.length > 1 ? `جلسة ${si + 1}` : '—'}
-                                                                                </td>
-                                                                                <td style={{ padding: '10px' }}>
-                                                                                    <span style={{ background: sObj.bg, color: sObj.color, borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 800 }}>
-                                                                                        {sObj.icon} {sObj.label}
-                                                                                    </span>
-                                                                                </td>
-                                                                                <td style={{ padding: '10px', fontWeight: 900, color: '#16a34a' }}>
-                                                                                    {session.check_in_time ? session.check_in_time.slice(0, 5) : '—'}
-                                                                                </td>
-                                                                                <td style={{ padding: '10px', fontWeight: 900, color: '#ea580c' }}>
-                                                                                    {session.check_out_time ? session.check_out_time.slice(0, 5) : '—'}
-                                                                                </td>
-                                                                                <td style={{ padding: '10px', position: 'sticky', left: 0, background: 'inherit', zIndex: 5, boxShadow: '2px 0 5px -2px rgba(0,0,0,0.05)' }}>
-                                                                                    <div style={{ display: 'flex', gap: 5, justifyContent: 'center' }}>
-                                                                                        <button 
-                                                                                            onClick={() => openEditAtt(session, selectedEmp.name)}
-                                                                                            title="تعديل هذا السجل"
-                                                                                            style={{ background: '#fef3c7', color: '#f59e0b', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 800, fontFamily: 'Cairo' }}>✏️</button>
-                                                                                        {si === 0 && !log.isFuture && !log.isOffDay && (
-                                                                                            <button
-                                                                                                onClick={() => openManualAtt(selectedEmp.id, selectedEmp.name, log.dateStr)}
-                                                                                                title="إضافة تحضير يدوي"
-                                                                                                style={{ background: 'linear-gradient(135deg,#0ea5e9,#38bdf8)', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 800, fontFamily: 'Cairo' }}>✏️</button>
-                                                                                        )}
-                                                                                        <button
-                                                                                            onClick={async () => {
-                                                                                                if (!confirm('حذف هذه الجلسة نهائياً؟')) return;
-                                                                                                await fetch(`/api/hr/attendance/${session.id}`, { method: 'DELETE' });
-                                                                                                loadEmpProfileMonth(selectedEmp.id, empProfileMonth);
-                                                                                            }}
-                                                                                            style={{ background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 700, fontFamily: 'Cairo' }}>🗑</button>
-                                                                                    </div>
-                                                                                </td>
-                                                                            </tr>
-                                                                        );
-                                                                    });
-                                                                })}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-
-                                                    {/* Mobile Card Layout for Daily Logs */}
-                                                    <div className="mobile-card-rows mt-3">
-                                                        {dailyLogs.slice().reverse().flatMap((log) => {
-                                                            const isOffOrFuture = (log.isOffDay || (log.isFuture && isCurrentMonth));
-                                                            const headerBg = isOffOrFuture ? '#f8fafc' : '#fff';
-
-                                                            if (!log.dayRecords || log.dayRecords.length === 0) {
-                                                                return (
-                                                                    <div key={`${log.dayNum}-empty`} className="mobile-card-row" style={{ background: headerBg }}>
-                                                                        <div className="mobile-card-row-header" style={{ marginBottom: 6 }}>
-                                                                            <div className="mobile-card-row-title" style={{ fontSize: 13, fontWeight: 800 }}>
-                                                                                {log.dayNum} {log.date.toLocaleDateString('ar-EG', { weekday: 'long' })}
-                                                                            </div>
-                                                                            {log.displayObj ? (
-                                                                                <span style={{ background: log.displayObj.bg, color: log.displayObj.color, borderRadius: 6, padding: '4px 8px', fontSize: 11, fontWeight: 800 }}>{log.displayObj.icon} {log.displayObj.label}</span>
-                                                                            ) : (
-                                                                                <span style={{ color: '#94a3b8', fontSize: 12 }}>{log.displayStatus}</span>
-                                                                            )}
-                                                                        </div>
-                                                                        {!log.isFuture && !log.hasLeave && !log.isOffDay && (
-                                                                            <div className="mobile-card-row-actions mt-2 pt-2 border-t border-slate-100">
-                                                                                <button onClick={() => openManualAtt(selectedEmp.id, selectedEmp.name, log.dateStr)}
-                                                                                    className="btn shadow-sm" style={{ background: 'linear-gradient(135deg, #0ea5e9, #38bdf8)', color: '#fff', fontSize: 12, padding: '6px 0', width: '100%' }}>
-                                                                                    ✏️ تحضير يدوي
-                                                                                </button>
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                );
-                                                            }
-
-                                                            return log.dayRecords.map((session: any, si: number) => {
-                                                                const sObj = attendanceLabels[session.status] || attendanceLabels.present;
-                                                                return (
-                                                                    <div key={`${log.dayNum}-s${si}`} className="mobile-card-row" style={{ borderRight: `4px solid ${sObj.color}`, background: si % 2 === 0 ? headerBg : '#fafff8' }}>
-                                                                        <div className="mobile-card-row-header">
-                                                                            <div className="mobile-card-row-title" style={{ fontSize: 13, fontWeight: 800 }}>
-                                                                                {log.dayNum} {log.date.toLocaleDateString('ar-EG', { weekday: 'short' })}
-                                                                                {log.dayRecords.length > 1 && <span style={{ color: '#64748b', fontSize: 11, marginRight: 6 }}>(جلسة {si + 1})</span>}
-                                                                            </div>
-                                                                            <span style={{ background: sObj.bg, color: sObj.color, borderRadius: 6, padding: '4px 8px', fontSize: 11, fontWeight: 800 }}>{sObj.icon} {sObj.label}</span>
-                                                                        </div>
-                                                                        <div className="mobile-card-row-body mt-2">
-                                                                            <div className="mobile-card-row-field">
-                                                                                <span className="mobile-card-row-label">حضور</span>
-                                                                                <span className="mobile-card-row-value" style={{ color: '#16a34a', fontSize: 15 }}>{session.check_in_time ? session.check_in_time.slice(0, 5) : '—'}</span>
-                                                                            </div>
-                                                                            <div className="mobile-card-row-field" style={{ alignItems: 'flex-end', textAlign: 'left' }}>
-                                                                                <span className="mobile-card-row-label">انصراف</span>
-                                                                                <span className="mobile-card-row-value" style={{ color: '#ea580c', fontSize: 15 }}>{session.check_out_time ? session.check_out_time.slice(0, 5) : '—'}</span>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="mobile-card-row-actions mt-2">
-                                                                            <button onClick={() => openEditAtt(session, selectedEmp.name)} style={{ background: '#fef3c7', color: '#f59e0b', fontSize: 12, padding: '6px' }} className="btn">تعديل</button>
-                                                                            {si === 0 && !log.isFuture && !log.isOffDay && (
-                                                                                <button onClick={() => openManualAtt(selectedEmp.id, selectedEmp.name, log.dateStr)} style={{ background: '#e0f2fe', color: '#0284c7', fontSize: 12, padding: '6px' }} className="btn">يدوي</button>
-                                                                            )}
-                                                                            <button onClick={async () => {
-                                                                                if (!confirm('حذف هذه الجلسة نهائياً؟')) return;
-                                                                                await fetch(`/api/hr/attendance/${session.id}`, { method: 'DELETE' });
-                                                                                loadEmpProfileMonth(selectedEmp.id, empProfileMonth);
-                                                                            }} style={{ background: '#fee2e2', color: '#ef4444', fontSize: 12, padding: '6px' }} className="btn">حذف</button>
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            });
-                                                        })}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })()}
-                                </div>
-                            </div>
-                        </div>
-                    )}
+            {/* ===== TAB: PAYMENTS ===== */}
                 </div>
             )}
 
@@ -1797,5 +1400,404 @@ export default function HRPage() {
                 </div>
             )}
         </div>
+
+        {/* Employee Profile Modal */}
+        {selectedEmp && (
+            <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }} onClick={() => setSelectedEmp(null)}>
+                <div className="emp-profile-modal" style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: 700, maxHeight: '90vh', overflow: 'auto', boxShadow: '0 30px 80px rgba(0,0,0,0.3)' }} onClick={e => e.stopPropagation()}>
+                    {/* Header */}
+                    <div style={{ background: 'linear-gradient(135deg, #0f172a, #1e3a5f)', padding: '28px 30px', borderRadius: 'var(--mobile-modal-radius, 24px 24px 0 0)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg, #0ea5e9, #38bdf8)', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>👔</div>
+                                <div>
+                                    <div style={{ color: '#fff', fontWeight: 900, fontSize: 22 }}>{selectedEmp.name}</div>
+                                    <div style={{ color: '#7dd3fc', fontSize: 14, marginTop: 3 }}>{selectedEmp.job_title || 'موظف'}</div>
+                                </div>
+                            </div>
+                            <button onClick={() => setSelectedEmp(null)} style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: 10, width: 40, height: 40, cursor: 'pointer', fontSize: 20 }}>✕</button>
+                        </div>
+                        <div className="emp-profile-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 20 }}>
+                            {[
+                                { label: 'الراتب الأساسي', value: `${selectedEmp.base_salary.toLocaleString()} ج.م`, color: '#4ade80' },
+                                { label: 'إجمالي مدفوعاته', value: `${empPayments.filter(p => p.payment_type !== 'deduction').reduce((s, p) => s + p.amount, 0).toLocaleString()} ج.م`, color: '#60a5fa' },
+                                { label: 'إجمالي الخصومات', value: `${(empPayments.filter(p => p.payment_type === 'deduction').reduce((s, p) => s + p.amount, 0) + empPurchases.reduce((s, p) => s + Number(p.amount), 0)).toLocaleString()} ج.م`, color: '#f87171' },
+                            ].map(s => (
+                                <div key={s.label} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 16px', textAlign: 'center' }}>
+                                    <div style={{ fontSize: 20, fontWeight: 900, color: s.color }}>{s.value}</div>
+                                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 4 }}>{s.label}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div style={{ padding: '24px 20px', overflowX: 'hidden' }}>
+                        {/* Details */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+                            {selectedEmp.phone && <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 16px' }}><div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>الهاتف</div><div style={{ fontWeight: 800, fontSize: 15 }}>📞 {selectedEmp.phone}</div></div>}
+                            {selectedEmp.national_id && <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 16px' }}><div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>الرقم القومي</div><div style={{ fontWeight: 800, fontSize: 15 }}>🪪 {selectedEmp.national_id}</div></div>}
+                            {selectedEmp.hire_date && <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 16px' }}><div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>تاريخ التعيين</div><div style={{ fontWeight: 800, fontSize: 15 }}>📅 {new Date(selectedEmp.hire_date).toLocaleDateString('ar-EG')}</div></div>}
+                            {selectedEmp.notes && <div style={{ background: '#fffbeb', borderRadius: 12, padding: '12px 16px' }}><div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>ملاحظات</div><div style={{ fontWeight: 700, fontSize: 14 }}>📝 {selectedEmp.notes}</div></div>}
+                        </div>
+
+                        {/* Payments History */}
+                        <h3 style={{ fontSize: 17, fontWeight: 900, margin: '0 0 14px', color: '#1e293b' }}>💰 سجل المدفوعات</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 200, overflowY: 'auto', marginBottom: 20 }}>
+                            {empPayments.length === 0 ? <div style={{ textAlign: 'center', color: '#94a3b8', padding: '20px 0' }}>لا توجد مدفوعات</div> : empPayments.map(p => {
+                                const t = paymentLabels[p.payment_type] || paymentLabels.salary;
+                                return (
+                                    <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', borderRadius: 12, padding: '12px 16px', border: `1.5px solid ${t.bg}` }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                            <span style={{ background: t.bg, borderRadius: 8, padding: '4px 10px', fontSize: 13, fontWeight: 800, color: t.color }}>{t.icon} {t.label}</span>
+                                            <span style={{ fontSize: 13, color: '#64748b' }}>{new Date(p.payment_date).toLocaleDateString('ar-EG')}</span>
+                                            {p.notes && <span style={{ fontSize: 12, color: '#94a3b8' }}>— {p.notes}</span>}
+                                        </div>
+                                        <div style={{ fontWeight: 900, fontSize: 16, color: p.payment_type === 'deduction' ? '#ef4444' : '#16a34a' }}>
+                                            {p.payment_type === 'deduction' ? '-' : '+'}{p.amount.toLocaleString()} ج.م
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Purchases History */}
+                        <h3 style={{ fontSize: 17, fontWeight: 900, margin: '24px 0 14px', color: '#1e293b' }}>🍔 سجل المسحوبات كافيتيريا</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 200, overflowY: 'auto', marginBottom: 20 }}>
+                            {empPurchases.length === 0 ? <div style={{ textAlign: 'center', color: '#94a3b8', padding: '20px 0' }}>لا توجد مسحوبات</div> : empPurchases.map(p => {
+                                return (
+                                    <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', borderRadius: 12, padding: '12px 16px', border: `1.5px solid #fecaca` }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                            <span style={{ background: '#fee2e2', borderRadius: 8, padding: '4px 10px', fontSize: 13, fontWeight: 800, color: '#ef4444' }}>🥤 {p.item_name}</span>
+                                            <span style={{ fontSize: 13, color: '#64748b' }}>{new Date(p.purchase_date).toLocaleDateString('ar-EG')}</span>
+                                            {p.notes && <span style={{ fontSize: 12, color: '#94a3b8' }}>— {p.notes}</span>}
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                            <div style={{ fontWeight: 900, fontSize: 16, color: '#ef4444' }}>
+                                                -{Number(p.amount).toLocaleString()} ج.م
+                                            </div>
+                                            <button onClick={async () => {
+                                                if (!confirm('حذف هذه المسحوبة؟')) return;
+                                                await fetch(`/api/hr/purchases/${p.id}`, { method: 'DELETE' });
+                                                const pur = await fetch(`/api/hr/purchases?employee_id=${selectedEmp.id}`).then(r => r.json());
+                                                setEmpPurchases(Array.isArray(pur) ? pur : []);
+                                                loadPurchases(getLocalYYYYMMDD().slice(0, 7)); // update reports
+                                            }} style={{ background: '#fef2f2', color: '#ef4444', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontFamily: 'Cairo', fontWeight: 800, fontSize: 13 }}>🗑</button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Attendance Summary */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '24px 0 14px' }}>
+                            <h3 style={{ fontSize: 17, fontWeight: 900, color: '#1e293b', margin: 0 }}>📅 سجل وإحصائيات الحضور</h3>
+                            <input type="month" value={empProfileMonth} onChange={e => {
+                                setEmpProfileMonth(e.target.value);
+                                loadEmpProfileMonth(selectedEmp.id, e.target.value);
+                            }} style={{ ...inp, width: 'auto', padding: '6px 12px', fontSize: 14 }} />
+                        </div>
+
+                        {empProfileLoading ? (
+                            <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontWeight: 800 }}>⏳ جاري التحميل...</div>
+                        ) : (() => {
+                            // Calculate late days — count unique DATES that have at least one 'late' record
+                            const lateDates = new Set(
+                                empAttendance.filter(a => a.status === 'late').map(a => a.attendance_date)
+                            );
+                            const lateDays = lateDates.size;
+
+                            const y = parseInt(empProfileMonth.split('-')[0]);
+                            const m = parseInt(empProfileMonth.split('-')[1]) - 1;
+                            const isCurrentMonth = new Date().getFullYear() === y && new Date().getMonth() === m;
+                            const daysInMonth = new Date(y, m + 1, 0).getDate();
+                            const todayDay = new Date().getDate();
+
+                            const offDaysKeys = selectedEmp.off_days || [];
+                            let expectedWorkDays = 0;
+                            let attendedDays = 0;
+                            let approvedLeaveDays = 0;
+                            let calculatedAbsences = 0;
+
+                            // Generate the detailed daily logs to view
+                            const dailyLogs = [];
+
+                            for (let d = 1; d <= daysInMonth; d++) {
+                                const date = new Date(y, m, d);
+                                const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                                const isFuture = date > new Date();
+                                const isOffDay = offDaysKeys.includes(date.getDay());
+
+                                // Check if employee has an approved leave for this day (sick/annual/etc)
+                                // Ensure leaves are loaded from empLeaves array
+                                const hasLeave = empLeaves.find(lv => {
+                                    const ls = new Date(lv.leave_start).getTime();
+                                    const le = new Date(lv.leave_end).getTime();
+                                    const curr = date.getTime();
+                                    return curr >= ls && curr <= le && !['unpaid'].includes(lv.leave_type);
+                                });
+
+                                // Find ALL attendance records for this date (multiple sessions possible)
+                                const dayRecords = empAttendance.filter(a => a.attendance_date === dateStr);
+                                const firstRecord = dayRecords[0] || null;
+                                const didAttend = dayRecords.some(r => ['present', 'late'].includes(r.status));
+                                const isExcused = dayRecords.some(r => r.status === 'excused');
+
+                                let displayStatus = '—';
+                                let displayObj: any = null;
+
+                                if (firstRecord) {
+                                    displayObj = attendanceLabels[firstRecord.status] || attendanceLabels.present;
+                                    displayStatus = displayObj.label;
+                                } else if (isFuture) {
+                                    displayStatus = 'مستقبل';
+                                } else if (hasLeave) {
+                                    displayStatus = 'إجازة معتمدة';
+                                    displayObj = attendanceLabels.excused;
+                                } else if (isOffDay) {
+                                    displayStatus = 'عطلة أسبوعية';
+                                } else {
+                                    displayStatus = 'غائب';
+                                    displayObj = attendanceLabels.absent;
+                                }
+
+                                dailyLogs.push({
+                                    dayNum: d,
+                                    dateStr,
+                                    date,
+                                    dayRecords,
+                                    record: firstRecord,
+                                    hasLeave,
+                                    isOffDay,
+                                    isFuture,
+                                    displayStatus,
+                                    displayObj,
+                                });
+
+                                // Stop counting stats for days that haven't arrived yet
+                                if (isFuture && isCurrentMonth) continue;
+
+                                if (!isOffDay) {
+                                    expectedWorkDays++;
+                                    if (hasLeave || isExcused) {
+                                        approvedLeaveDays++;
+                                    } else if (didAttend) {
+                                        attendedDays++;
+                                    } else {
+                                        calculatedAbsences++;
+                                    }
+                                }
+                            }
+
+                            const actualAttended = attendedDays; // pure work days!
+                            const actualBase = Math.max(0, expectedWorkDays - approvedLeaveDays);
+                            const completionRate = actualBase > 0 ? Math.round((actualAttended / actualBase) * 100) : (approvedLeaveDays > 0 ? 100 : 0);
+
+                            let rating = { label: 'ممتاز 🌟', color: '#16a34a', bg: '#dcfce7' };
+                            if (completionRate < 70) rating = { label: 'ضعيف ⚠️', color: '#ef4444', bg: '#fee2e2' };
+                            else if (completionRate < 90) rating = { label: 'متوسط 📊', color: '#f59e0b', bg: '#fef3c7' };
+
+                            return (
+                                <div style={{ background: '#f8fafc', borderRadius: 16, padding: '16px', border: '1.5px solid #e2e8f0', width: '100%' }}>
+                                    {/* Stats Grid */}
+                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+                                        <div style={{ background: '#fff', borderRadius: 12, padding: '12px', textAlign: 'center', border: '1px solid #f1f5f9' }}>
+                                            <div style={{ fontSize: 24, fontWeight: 900, color: '#16a34a' }}>{actualAttended}</div>
+                                            <div style={{ fontSize: 12, color: '#64748b', fontWeight: 800 }}>يوم عمل (حضور)</div>
+                                        </div>
+                                        <div style={{ background: '#fff', borderRadius: 12, padding: '12px', textAlign: 'center', border: '1px solid #f1f5f9' }}>
+                                            <div style={{ fontSize: 24, fontWeight: 900, color: calculatedAbsences > 0 ? '#ef4444' : '#64748b' }}>{calculatedAbsences}</div>
+                                            <div style={{ fontSize: 12, color: '#64748b', fontWeight: 800 }}>يوم غياب (بدون عذر)</div>
+                                        </div>
+                                        <div style={{ background: '#fff', borderRadius: 12, padding: '12px', textAlign: 'center', border: '1px solid #f1f5f9' }}>
+                                            <div style={{ fontSize: 24, fontWeight: 900, color: '#f59e0b' }}>{lateDays}</div>
+                                            <div style={{ fontSize: 12, color: '#64748b', fontWeight: 800 }}>مرات تأخير من الحضور</div>
+                                        </div>
+                                        <div style={{ background: rating.bg, borderRadius: 12, padding: '12px', textAlign: 'center', border: `1px solid ${rating.color}40` }}>
+                                            <div style={{ fontSize: 24, fontWeight: 900, color: rating.color }}>{completionRate}%</div>
+                                            <div style={{ fontSize: 12, color: rating.color, fontWeight: 800 }}>التقييم {rating.label}</div>
+                                        </div>
+                                    </div>
+
+                                    {/* Daily Logs Table — multiple sessions per day */}
+                                    <div style={{ width: '100%', overflowX: 'hidden' }}>
+                                        <div style={{ fontSize: 16, fontWeight: 900, color: '#1e293b', marginBottom: 12 }}>تفاصيل السجل اليومي لشهر {new Date(y, m).toLocaleDateString('ar-EG', { month: 'long' })}:</div>
+                                        <div className="table-responsive" style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                                            <table style={{ width: '100%', minWidth: 600, borderCollapse: 'collapse', fontSize: 13, textAlign: 'center' }}>
+                                                <thead>
+                                                    <tr style={{ background: '#f1f5f9', color: '#475569', fontWeight: 800 }}>
+                                                        <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>التاريخ</th>
+                                                        <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>الجلسة</th>
+                                                        <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>الحالة</th>
+                                                        <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>حضور</th>
+                                                        <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0' }}>انصراف</th>
+                                                        <th style={{ padding: '10px', borderBottom: '1.5px solid #e2e8f0', position: 'sticky', left: 0, background: '#f1f5f9', zIndex: 10, boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)' }}>إجراء</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {dailyLogs.slice().reverse().flatMap((log) => {
+                                                        const rowBg = log.isOffDay ? '#f8fafc' : (log.isFuture && isCurrentMonth) ? '#F9FAFB' : '#fff';
+                                                        const opacity = (log.isFuture && isCurrentMonth) ? 0.6 : 1;
+                                                        const dateCell = (
+                                                            <td style={{ padding: '10px', fontWeight: 800, color: '#374151', verticalAlign: 'top' }}>
+                                                                {log.dayNum} {log.date.toLocaleDateString('ar-EG', { weekday: 'short' })}
+                                                            </td>
+                                                        );
+
+                                                        // Days with no sessions at all → single summary row
+                                                        if (!log.dayRecords || log.dayRecords.length === 0) {
+                                                            return [
+                                                                <tr key={`${log.dayNum}-empty`} style={{ borderBottom: '1px solid #f1f5f9', background: rowBg, opacity }}>
+                                                                    {dateCell}
+                                                                    <td style={{ padding: '10px' }}>—</td>
+                                                                    <td style={{ padding: '10px' }}>
+                                                                        {log.displayObj ? (
+                                                                            <span style={{ background: log.displayObj.bg, color: log.displayObj.color, borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 800 }}>
+                                                                                {log.displayObj.icon} {log.displayObj.label}
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span style={{ color: '#94a3b8', fontSize: 12 }}>{log.displayStatus}</span>
+                                                                        )}
+                                                                    </td>
+                                                                    <td style={{ padding: '10px', color: '#94a3b8' }}>—</td>
+                                                                    <td style={{ padding: '10px', color: '#94a3b8' }}>—</td>
+                                                                    <td style={{ padding: '10px', position: 'sticky', left: 0, background: 'inherit', zIndex: 5, boxShadow: '2px 0 5px -2px rgba(0,0,0,0.05)' }}>
+                                                                        {!log.isFuture && !log.hasLeave && !log.isOffDay && (
+                                                                            <button
+                                                                                onClick={() => openManualAtt(selectedEmp.id, selectedEmp.name, log.dateStr)}
+                                                                                style={{ background: 'linear-gradient(135deg, #0ea5e9, #38bdf8)', color: '#fff', border: 'none', borderRadius: 8, padding: '5px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 800, fontFamily: 'Cairo', display: 'flex', alignItems: 'center', gap: 5 }}>
+                                                                                ✏️ تحضير يدوي
+                                                                            </button>
+                                                                        )}
+                                                                    </td>
+                                                                </tr>
+                                                            ];
+                                                        }
+
+                                                        // Days WITH one or more sessions → one row per session
+                                                        return log.dayRecords.map((session: any, si: number) => {
+                                                            const sObj = attendanceLabels[session.status] || attendanceLabels.present;
+                                                            return (
+                                                                <tr key={`${log.dayNum}-s${si}`} style={{ borderBottom: '1px solid #f1f5f9', background: si % 2 === 0 ? rowBg : '#fafff8', opacity }}>
+                                                                    {/* Show date only on first session */}
+                                                                    {si === 0 ? dateCell : <td style={{ padding: '10px' }} />}
+                                                                    <td style={{ padding: '6px 10px', fontSize: 11, color: '#64748b', fontWeight: 700 }}>
+                                                                        {log.dayRecords.length > 1 ? `جلسة ${si + 1}` : '—'}
+                                                                    </td>
+                                                                    <td style={{ padding: '10px' }}>
+                                                                        <span style={{ background: sObj.bg, color: sObj.color, borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 800 }}>
+                                                                            {sObj.icon} {sObj.label}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td style={{ padding: '10px', fontWeight: 900, color: '#16a34a' }}>
+                                                                        {session.check_in_time ? session.check_in_time.slice(0, 5) : '—'}
+                                                                    </td>
+                                                                    <td style={{ padding: '10px', fontWeight: 900, color: '#ea580c' }}>
+                                                                        {session.check_out_time ? session.check_out_time.slice(0, 5) : '—'}
+                                                                    </td>
+                                                                    <td style={{ padding: '10px', position: 'sticky', left: 0, background: 'inherit', zIndex: 5, boxShadow: '2px 0 5px -2px rgba(0,0,0,0.05)' }}>
+                                                                        <div style={{ display: 'flex', gap: 5, justifyContent: 'center' }}>
+                                                                            <button 
+                                                                                onClick={() => openEditAtt(session, selectedEmp.name)}
+                                                                                title="تعديل هذا السجل"
+                                                                                style={{ background: '#fef3c7', color: '#f59e0b', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 800, fontFamily: 'Cairo' }}>✏️</button>
+                                                                            {si === 0 && !log.isFuture && !log.isOffDay && (
+                                                                                <button
+                                                                                    onClick={() => openManualAtt(selectedEmp.id, selectedEmp.name, log.dateStr)}
+                                                                                    title="إضافة تحضير يدوي"
+                                                                                    style={{ background: 'linear-gradient(135deg,#0ea5e9,#38bdf8)', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 800, fontFamily: 'Cairo' }}>✏️</button>
+                                                                            )}
+                                                                            <button
+                                                                                onClick={async () => {
+                                                                                    if (!confirm('حذف هذه الجلسة نهائياً؟')) return;
+                                                                                    await fetch(`/api/hr/attendance/${session.id}`, { method: 'DELETE' });
+                                                                                    loadEmpProfileMonth(selectedEmp.id, empProfileMonth);
+                                                                                }}
+                                                                                style={{ background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 700, fontFamily: 'Cairo' }}>🗑</button>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        });
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        {/* Mobile Card Layout for Daily Logs */}
+                                        <div className="mobile-card-rows mt-3">
+                                            {dailyLogs.slice().reverse().flatMap((log) => {
+                                                const isOffOrFuture = (log.isOffDay || (log.isFuture && isCurrentMonth));
+                                                const headerBg = isOffOrFuture ? '#f8fafc' : '#fff';
+
+                                                if (!log.dayRecords || log.dayRecords.length === 0) {
+                                                    return (
+                                                        <div key={`${log.dayNum}-empty`} className="mobile-card-row" style={{ background: headerBg }}>
+                                                            <div className="mobile-card-row-header" style={{ marginBottom: 6 }}>
+                                                                <div className="mobile-card-row-title" style={{ fontSize: 13, fontWeight: 800 }}>
+                                                                    {log.dayNum} {log.date.toLocaleDateString('ar-EG', { weekday: 'long' })}
+                                                                </div>
+                                                                {log.displayObj ? (
+                                                                    <span style={{ background: log.displayObj.bg, color: log.displayObj.color, borderRadius: 6, padding: '4px 8px', fontSize: 11, fontWeight: 800 }}>{log.displayObj.icon} {log.displayObj.label}</span>
+                                                                ) : (
+                                                                    <span style={{ color: '#94a3b8', fontSize: 12 }}>{log.displayStatus}</span>
+                                                                )}
+                                                            </div>
+                                                            {!log.isFuture && !log.hasLeave && !log.isOffDay && (
+                                                                <div className="mobile-card-row-actions mt-2 pt-2 border-t border-slate-100">
+                                                                    <button onClick={() => openManualAtt(selectedEmp.id, selectedEmp.name, log.dateStr)}
+                                                                        className="btn shadow-sm" style={{ background: 'linear-gradient(135deg, #0ea5e9, #38bdf8)', color: '#fff', fontSize: 12, padding: '6px 0', width: '100%' }}>
+                                                                        ✏️ تحضير يدوي
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                }
+
+                                                return log.dayRecords.map((session: any, si: number) => {
+                                                    const sObj = attendanceLabels[session.status] || attendanceLabels.present;
+                                                    return (
+                                                        <div key={`${log.dayNum}-s${si}`} className="mobile-card-row" style={{ borderRight: `4px solid ${sObj.color}`, background: si % 2 === 0 ? headerBg : '#fafff8' }}>
+                                                            <div className="mobile-card-row-header">
+                                                                <div className="mobile-card-row-title" style={{ fontSize: 13, fontWeight: 800 }}>
+                                                                    {log.dayNum} {log.date.toLocaleDateString('ar-EG', { weekday: 'short' })}
+                                                                    {log.dayRecords.length > 1 && <span style={{ color: '#64748b', fontSize: 11, marginRight: 6 }}>(جلسة {si + 1})</span>}
+                                                                </div>
+                                                                <span style={{ background: sObj.bg, color: sObj.color, borderRadius: 6, padding: '4px 8px', fontSize: 11, fontWeight: 800 }}>{sObj.icon} {sObj.label}</span>
+                                                            </div>
+                                                            <div className="mobile-card-row-body mt-2">
+                                                                <div className="mobile-card-row-field">
+                                                                    <span className="mobile-card-row-label">حضور</span>
+                                                                    <span className="mobile-card-row-value" style={{ color: '#16a34a', fontSize: 15 }}>{session.check_in_time ? session.check_in_time.slice(0, 5) : '—'}</span>
+                                                                </div>
+                                                                <div className="mobile-card-row-field" style={{ alignItems: 'flex-end', textAlign: 'left' }}>
+                                                                    <span className="mobile-card-row-label">انصراف</span>
+                                                                    <span className="mobile-card-row-value" style={{ color: '#ea580c', fontSize: 15 }}>{session.check_out_time ? session.check_out_time.slice(0, 5) : '—'}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="mobile-card-row-actions mt-2">
+                                                                <button onClick={() => openEditAtt(session, selectedEmp.name)} style={{ background: '#fef3c7', color: '#f59e0b', fontSize: 12, padding: '6px' }} className="btn">تعديل</button>
+                                                                {si === 0 && !log.isFuture && !log.isOffDay && (
+                                                                    <button onClick={() => openManualAtt(selectedEmp.id, selectedEmp.name, log.dateStr)} style={{ background: '#e0f2fe', color: '#0284c7', fontSize: 12, padding: '6px' }} className="btn">يدوي</button>
+                                                                )}
+                                                                <button onClick={async () => {
+                                                                    if (!confirm('حذف هذه الجلسة نهائياً؟')) return;
+                                                                    await fetch(`/api/hr/attendance/${session.id}`, { method: 'DELETE' });
+                                                                    loadEmpProfileMonth(selectedEmp.id, empProfileMonth);
+                                                                }} style={{ background: '#fee2e2', color: '#ef4444', fontSize: 12, padding: '6px' }} className="btn">حذف</button>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                });
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                    </div>
+                </div>
+            </div>
+        )}
     );
 }
