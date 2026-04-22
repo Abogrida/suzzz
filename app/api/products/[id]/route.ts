@@ -11,7 +11,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 
     const { id: idParam } = await params;
     const db = createAdminClient();
-    const { data, error } = await db.from('products').select('*').eq('id', id).single();
+    const { data, error } = await db.from('products').select('*').eq('id', idParam).single();
 
     if (error || !data) return NextResponse.json({ error: 'المنتج غير موجود' }, { status: 404 });
     return NextResponse.json(data);
@@ -35,7 +35,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
         sale_price: parseFloat(data.sale_price) || 0,
         barcode: data.barcode || '',
         description: data.description || '',
-    }).eq('id', id);
+    }).eq('id', idParam);
 
     if (error) return NextResponse.json({ success: false, message: error.message }, { status: 400 });
     return NextResponse.json({ success: true, message: 'تم تحديث المنتج بنجاح' });
@@ -50,8 +50,8 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     const db = createAdminClient();
 
     // Delete related stock movements first
-    await db.from('stock_movements').delete().eq('product_id', id);
-    const { error } = await db.from('products').delete().eq('id', id);
+    await db.from('stock_movements').delete().eq('product_id', idParam);
+    const { error } = await db.from('products').delete().eq('id', idParam);
 
     if (error) return NextResponse.json({ success: false, message: error.message }, { status: 400 });
     return NextResponse.json({ success: true, message: 'تم حذف المنتج بنجاح' });

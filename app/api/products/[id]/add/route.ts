@@ -19,7 +19,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const { data: product, error: fetchError } = await db
         .from('products')
         .select('current_quantity')
-        .eq('id', id)
+        .eq('id', idParam)
         .single();
 
     if (fetchError || !product) {
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     const { error } = await db.from('products').update({
         current_quantity: product.current_quantity + quantity,
-    }).eq('id', id);
+    }).eq('id', idParam);
 
     if (error) return NextResponse.json({ success: false, message: error.message }, { status: 400 });
 

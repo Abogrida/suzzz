@@ -14,7 +14,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     const { data, error } = await db
         .from('invoices')
         .select('*, invoice_items(*)')
-        .eq('id', id)
+        .eq('id', idParam)
         .single();
 
     if (error || !data) return NextResponse.json({ error: 'الفاتورة غير موجودة' }, { status: 404 });
@@ -33,7 +33,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     const { data: invoice } = await db
         .from('invoices')
         .select('*, invoice_items(*)')
-        .eq('id', id)
+        .eq('id', idParam)
         .single();
 
     if (invoice) {
@@ -52,7 +52,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     }
 
     // Delete invoice items and invoice (cascade handles items)
-    const { error } = await db.from('invoices').delete().eq('id', id);
+    const { error } = await db.from('invoices').delete().eq('id', idParam);
     if (error) return NextResponse.json({ success: false, message: error.message }, { status: 400 });
 
     return NextResponse.json({ success: true, message: 'تم حذف الفاتورة' });
