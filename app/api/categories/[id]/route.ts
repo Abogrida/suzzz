@@ -17,12 +17,12 @@ export async function PUT(req: NextRequest, { params }: Params) {
     if (!name) return NextResponse.json({ error: 'اسم الفئة مطلوب' }, { status: 400 });
 
     // Get old category name
-    const { data: oldCat } = await db.from('categories').select('name').eq('id', id).single();
+    const { data: oldCat } = await db.from('categories').select('name').eq('id', idParam).single();
 
     const { error } = await db.from('categories').update({
         name,
         description: data.description || '',
-    }).eq('id', id);
+    }).eq('id', idParam);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
@@ -42,12 +42,12 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     const { id: idParam } = await params;
     const db = createAdminClient();
 
-    const { data: cat } = await db.from('categories').select('name').eq('id', id).single();
+    const { data: cat } = await db.from('categories').select('name').eq('id', idParam).single();
     if (cat) {
         await db.from('products').update({ category: null }).eq('category', cat.name);
     }
 
-    const { error } = await db.from('categories').delete().eq('id', id);
+    const { error } = await db.from('categories').delete().eq('id', idParam);
     if (error) return NextResponse.json({ success: false, message: error.message }, { status: 400 });
     return NextResponse.json({ success: true });
 }
