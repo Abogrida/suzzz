@@ -581,10 +581,6 @@ export default function HRPage() {
             })()
 
             {/* ===== TAB: PAYMENTS ===== */}
-                </div>
-            )}
-
-            {/* ===== TAB: PAYMENTS ===== */}
             {tab === 'payments' && (
                 <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
