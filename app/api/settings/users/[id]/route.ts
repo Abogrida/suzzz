@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthFromRequest, isSuperAdmin } from '@/lib/auth';
-import { createAdminClient } from '@/lib/supabase';
 import { requireAuth } from '@/lib/auth';
+import { createAdminClient } from '@/lib/supabase';
 
 // PUT /api/settings/users/[id] - Update a user
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const authError = requireAuth(req);
     if (authError) return authError;
 
+    const { id: idParam } = await params;
     const supabase = createAdminClient();
     const body = await req.json();
-    const id = Number(params.id); // Ensure ID is a number
+    const id = Number(idParam);
 
     if (isNaN(id)) return NextResponse.json({ error: 'معرف مستخدم غير صالح' }, { status: 400 });
 
@@ -23,7 +23,6 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         is_system_user: true
     };
 
-    // Only update password if provided
     if (body.password) {
         updateData.password = body.password;
     }
@@ -40,12 +39,13 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 // DELETE /api/settings/users/[id] - Delete a user
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const authError = requireAuth(req);
     if (authError) return authError;
 
+    const { id: idParam } = await params;
     const supabase = createAdminClient();
-    const id = Number(params.id);
+    const id = Number(idParam);
 
     if (isNaN(id)) return NextResponse.json({ error: 'معرف مستخدم غير صالح' }, { status: 400 });
 
