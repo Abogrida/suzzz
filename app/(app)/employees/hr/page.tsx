@@ -99,6 +99,9 @@ export default function HRPage() {
     const [attStatusFilter, setAttStatusFilter] = useState('all');
     const [attLoading, setAttLoading] = useState(false);
 
+    // Employee search (for employees tab - smart search)
+    const [empSearch, setEmpSearch] = useState('');
+
     // Selected employee for profile view
     const [selectedEmp, setSelectedEmp] = useState<HREmployee | null>(null);
     const [empPayments, setEmpPayments] = useState<Payment[]>([]);
@@ -439,8 +442,81 @@ export default function HRPage() {
                         </button>
                     </div>
 
-                    <div className="emp-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-                        {employees.map(emp => (
+                    {/* Smart Search Bar for Employees */}
+                    <div style={{ marginBottom: 20, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <input
+                            type="text"
+                            placeholder="🔍 ابحث بالاسم أو الهاتف أو الوظيفة..."
+                            value={empSearch}
+                            onChange={(e) => setEmpSearch(e.target.value)}
+                            style={{
+                                flex: 1,
+                                minWidth: '200px',
+                                padding: '12px 16px',
+                                fontSize: '16px',
+                                fontFamily: 'Cairo',
+                                border: '1.5px solid #e2e8f0',
+                                borderRadius: 12,
+                                outline: 'none',
+                                boxSizing: 'border-box',
+                                background: '#fff',
+                                transition: 'all 0.2s',
+                                inputMode: 'none',
+                            }}
+                            onFocus={(e) => {
+                                e.currentTarget.style.borderColor = '#0ea5e9';
+                                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(14, 165, 233, 0.1)';
+                            }}
+                            onBlur={(e) => {
+                                e.currentTarget.style.borderColor = '#e2e8f0';
+                                e.currentTarget.style.boxShadow = 'none';
+                            }}
+                        />
+                        {empSearch && (
+                            <button
+                                onClick={() => setEmpSearch('')}
+                                style={{
+                                    background: '#f1f5f9',
+                                    color: '#64748b',
+                                    border: '1.5px solid #e2e8f0',
+                                    borderRadius: 10,
+                                    padding: '10px 14px',
+                                    fontWeight: 800,
+                                    fontSize: 13,
+                                    cursor: 'pointer',
+                                    fontFamily: 'Cairo',
+                                    transition: 'all 0.2s',
+                                    whiteSpace: 'nowrap'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = '#e2e8f0';
+                                    e.currentTarget.style.color = '#1e293b';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = '#f1f5f9';
+                                    e.currentTarget.style.color = '#64748b';
+                                }}
+                            >
+                                ✕ مسح
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Filter employees based on search */}
+                    {(() => {
+                        const filteredEmployees = employees.filter(emp => {
+                            if (!empSearch) return true;
+                            const searchLower = empSearch.toLowerCase().trim();
+                            return (
+                                emp.name.toLowerCase().includes(searchLower) ||
+                                (emp.phone && emp.phone.includes(searchLower)) ||
+                                (emp.job_title && emp.job_title.toLowerCase().includes(searchLower))
+                            );
+                        });
+
+                        return (
+                            <div className="emp-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+                                {filteredEmployees.map(emp => (
                             <div key={emp.id} style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', border: '1.5px solid #e2e8f0', cursor: 'pointer' }}
                                 onClick={() => openEmpProfile(emp)}>
                                 {/* Header */}
@@ -486,7 +562,14 @@ export default function HRPage() {
                                 </div>
                             </div>
                         ))}
-                        {employees.length === 0 && (
+                        {filteredEmployees.length === 0 && empSearch && (
+                            <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '80px 0', color: '#94a3b8' }}>
+                                <div style={{ fontSize: 56, marginBottom: 16 }}>🔍</div>
+                                <div style={{ fontWeight: 800, fontSize: 20, color: '#374151' }}>لم يتم العثور على موظفين</div>
+                                <div style={{ fontSize: 14, marginTop: 8 }}>جرب البحث بكلمات مختلفة أو اضغط "مسح" للعودة للقائمة الكاملة</div>
+                            </div>
+                        )}
+                        {filteredEmployees.length === 0 && !empSearch && employees.length === 0 && (
                             <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '80px 0', color: '#94a3b8' }}>
                                 <div style={{ fontSize: 56, marginBottom: 16 }}>👔</div>
                                 <div style={{ fontWeight: 800, fontSize: 20, color: '#374151' }}>لا يوجد موظفون بعد</div>
@@ -494,6 +577,8 @@ export default function HRPage() {
                             </div>
                         )}
                     </div>
+                        );
+                    })()
 
                     {/* Employee Profile Modal */}
                     {selectedEmp && (

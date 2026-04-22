@@ -22,6 +22,7 @@ export default function EmployeeInventoryPage() {
     const [coldItems, setColdItems] = useState<string[]>([]);
     const [loadingItems, setLoadingItems] = useState(true);
     const [loadingLatest, setLoadingLatest] = useState(false);
+    const [itemSearch, setItemSearch] = useState('');
 
     const ALL_ITEMS = [...hotItems, ...coldItems];
 
@@ -330,8 +331,76 @@ export default function EmployeeInventoryPage() {
                     <span style={{ color: '#fff', fontWeight: 900, fontSize: 19 }}>قائمة الجرد</span>
                     <span style={{ background: 'rgba(255,255,255,0.25)', borderRadius: 8, padding: '3px 12px', color: '#fff', fontWeight: 700, fontSize: 14, marginRight: 'auto' }}>{ALL_ITEMS.length}</span>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
-                    {ALL_ITEMS.map(item => (
+
+                {/* Smart Search for Items */}
+                <div style={{ marginBottom: 16, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <input
+                        type="text"
+                        placeholder="🔍 ابحث عن منتج..."
+                        value={itemSearch}
+                        onChange={(e) => setItemSearch(e.target.value)}
+                        style={{
+                            flex: 1,
+                            minWidth: '200px',
+                            padding: '12px 14px',
+                            fontSize: '16px',
+                            fontFamily: 'Cairo',
+                            border: '1.5px solid #e2e8f0',
+                            borderRadius: 12,
+                            outline: 'none',
+                            boxSizing: 'border-box',
+                            background: '#fff',
+                            transition: 'all 0.2s',
+                        }}
+                        onFocus={(e) => {
+                            e.currentTarget.style.borderColor = '#6366f1';
+                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
+                        }}
+                        onBlur={(e) => {
+                            e.currentTarget.style.borderColor = '#e2e8f0';
+                            e.currentTarget.style.boxShadow = 'none';
+                        }}
+                    />
+                    {itemSearch && (
+                        <button
+                            onClick={() => setItemSearch('')}
+                            style={{
+                                background: '#f1f5f9',
+                                color: '#64748b',
+                                border: '1.5px solid #e2e8f0',
+                                borderRadius: 10,
+                                padding: '10px 12px',
+                                fontWeight: 700,
+                                fontSize: 14,
+                                cursor: 'pointer',
+                                fontFamily: 'Cairo',
+                                transition: 'all 0.2s',
+                                whiteSpace: 'nowrap',
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background = '#e2e8f0';
+                                e.currentTarget.style.color = '#1e293b';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = '#f1f5f9';
+                                e.currentTarget.style.color = '#64748b';
+                            }}
+                        >
+                            ✕ مسح
+                        </button>
+                    )}
+                </div>
+
+                {/* Filter items based on search and display */}
+                {(() => {
+                    const filteredItems = ALL_ITEMS.filter(item => {
+                        if (!itemSearch) return true;
+                        return item.toLowerCase().includes(itemSearch.toLowerCase().trim());
+                    });
+
+                    return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+                            {filteredItems.map(item => (
                         <div key={item} style={{ background: '#fff', borderRadius: 16, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, boxShadow: '0 2px 6px rgba(0,0,0,0.05)', border: '1.5px solid #e2e8f0' }}>
                             <label style={{ fontWeight: 800, fontSize: 18, color: '#1e293b', flex: 1 }}>{item}</label>
                             <input
@@ -343,7 +412,16 @@ export default function EmployeeInventoryPage() {
                             />
                         </div>
                     ))}
-                </div>
+                    {filteredItems.length === 0 && itemSearch && (
+                        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8' }}>
+                            <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
+                            <div style={{ fontWeight: 800, fontSize: 16, color: '#475569', marginBottom: 4 }}>لم يتم العثور على منتجات</div>
+                            <div style={{ fontSize: 14 }}>جرب البحث بكلمات مختلفة أو اضغط "مسح" للعودة للقائمة الكاملة</div>
+                        </div>
+                    )}
+                        </div>
+                    );
+                })()}
 
                 {error && <div style={{ background: '#fee2e2', color: '#b91c1c', borderRadius: 12, padding: '14px 18px', marginBottom: 14, fontWeight: 700, textAlign: 'center', fontSize: 16 }}>{error}</div>}
 
