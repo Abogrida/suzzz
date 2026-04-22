@@ -19,6 +19,7 @@ const navLinks = [
     { href: '/inventory-reports', label: 'تقارير الجرد', icon: ClipboardList },
     { href: '/cashier-stats', label: 'لوحة الكاشير', icon: LayoutDashboard },
     { href: '/notes', label: 'ملاحظات الشغل', icon: StickyNote },
+    { href: '/chat', label: 'الرسائل', icon: MessageSquare },
     { href: '/settings', label: 'الإعدادات', icon: Settings },
     { href: '/settings/users', label: 'إدارة المستخدمين', icon: Users },
 ];
