@@ -579,6 +579,8 @@ export default function HRPage() {
                     </div>
                 );
             })()
+                </div>
+            )}
 
             {/* ===== TAB: PAYMENTS ===== */}
             {tab === 'payments' && (
