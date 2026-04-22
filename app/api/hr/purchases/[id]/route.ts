@@ -12,7 +12,7 @@ export async function DELETE(
     const { error } = await db
         .from('hr_employee_purchases')
         .delete()
-        .eq('id', id);
+        .eq('id', idParam);
 
     if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
