@@ -355,7 +355,8 @@ export default function HRPage() {
     if (loading) return <div style={{ textAlign: 'center', padding: 80 }}><div style={{ fontSize: 52 }}>⏳</div><div style={{ color: '#64748b', fontSize: 18, marginTop: 12 }}>جاري التحميل...</div></div>;
 
     return (
-        <div className="page-content" style={{ direction: 'rtl', minHeight: '100vh' }}>
+        <>
+            <div className="page-content" style={{ direction: 'rtl', minHeight: '100vh' }}>
             {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
 
             {/* Breadcrumb */}
@@ -461,8 +462,8 @@ export default function HRPage() {
                                 boxSizing: 'border-box',
                                 background: '#fff',
                                 transition: 'all 0.2s',
-                                inputMode: 'none',
                             }}
+                            inputMode="none"
                             onFocus={(e) => {
                                 e.currentTarget.style.borderColor = '#0ea5e9';
                                 e.currentTarget.style.boxShadow = '0 0 0 3px rgba(14, 165, 233, 0.1)';
@@ -578,7 +579,7 @@ export default function HRPage() {
                         )}
                     </div>
                 );
-            })()
+            })()}
                 </div>
             )}
 
@@ -1409,15 +1410,15 @@ export default function HRPage() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                                 <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg, #0ea5e9, #38bdf8)', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>👔</div>
                                 <div>
-                                    <div style={{ color: '#fff', fontWeight: 900, fontSize: 22 }}>{selectedEmp.name}</div>
-                                    <div style={{ color: '#7dd3fc', fontSize: 14, marginTop: 3 }}>{selectedEmp.job_title || 'موظف'}</div>
+                                    <div style={{ color: '#fff', fontWeight: 900, fontSize: 22 }}>{selectedEmp?.name}</div>
+                                    <div style={{ color: '#7dd3fc', fontSize: 14, marginTop: 3 }}>{selectedEmp?.job_title || 'موظف'}</div>
                                 </div>
                             </div>
                             <button onClick={() => setSelectedEmp(null)} style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: 10, width: 40, height: 40, cursor: 'pointer', fontSize: 20 }}>✕</button>
                         </div>
                         <div className="emp-profile-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 20 }}>
                             {[
-                                { label: 'الراتب الأساسي', value: `${selectedEmp.base_salary.toLocaleString()} ج.م`, color: '#4ade80' },
+                                { label: 'الراتب الأساسي', value: `${selectedEmp?.base_salary?.toLocaleString()} ج.م`, color: '#4ade80' },
                                 { label: 'إجمالي مدفوعاته', value: `${empPayments.filter(p => p.payment_type !== 'deduction').reduce((s, p) => s + p.amount, 0).toLocaleString()} ج.م`, color: '#60a5fa' },
                                 { label: 'إجمالي الخصومات', value: `${(empPayments.filter(p => p.payment_type === 'deduction').reduce((s, p) => s + p.amount, 0) + empPurchases.reduce((s, p) => s + Number(p.amount), 0)).toLocaleString()} ج.م`, color: '#f87171' },
                             ].map(s => (
@@ -1432,10 +1433,10 @@ export default function HRPage() {
                     <div style={{ padding: '24px 20px', overflowX: 'hidden' }}>
                         {/* Details */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-                            {selectedEmp.phone && <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 16px' }}><div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>الهاتف</div><div style={{ fontWeight: 800, fontSize: 15 }}>📞 {selectedEmp.phone}</div></div>}
-                            {selectedEmp.national_id && <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 16px' }}><div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>الرقم القومي</div><div style={{ fontWeight: 800, fontSize: 15 }}>🪪 {selectedEmp.national_id}</div></div>}
-                            {selectedEmp.hire_date && <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 16px' }}><div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>تاريخ التعيين</div><div style={{ fontWeight: 800, fontSize: 15 }}>📅 {new Date(selectedEmp.hire_date).toLocaleDateString('ar-EG')}</div></div>}
-                            {selectedEmp.notes && <div style={{ background: '#fffbeb', borderRadius: 12, padding: '12px 16px' }}><div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>ملاحظات</div><div style={{ fontWeight: 700, fontSize: 14 }}>📝 {selectedEmp.notes}</div></div>}
+                            {selectedEmp?.phone && <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 16px' }}><div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>الهاتف</div><div style={{ fontWeight: 800, fontSize: 15 }}>📞 {selectedEmp?.phone}</div></div>}
+                            {selectedEmp?.national_id && <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 16px' }}><div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>الرقم القومي</div><div style={{ fontWeight: 800, fontSize: 15 }}>🪪 {selectedEmp?.national_id}</div></div>}
+                            {selectedEmp?.hire_date && <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 16px' }}><div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>تاريخ التعيين</div><div style={{ fontWeight: 800, fontSize: 15 }}>📅 {new Date(selectedEmp?.hire_date).toLocaleDateString('ar-EG')}</div></div>}
+                            {selectedEmp?.notes && <div style={{ background: '#fffbeb', borderRadius: 12, padding: '12px 16px' }}><div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>ملاحظات</div><div style={{ fontWeight: 700, fontSize: 14 }}>📝 {selectedEmp?.notes}</div></div>}
                         </div>
 
                         {/* Payments History */}
@@ -1476,7 +1477,7 @@ export default function HRPage() {
                                             <button onClick={async () => {
                                                 if (!confirm('حذف هذه المسحوبة؟')) return;
                                                 await fetch(`/api/hr/purchases/${p.id}`, { method: 'DELETE' });
-                                                const pur = await fetch(`/api/hr/purchases?employee_id=${selectedEmp.id}`).then(r => r.json());
+                                                const pur = await fetch(`/api/hr/purchases?employee_id=${selectedEmp?.id}`).then(r => r.json());
                                                 setEmpPurchases(Array.isArray(pur) ? pur : []);
                                                 loadPurchases(getLocalYYYYMMDD().slice(0, 7)); // update reports
                                             }} style={{ background: '#fef2f2', color: '#ef4444', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontFamily: 'Cairo', fontWeight: 800, fontSize: 13 }}>🗑</button>
@@ -1491,7 +1492,7 @@ export default function HRPage() {
                             <h3 style={{ fontSize: 17, fontWeight: 900, color: '#1e293b', margin: 0 }}>📅 سجل وإحصائيات الحضور</h3>
                             <input type="month" value={empProfileMonth} onChange={e => {
                                 setEmpProfileMonth(e.target.value);
-                                loadEmpProfileMonth(selectedEmp.id, e.target.value);
+                                loadEmpProfileMonth(selectedEmp?.id || 0, e.target.value);
                             }} style={{ ...inp, width: 'auto', padding: '6px 12px', fontSize: 14 }} />
                         </div>
 
@@ -1508,9 +1509,8 @@ export default function HRPage() {
                             const m = parseInt(empProfileMonth.split('-')[1]) - 1;
                             const isCurrentMonth = new Date().getFullYear() === y && new Date().getMonth() === m;
                             const daysInMonth = new Date(y, m + 1, 0).getDate();
-                            const todayDay = new Date().getDate();
 
-                            const offDaysKeys = selectedEmp.off_days || [];
+                            const offDaysKeys = selectedEmp?.off_days || [];
                             let expectedWorkDays = 0;
                             let attendedDays = 0;
                             let approvedLeaveDays = 0;
@@ -1536,15 +1536,14 @@ export default function HRPage() {
 
                                 // Find ALL attendance records for this date (multiple sessions possible)
                                 const dayRecords = empAttendance.filter(a => a.attendance_date === dateStr);
-                                const firstRecord = dayRecords[0] || null;
                                 const didAttend = dayRecords.some(r => ['present', 'late'].includes(r.status));
                                 const isExcused = dayRecords.some(r => r.status === 'excused');
 
                                 let displayStatus = '—';
                                 let displayObj: any = null;
 
-                                if (firstRecord) {
-                                    displayObj = attendanceLabels[firstRecord.status] || attendanceLabels.present;
+                                if (dayRecords.length > 0) {
+                                    displayObj = attendanceLabels[dayRecords[0].status] || attendanceLabels.present;
                                     displayStatus = displayObj.label;
                                 } else if (isFuture) {
                                     displayStatus = 'مستقبل';
@@ -1563,7 +1562,6 @@ export default function HRPage() {
                                     dateStr,
                                     date,
                                     dayRecords,
-                                    record: firstRecord,
                                     hasLeave,
                                     isOffDay,
                                     isFuture,
@@ -1636,12 +1634,11 @@ export default function HRPage() {
                                                         const rowBg = log.isOffDay ? '#f8fafc' : (log.isFuture && isCurrentMonth) ? '#F9FAFB' : '#fff';
                                                         const opacity = (log.isFuture && isCurrentMonth) ? 0.6 : 1;
                                                         const dateCell = (
-                                                            <td style={{ padding: '10px', fontWeight: 800, color: '#374151', verticalAlign: 'top' }}>
+                                                            <td rowSpan={Math.max(1, log.dayRecords.length)} style={{ padding: '10px', fontWeight: 800, color: '#374151', verticalAlign: 'top' }}>
                                                                 {log.dayNum} {log.date.toLocaleDateString('ar-EG', { weekday: 'short' })}
                                                             </td>
                                                         );
 
-                                                        // Days with no sessions at all → single summary row
                                                         if (!log.dayRecords || log.dayRecords.length === 0) {
                                                             return [
                                                                 <tr key={`${log.dayNum}-empty`} style={{ borderBottom: '1px solid #f1f5f9', background: rowBg, opacity }}>
@@ -1661,7 +1658,7 @@ export default function HRPage() {
                                                                     <td style={{ padding: '10px', position: 'sticky', left: 0, background: 'inherit', zIndex: 5, boxShadow: '2px 0 5px -2px rgba(0,0,0,0.05)' }}>
                                                                         {!log.isFuture && !log.hasLeave && !log.isOffDay && (
                                                                             <button
-                                                                                onClick={() => openManualAtt(selectedEmp.id, selectedEmp.name, log.dateStr)}
+                                                                                onClick={() => openManualAtt(selectedEmp?.id || 0, selectedEmp?.name || '', log.dateStr)}
                                                                                 style={{ background: 'linear-gradient(135deg, #0ea5e9, #38bdf8)', color: '#fff', border: 'none', borderRadius: 8, padding: '5px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 800, fontFamily: 'Cairo', display: 'flex', alignItems: 'center', gap: 5 }}>
                                                                                 ✏️ تحضير يدوي
                                                                             </button>
@@ -1671,16 +1668,12 @@ export default function HRPage() {
                                                             ];
                                                         }
 
-                                                        // Days WITH one or more sessions → one row per session
-                                                        return log.dayRecords.map((session: any, si: number) => {
+                                                        return log.dayRecords.map((session, si) => {
                                                             const sObj = attendanceLabels[session.status] || attendanceLabels.present;
                                                             return (
-                                                                <tr key={`${log.dayNum}-s${si}`} style={{ borderBottom: '1px solid #f1f5f9', background: si % 2 === 0 ? rowBg : '#fafff8', opacity }}>
-                                                                    {/* Show date only on first session */}
-                                                                    {si === 0 ? dateCell : <td style={{ padding: '10px' }} />}
-                                                                    <td style={{ padding: '6px 10px', fontSize: 11, color: '#64748b', fontWeight: 700 }}>
-                                                                        {log.dayRecords.length > 1 ? `جلسة ${si + 1}` : '—'}
-                                                                    </td>
+                                                                <tr key={`${session.id}-${si}`} style={{ borderBottom: '1px solid #f1f5f9', background: rowBg, opacity }}>
+                                                                    {si === 0 && dateCell}
+                                                                    <td style={{ padding: '10px' }}>{si + 1}</td>
                                                                     <td style={{ padding: '10px' }}>
                                                                         <span style={{ background: sObj.bg, color: sObj.color, borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 800 }}>
                                                                             {sObj.icon} {sObj.label}
@@ -1695,20 +1688,18 @@ export default function HRPage() {
                                                                     <td style={{ padding: '10px', position: 'sticky', left: 0, background: 'inherit', zIndex: 5, boxShadow: '2px 0 5px -2px rgba(0,0,0,0.05)' }}>
                                                                         <div style={{ display: 'flex', gap: 5, justifyContent: 'center' }}>
                                                                             <button 
-                                                                                onClick={() => openEditAtt(session, selectedEmp.name)}
-                                                                                title="تعديل هذا السجل"
+                                                                                onClick={() => openEditAtt(session, selectedEmp?.name || '')}
                                                                                 style={{ background: '#fef3c7', color: '#f59e0b', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 800, fontFamily: 'Cairo' }}>✏️</button>
                                                                             {si === 0 && !log.isFuture && !log.isOffDay && (
                                                                                 <button
-                                                                                    onClick={() => openManualAtt(selectedEmp.id, selectedEmp.name, log.dateStr)}
-                                                                                    title="إضافة تحضير يدوي"
+                                                                                    onClick={() => openManualAtt(selectedEmp?.id || 0, selectedEmp?.name || '', log.dateStr)}
                                                                                     style={{ background: 'linear-gradient(135deg,#0ea5e9,#38bdf8)', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 800, fontFamily: 'Cairo' }}>✏️</button>
                                                                             )}
                                                                             <button
                                                                                 onClick={async () => {
                                                                                     if (!confirm('حذف هذه الجلسة نهائياً؟')) return;
                                                                                     await fetch(`/api/hr/attendance/${session.id}`, { method: 'DELETE' });
-                                                                                    loadEmpProfileMonth(selectedEmp.id, empProfileMonth);
+                                                                                    loadEmpProfileMonth(selectedEmp?.id || 0, empProfileMonth);
                                                                                 }}
                                                                                 style={{ background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 700, fontFamily: 'Cairo' }}>🗑</button>
                                                                         </div>
@@ -1742,7 +1733,7 @@ export default function HRPage() {
                                                             </div>
                                                             {!log.isFuture && !log.hasLeave && !log.isOffDay && (
                                                                 <div className="mobile-card-row-actions mt-2 pt-2 border-t border-slate-100">
-                                                                    <button onClick={() => openManualAtt(selectedEmp.id, selectedEmp.name, log.dateStr)}
+                                                                    <button onClick={() => openManualAtt(selectedEmp?.id || 0, selectedEmp?.name || '', log.dateStr)}
                                                                         className="btn shadow-sm" style={{ background: 'linear-gradient(135deg, #0ea5e9, #38bdf8)', color: '#fff', fontSize: 12, padding: '6px 0', width: '100%' }}>
                                                                         ✏️ تحضير يدوي
                                                                     </button>
@@ -1752,15 +1743,12 @@ export default function HRPage() {
                                                     );
                                                 }
 
-                                                return log.dayRecords.map((session: any, si: number) => {
+                                                return log.dayRecords.map((session, si) => {
                                                     const sObj = attendanceLabels[session.status] || attendanceLabels.present;
                                                     return (
-                                                        <div key={`${log.dayNum}-s${si}`} className="mobile-card-row" style={{ borderRight: `4px solid ${sObj.color}`, background: si % 2 === 0 ? headerBg : '#fafff8' }}>
+                                                        <div key={`${session.id}-${si}`} className="mobile-card-row" style={{ background: headerBg }}>
                                                             <div className="mobile-card-row-header">
-                                                                <div className="mobile-card-row-title" style={{ fontSize: 13, fontWeight: 800 }}>
-                                                                    {log.dayNum} {log.date.toLocaleDateString('ar-EG', { weekday: 'short' })}
-                                                                    {log.dayRecords.length > 1 && <span style={{ color: '#64748b', fontSize: 11, marginRight: 6 }}>(جلسة {si + 1})</span>}
-                                                                </div>
+                                                                <div className="mobile-card-row-title" style={{ fontSize: 13, fontWeight: 800 }}>{log.dayNum} {log.date.toLocaleDateString('ar-EG', { weekday: 'short' })} <span style={{ color: '#94a3b8', fontWeight: 6 }}>(جلسة {si + 1})</span></div>
                                                                 <span style={{ background: sObj.bg, color: sObj.color, borderRadius: 6, padding: '4px 8px', fontSize: 11, fontWeight: 800 }}>{sObj.icon} {sObj.label}</span>
                                                             </div>
                                                             <div className="mobile-card-row-body mt-2">
@@ -1774,14 +1762,14 @@ export default function HRPage() {
                                                                 </div>
                                                             </div>
                                                             <div className="mobile-card-row-actions mt-2">
-                                                                <button onClick={() => openEditAtt(session, selectedEmp.name)} style={{ background: '#fef3c7', color: '#f59e0b', fontSize: 12, padding: '6px' }} className="btn">تعديل</button>
+                                                                <button onClick={() => openEditAtt(session, selectedEmp?.name || '')} style={{ background: '#fef3c7', color: '#f59e0b', fontSize: 12, padding: '6px' }} className="btn">تعديل</button>
                                                                 {si === 0 && !log.isFuture && !log.isOffDay && (
-                                                                    <button onClick={() => openManualAtt(selectedEmp.id, selectedEmp.name, log.dateStr)} style={{ background: '#e0f2fe', color: '#0284c7', fontSize: 12, padding: '6px' }} className="btn">يدوي</button>
+                                                                    <button onClick={() => openManualAtt(selectedEmp?.id || 0, selectedEmp?.name || '', log.dateStr)} style={{ background: '#e0f2fe', color: '#0284c7', fontSize: 12, padding: '6px' }} className="btn">يدوي</button>
                                                                 )}
                                                                 <button onClick={async () => {
                                                                     if (!confirm('حذف هذه الجلسة نهائياً؟')) return;
                                                                     await fetch(`/api/hr/attendance/${session.id}`, { method: 'DELETE' });
-                                                                    loadEmpProfileMonth(selectedEmp.id, empProfileMonth);
+                                                                    loadEmpProfileMonth(selectedEmp?.id || 0, empProfileMonth);
                                                                 }} style={{ background: '#fee2e2', color: '#ef4444', fontSize: 12, padding: '6px' }} className="btn">حذف</button>
                                                             </div>
                                                         </div>
@@ -1796,6 +1784,7 @@ export default function HRPage() {
                     </div>
                 </div>
             </div>
-        )}
+         )}
+        </>
     );
 }
